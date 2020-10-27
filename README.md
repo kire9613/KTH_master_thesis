@@ -67,7 +67,7 @@ If you do not want to install Ubuntu onto your computer, consider installing a
 Some may need to install some additional python tools (install the **Python 2.7**
 versions):
 
-1. [numpy](https://scipy.org/install.html) **(You may need to update your version of numpy to the newest)**
+1. [numpy](https://scipy.org/install.html) **(You may need to update your version of numpy to the newest)** You can do this with `pip install numpy`
 2. [matplotlib](https://matplotlib.org/users/installing.html)
 
 The installation instructions later on will use `catkin build` instead of
@@ -138,8 +138,8 @@ cars with little effort. However, this does not mean the code will work on a
 real vehicle without further tuning or changes.
 
 There are three pre-written scripts to serve as examples of how to use the
-code base in simulation. See and read the source code in
-`svea_starter/src/svea_core/scripts/sim`.
+code base. See and read the source code in
+`svea_starter/src/svea_core/scripts/core_examples`.
 
 You can try them out by running one of the two commands:
 
@@ -173,7 +173,11 @@ where you should see something that looks like:
 
 ![key-teleop example](./media/floor2_rviz.png)
 
+Now you are ready to read through the tutorials! You can find them in `svea_starter/docs/tutorials`.
+
 ## Going from simulation to real
+
+**Note, you only have to follow this section when running the real cars!**
 
 Since the simulated SVEA cars are built to function very similarly to the real
 SVEA cars, the transfer from simulation to real vehicles is fairly simple!
