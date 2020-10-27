@@ -2,12 +2,13 @@
 Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math
+from pprint import pprint
 
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.0  #TODO speed control propotional gain
+    K_p = 0.5 #TODO speed control propotional gain
     K_i = 0.0  #TODO speed control integral gain
     K_d = 0.0  #TODO speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
@@ -28,7 +29,7 @@ class PurePursuitController(object):
 
     def compute_steering(self, state, target=None):
         if target is None:
-            self.find_target(state)
+            dist = self.find_target(state)
         else:
             # allow manual setting of target
             self.target = target
@@ -47,14 +48,16 @@ class PurePursuitController(object):
             return 0.0
         else:
             # speed control
-            #TODO
-            return self.target_velocity
+            dist = self.find_target(state)
+            vel = dist*self.K_p
+            return vel
 
     def find_target(self, state):
-        ind = self._calc_target_index(state)
+        ind, dist = self._calc_target_index(state)
         tx = self.traj_x[ind]
         ty = self.traj_y[ind]
         self.target = (tx, ty)
+        return dist
 
     def _calc_target_index(self, state):
         # search nearest point index
@@ -75,4 +78,4 @@ class PurePursuitController(object):
         # terminating condition
         #TODO
 
-        return ind
+        return ind, dist
