@@ -12,16 +12,19 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
 
+__team__ = "Team 3"
+__maintainers__ = "Albin Larsson Forsberg"
+__status__ = "Development"
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
-xs = [-2.33, 10.48]
-ys = [-7.09, 11.71]
-traj_x = np.linspace(xs[0], xs[1]).tolist()
-traj_y = np.linspace(ys[0], ys[1]).tolist()
+xs = [-2.33, 10.48, 5.9, -7, -2.33] 
+ys = [-7.09, 11.71, 14.9, -3.3, -7.09] 
+traj_x = np.linspace(xs[0], xs[1]).tolist() + np.linspace(xs[1], xs[2]).tolist() + np.linspace(xs[2], xs[3]).tolist() + np.linspace(xs[3], xs[4]).tolist()
+traj_y = np.linspace(ys[0], ys[1]).tolist() + np.linspace(ys[1], ys[2]).tolist() + np.linspace(ys[2], ys[3]).tolist() + np.linspace(ys[3], ys[4]).tolist()
 ###############################################################################
 
 ## INIT #######################################################################
