@@ -4,14 +4,16 @@ Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 import math
 import rospy
 import numpy as np
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
     K_p = 1  #TODO speed control propotional gain
-    K_i = 2  #TODO speed control integral gain
-    K_d = -0.1  #TODO speed control derivitive gain
+    K_i = 0.02  #TODO speed control integral gain
+    K_d = 0  #TODO speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
     threshold = 0.2
     checkpointsTouched = False
@@ -27,7 +29,10 @@ class PurePursuitController(object):
         
         self.hist_v = []
         self.errors = []
+        self.errors_for_I = []
         self.flag_halfway = False
+        self.last_time = rospy.get_time()
+        self.pid_hist = []
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -60,18 +65,29 @@ class PurePursuitController(object):
 
             P = self.K_p*(self.errors[-1])
 
-            #N=300
-            #if len(self.errors)>N:
-            #    I = self.K_i*(sum(self.errors[-N:-1]))
-            #else:
-            I = self.K_i*(sum(self.errors))
+            if abs(self.errors[-1]) < self.target_velocity*0.4:
+                self.errors_for_I.append(self.errors[-1])
+                I = self.K_i*(sum(self.errors_for_I))
+            else:
+                self.errors_for_I = []
+                I = 0.4
 
+            newtime = rospy.get_time()
+            dt = newtime - self.last_time
+            self.last_time = newtime
             if len(self.errors)>1:
-                D = self.K_d*(self.errors[-1]-self.errors[-2])
+                D = self.K_d*(self.errors[-1]-self.errors[-2])/dt
             else:
                 D = 0
-
-            return P+I+D
+            
+            self.hist_v.append(state.v)
+            PID = P+I+D
+            if PID > 4:
+                PID = 4
+            elif PID < 0:
+                PID = 0
+            self.pid_hist.append(PID)
+            return PID
 
     def find_target(self, state):
         ind = self._calc_target_index(state)
@@ -103,8 +119,8 @@ class PurePursuitController(object):
         target_distance = math.sqrt(x_dist**2+y_dist**2)
 
 
-        self.hist_v.append(state.v)
-        rospy.loginfo_throttle(2,"Speed is: {}".format(np.mean(self.hist_v[-30:-1])))
+        
+        rospy.loginfo_throttle(10,"Speed is: {}".format(np.mean(self.hist_v[-400:-1])))
         if ind > len(self.traj_x)/2 and ind < len(self.traj_x)/2+30:
             self.flag_halfway = True
             rospy.loginfo_throttle(1000,"Passed the Halfway point!")
@@ -112,5 +128,8 @@ class PurePursuitController(object):
         if target_distance < self.threshold and self.flag_halfway:
             self.is_finished = True
             rospy.loginfo_throttle(1000,"The Average speed was: {}".format(np.mean(self.hist_v)))
+            t = np.linspace(0,len(self.hist_v)-1,len(self.hist_v))
+            plt.plot(t,self.hist_v,'r--',t,self.pid_hist,'b--')
+            plt.show(block=False)
 
         return ind
