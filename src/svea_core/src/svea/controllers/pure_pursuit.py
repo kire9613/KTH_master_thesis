@@ -53,8 +53,8 @@ class PurePursuitController(object):
 
             e = self.target_velocity - state.v
             print("e: " + str(e))
-            self.e_sum = e + self.e_sum
             u = self.K_p * e    +    self.K_i * self.e_sum
+            self.e_sum = e + self.e_sum
 
             return u #self.target_velocity
 
