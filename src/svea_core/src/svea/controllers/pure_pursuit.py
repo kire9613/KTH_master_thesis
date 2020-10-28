@@ -48,9 +48,18 @@ class PurePursuitController(object):
             return 0.0
         else:
             # speed control
+<<<<<<< Updated upstream
             dist = self.find_target(state)
             vel = dist*self.K_p
             return vel
+=======
+            e = self.target_velocity - state.v
+            dt =  state.time_stamp.to_sec() - self.last_time
+            self.last_time = state.time_stamp.to_sec()
+            self.P = self.K_p*e
+            self.I = self. I + self.K_i*e*dt
+            return  self.target_velocity + self.P + self.I
+>>>>>>> Stashed changes
 
     def find_target(self, state):
         ind, dist = self._calc_target_index(state)
@@ -77,5 +86,10 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
+<<<<<<< Updated upstream
+=======
+        if dist < 0.1:
+            self.is_finished = True 
+>>>>>>> Stashed changes
 
         return ind, dist
