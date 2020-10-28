@@ -26,6 +26,16 @@ xs = [-2.33, 10.48]
 ys = [-7.09, 11.71]
 traj_x = np.linspace(xs[0], xs[1]).tolist()
 traj_y = np.linspace(ys[0], ys[1]).tolist()
+xs = [10.48, 5.88]
+ys = [11.71, 14.8]
+traj_x += np.linspace(xs[0], xs[1]).tolist()
+traj_y += np.linspace(ys[0], ys[1]).tolist()
+xs = [5.88, -6.82]
+ys = [14.8, -3,72]
+traj_x += np.linspace(xs[0], xs[1]).tolist()
+traj_y += np.linspace(ys[0], ys[1]).tolist()
+
+
 ###############################################################################
 
 ## INIT #######################################################################
