@@ -57,7 +57,11 @@ def main():
     # simualtion loop
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
+
         state = svea.wait_for_state()
+        # Testing different target velocity after 3s
+        if state.time_stamp.to_sec() > 3:
+            svea.controller.target_velocity = 1.2
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control(state)
