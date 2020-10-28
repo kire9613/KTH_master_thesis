@@ -11,10 +11,8 @@ class PurePursuitController(object):
     K_p = 0.5 #TODO speed control propotional gain
     K_i = 1.0  #TODO speed control integral gain
     K_d = 0.0  #TODO speed control derivitive gain
-    L = 0.324  # [m] wheel base of vehicle
-    I = 0
-    P = 0
-
+    P = 0 # initilize P value (PID)
+    I = 0 # intialize I value (PID)
     def __init__(self, vehicle_name=''):
         self.traj_x = []
         self.traj_y = []
@@ -23,7 +21,7 @@ class PurePursuitController(object):
         self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
-        self.last_time = 0
+        self.last_time = 0.0 #rospy.Time.from_sec(0)
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -58,6 +56,7 @@ class PurePursuitController(object):
             self.I = self. I + self.K_i*e*dt
         return  self.target_velocity + self.P + self.I
 
+
     def find_target(self, state):
         ind, dist = self._calc_target_index(state)
         tx = self.traj_x[ind]
@@ -84,6 +83,6 @@ class PurePursuitController(object):
         # terminating condition
         #TODO
         if dist < 0.1:
-            self.is_finished = True 
+            self.is_finished = True
 
         return ind, dist
