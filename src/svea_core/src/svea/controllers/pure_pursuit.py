@@ -11,8 +11,6 @@ class PurePursuitController(object):
     K_i = 0.2
     K_d = 0.0
     L = 0.324  # [m] wheel base of vehicle
-    e_prev = 0
-    e_sum = 0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -83,7 +81,7 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
-        if dist < 0.01:
+        if math.sqrt((state.x-self.traj_x[-1]) ** 2 + (state.y-self.traj_y[-1]) ** 2) < 0.05:
             self.is_finished = True
         else:
             self.is_finished = False
