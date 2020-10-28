@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 
 __team__ = "Team 4"
-__maintainers__ = "Adam Miksits, Caroline Skoglund, Oscar Gustavsson, Ylva Modahl"
+__maintainers__ = "Adam Miksits, Caroline Skoglund, Oscar Gustavsson, Ylva Modahl "
 __status__ = "Development"
 
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
