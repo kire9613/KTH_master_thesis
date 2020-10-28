@@ -13,6 +13,8 @@ class PurePursuitController(object):
     K_d = 0.0  #TODO speed control derivitive gain
     P = 0 # initilize P value (PID)
     I = 0 # intialize I value (PID)
+    L = 0.324  # [m] wheel base of vehicle
+
     def __init__(self, vehicle_name=''):
         self.traj_x = []
         self.traj_y = []
