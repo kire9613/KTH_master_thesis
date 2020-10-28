@@ -81,6 +81,7 @@ class PurePursuitController(object):
             ind += 1
 
         # terminating condition
+
         #TODO
         if dist < 0.1:
             self.is_finished = True
