@@ -7,10 +7,12 @@ class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.0  #TODO speed control propotional gain
-    K_i = 0.0  #TODO speed control integral gain
-    K_d = 0.0  #TODO speed control derivitive gain
+    K_p = 0.05
+    K_i = 0.2
+    K_d = 0.0
     L = 0.324  # [m] wheel base of vehicle
+    e_prev = 0
+    e_sum = 0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -46,9 +48,16 @@ class PurePursuitController(object):
             # stop moning if trajectory done
             return 0.0
         else:
+            print("target vel: " + str(self.target_velocity) + " current vel:" + str(state.v))
             # speed control
             #TODO
-            return self.target_velocity
+
+            e = self.target_velocity - state.v
+            print("e: " + str(e))
+            self.e_sum = e + self.e_sum
+            u = self.K_p * e    +    self.K_i * self.e_sum
+
+            return u #self.target_velocity
 
     def find_target(self, state):
         ind = self._calc_target_index(state)
@@ -74,5 +83,9 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
+        if dist < 0.01:
+            self.is_finished = True
+        else:
+            self.is_finished = False
 
         return ind
