@@ -18,10 +18,14 @@ target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
-xs = [-2.33, 10.48]
-ys = [-7.09, 11.71]
-traj_x = np.linspace(xs[0], xs[1]).tolist()
-traj_y = np.linspace(ys[0], ys[1]).tolist()
+xs = [-7.4 , -2.33, 10.3, 5.9, -7.2, -2.5]
+ys = [-15.3,  -7.09, 11.4, 14.8, -4.2, -7.6]
+traj_x = []
+traj_y = []
+for i in range(0,len(xs)-1):
+    traj_x += np.linspace(xs[i], xs[i+1]).tolist()
+    traj_y += np.linspace(ys[i], ys[i+1]).tolist()
+
 ###############################################################################
 
 ## INIT #######################################################################
