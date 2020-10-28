@@ -9,9 +9,11 @@ class PurePursuitController(object):
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
     K_p = 0.5 #TODO speed control propotional gain
-    K_i = 0.0  #TODO speed control integral gain
+    K_i = 1.0  #TODO speed control integral gain
     K_d = 0.0  #TODO speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
+    I = 0
+    P = 0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -21,6 +23,7 @@ class PurePursuitController(object):
         self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
+        self.last_time = 0
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -48,18 +51,12 @@ class PurePursuitController(object):
             return 0.0
         else:
             # speed control
-<<<<<<< Updated upstream
-            dist = self.find_target(state)
-            vel = dist*self.K_p
-            return vel
-=======
             e = self.target_velocity - state.v
             dt =  state.time_stamp.to_sec() - self.last_time
             self.last_time = state.time_stamp.to_sec()
             self.P = self.K_p*e
             self.I = self. I + self.K_i*e*dt
-            return  self.target_velocity + self.P + self.I
->>>>>>> Stashed changes
+        return  self.target_velocity + self.P + self.I
 
     def find_target(self, state):
         ind, dist = self._calc_target_index(state)
@@ -86,10 +83,7 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
-<<<<<<< Updated upstream
-=======
         if dist < 0.1:
             self.is_finished = True 
->>>>>>> Stashed changes
 
         return ind, dist
