@@ -11,6 +11,7 @@ class PurePursuitController(object):
     K_i = 0.2
     K_d = 0.0
     L = 0.324  # [m] wheel base of vehicle
+    e_sum = 0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
