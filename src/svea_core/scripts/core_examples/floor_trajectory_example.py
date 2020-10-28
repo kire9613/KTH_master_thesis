@@ -11,7 +11,7 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
 __team__ = "Team 5"
-__maintainers__ ="Bianca Otake, ...”
+__maintainers__ ="Bianca Otake, Holmfridur Elvarsdottir ...”
 __status__ ="Development"
 
 
