@@ -13,7 +13,7 @@ from svea.simulators.sim_SVEA import SimSVEA
 
 
 __team__ = "Team 3"
-__maintainers__ = "Albin Larsson Forsberg"
+__maintainers__ = "Albin Larsson Forsberg, Timotheos Souroulla"
 __status__ = "Development"
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
