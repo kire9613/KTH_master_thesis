@@ -12,7 +12,7 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
 __team__ = "Team 3"
-__maintainers__ = "Albin Larsson Forsberg, Timotheos Souroulla, Filip Hestell, Roman Landin"
+__maintainers__ = "Albin Larsson Forsberg, Timotheos Souroulla, Filip Hestell, Roman Landin, Filip von Reis Marlevi"
 __status__ = "Development"
 
 ## SIMULATION PARAMS ##########################################################
