@@ -13,7 +13,7 @@ from svea.simulators.sim_SVEA import SimSVEA
 
 """
 __team__ = “Team 1”
-__maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin”
+__maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin, Aravind Sadashiv”
 __status__ = "Development"
 """
 
