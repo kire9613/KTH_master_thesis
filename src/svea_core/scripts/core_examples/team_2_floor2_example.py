@@ -12,6 +12,10 @@ from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
+__team__ = "Team 2"
+__maintainers__ = "Badi Mirzai,... "
+__statuts__ = "Development"
+
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
