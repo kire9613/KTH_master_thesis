@@ -86,7 +86,7 @@ class PurePursuitController(object):
             ind += 1
 
         # terminating condition
-        thresh = 0.1
+        thresh = 0.3
         target_dist = math.hypot(self.traj_x[-1]-state.x,self.traj_y[-1]-state.y)
         is_close = (target_dist<thresh)
         if ind+1==len(self.traj_x) and is_close:
