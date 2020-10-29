@@ -13,7 +13,7 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
 __team__ = "Team 2"
-__maintainers__ = "Badi Mirzai, Hashem Ghasemi, ... "
+__maintainers__ = "Badi Mirzai, Hashem Ghasemi, Seyedhesam Ahmadi ... "
 __statuts__ = "Development"
 
 
