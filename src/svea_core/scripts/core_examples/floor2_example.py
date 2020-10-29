@@ -12,19 +12,48 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
 
-__team__ = "Team 3"
-__maintainers__ = "Albin Larsson Forsberg, Timotheos Souroulla"
-__status__ = "Development"
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
-xs = [-2.33, 10.48, 5.9, -7, -2.33] 
-ys = [-7.09, 11.71, 14.9, -3.3, -7.09] 
-traj_x = np.linspace(xs[0], xs[1]).tolist() + np.linspace(xs[1], xs[2]).tolist() + np.linspace(xs[2], xs[3]).tolist() + np.linspace(xs[3], xs[4]).tolist()
-traj_y = np.linspace(ys[0], ys[1]).tolist() + np.linspace(ys[1], ys[2]).tolist() + np.linspace(ys[2], ys[3]).tolist() + np.linspace(ys[3], ys[4]).tolist()
+xs1 = [-3.04, 10.06]
+ys1 = [-8.24, 11.12]
+xs2 = [9.83, 6.45]
+ys2 = [12.04, 14.38]
+xs12 = [xs1[1],xs2[0]]
+ys12 = [ys1[1],ys2[0]]
+xs3 = [5.28, -6.58]
+ys3 = [14.22, -2.97]
+xs23 = [xs2[1],xs3[0]]
+ys23 = [ys2[1],ys3[0]]
+xs4 = [-6.61, -2.34]
+ys4 = [-4.44, -7.17]
+xs34 = [xs3[1],xs4[0]]
+ys34 = [ys3[1],ys4[0]]
+
+traj_x1 = np.linspace(xs1[0], xs1[1]).tolist()
+traj_y1 = np.linspace(ys1[0], ys1[1]).tolist()
+traj_x12 = np.linspace(xs12[0], xs12[1]).tolist()
+traj_y12 = np.linspace(ys12[0], ys12[1]).tolist()
+traj_x2 = np.linspace(xs2[0], xs2[1]).tolist()
+traj_y2 = np.linspace(ys2[0], ys2[1]).tolist()
+traj_x23 = np.linspace(xs23[0], xs23[1]).tolist()
+traj_y23 = np.linspace(ys23[0], ys23[1]).tolist()
+traj_x3 = np.linspace(xs3[0], xs3[1]).tolist()
+traj_y3 = np.linspace(ys3[0], ys3[1]).tolist()
+traj_x34 = np.linspace(xs34[0], xs34[1]).tolist()
+traj_y34 = np.linspace(ys34[0], ys34[1]).tolist()
+traj_x4 = np.linspace(xs4[0], xs4[1]).tolist()
+traj_y4 = np.linspace(ys4[0], ys4[1]).tolist()
+
+traj_x = [traj_x1, traj_x12, traj_x2, traj_x23, traj_x3, traj_x34, traj_x4] #  , 
+traj_y = [traj_y1, traj_y12, traj_y2, traj_y23, traj_y3, traj_y34, traj_y4] # , , 
+
+traj_x = [val for sublist in traj_x for val in sublist]
+traj_y = [val for sublist in traj_y for val in sublist]
+
 ###############################################################################
 
 ## INIT #######################################################################
@@ -89,6 +118,15 @@ def main():
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
 
+        
+        index =  svea.controller.last_index
+        if index > 50:
+            svea.controller.traj_x = traj_x
+            svea.controller.traj_y = traj_y
+        else:
+            svea.controller.traj_x = traj_x[0:100]
+            svea.controller.traj_y = traj_y[0:100]
+        ##print(index)
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
         svea.send_control(steering, velocity)
