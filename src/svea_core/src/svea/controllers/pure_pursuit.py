@@ -7,8 +7,8 @@ class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.05
-    K_i = 0.2
+    K_p = 0.4
+    K_i = 0.01
     K_d = 0.0
     L = 0.324  # [m] wheel base of vehicle
     e_sum = 0
