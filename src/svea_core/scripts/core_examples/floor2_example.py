@@ -11,6 +11,9 @@ from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
+__team__ = "Team 3"
+__maintainers__ = "Albin Larsson Forsberg, Timotheos Souroulla, Filip Hestell"
+__status__ = "Development"
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
@@ -48,8 +51,8 @@ traj_y34 = np.linspace(ys34[0], ys34[1]).tolist()
 traj_x4 = np.linspace(xs4[0], xs4[1]).tolist()
 traj_y4 = np.linspace(ys4[0], ys4[1]).tolist()
 
-traj_x = [traj_x1, traj_x12, traj_x2, traj_x23, traj_x3, traj_x34, traj_x4] #  , 
-traj_y = [traj_y1, traj_y12, traj_y2, traj_y23, traj_y3, traj_y34, traj_y4] # , , 
+traj_x = [traj_x1, traj_x12, traj_x2, traj_x23, traj_x3, traj_x34, traj_x4] #  ,
+traj_y = [traj_y1, traj_y12, traj_y2, traj_y23, traj_y3, traj_y34, traj_y4] # , ,
 
 traj_x = [val for sublist in traj_x for val in sublist]
 traj_y = [val for sublist in traj_y for val in sublist]
@@ -118,7 +121,7 @@ def main():
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
 
-        
+
         index =  svea.controller.last_index
         if index > 50:
             svea.controller.traj_x = traj_x
