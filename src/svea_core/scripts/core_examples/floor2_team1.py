@@ -14,8 +14,7 @@ from svea.simulators.sim_SVEA import SimSVEA
 """
 __team__ = “Team 1”
 =======
-__maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin, Aravind Sadashiv”
->>>>>>> e73f09281184c359f14727cbdfaa8629169c97b1
+__maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin, Aravind Sadashiv, Sarthak Manocha”
 __status__ = "Development"
 """
 
