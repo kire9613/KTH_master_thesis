@@ -8,9 +8,9 @@ class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 1.0  #TODO speed control propotional gain
-    K_i = 0.2  #TODO speed control integral gain
-    K_d = 0.0  #TODO speed control derivitive gain
+    K_p = 1.0  # speed control propotional gain
+    K_i = 0.2  # speed control integral gain
+    K_d = 0.0  # speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
     e_sum = 0
     e_tmin1 = 0
@@ -50,7 +50,6 @@ class PurePursuitController(object):
             return 0.0
         else:
             # speed control
-            #TODO
             e = self.target_velocity - state.v
             self.e_sum += e
             if e*self.e_tmin1<0: # anti-windup, reset when crossing zero
