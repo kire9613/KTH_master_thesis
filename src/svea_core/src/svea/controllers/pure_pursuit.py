@@ -2,15 +2,18 @@
 Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math
+import numpy as np
 
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.0  #TODO speed control propotional gain
-    K_i = 0.0  #TODO speed control integral gain
+    K_p = 1.0  #TODO speed control propotional gain
+    K_i = 0.2  #TODO speed control integral gain
     K_d = 0.0  #TODO speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
+    e_sum = 0
+    e_tmin1 = 0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -48,7 +51,18 @@ class PurePursuitController(object):
         else:
             # speed control
             #TODO
-            return self.target_velocity
+            e = self.target_velocity - state.v
+            self.e_sum += e
+            if e*self.e_tmin1<0: # anti-windup, reset when crossing zero
+                self.e_sum=0
+            P = e*self.K_p
+            I = self.e_sum*self.K_i
+            D = (e-self.e_tmin1)*self.K_d/0.01 # dt = 0.01, first order approx
+            self.e_tmin1 = e
+            u = P + I
+            speed_lim = 1.50
+            u = np.clip(u,-speed_lim+self.target_velocity,speed_lim-self.target_velocity)
+            return self.target_velocity + u
 
     def find_target(self, state):
         ind = self._calc_target_index(state)
@@ -73,6 +87,10 @@ class PurePursuitController(object):
             ind += 1
 
         # terminating condition
-        #TODO
+        thresh = 0.1
+        target_dist = math.hypot(self.traj_x[-1]-state.x,self.traj_y[-1]-state.y)
+        is_close = (target_dist<thresh)
+        if ind+1==len(self.traj_x) and is_close:
+            self.is_finished = True
 
         return ind
