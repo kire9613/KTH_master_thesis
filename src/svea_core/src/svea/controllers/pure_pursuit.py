@@ -56,6 +56,10 @@ class PurePursuitController(object):
             u = self.K_p * e    +    self.K_i * self.e_sum
             self.e_sum = e + self.e_sum
 
+            # Anti reset windup
+            if (abs(self.e_sum) > 35):
+                self.e_sum = math.copysign(35, self.e_sum)
+
             return u #self.target_velocity
 
     def find_target(self, state):
