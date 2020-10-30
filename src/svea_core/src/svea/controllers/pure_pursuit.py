@@ -14,6 +14,7 @@ class PurePursuitController(object):
     P = 0 # initilize P value (PID)
     I = 0 # intialize I value (PID)
     L = 0.324  # [m] wheel base of vehicle
+    max_velocity = 1
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -23,7 +24,7 @@ class PurePursuitController(object):
         self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
-        self.last_time = 0.0 
+        self.last_time = 0.0
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -48,6 +49,9 @@ class PurePursuitController(object):
     def compute_velocity(self, state):
         if self.is_finished:
             # stop moning if trajectory done
+            # and reset controller.
+            self.I = 0.0
+            self.P = 0.0
             return 0.0
         else:
             # speed control
@@ -56,7 +60,12 @@ class PurePursuitController(object):
             self.last_time = state.time_stamp.to_sec()
             self.P = self.K_p*e
             self.I = self. I + self.K_i*e*dt
-        return  self.target_velocity + self.P + self.I
+            print(self.target_velocity)
+            actuated_velocity = self.target_velocity + self.P + self.I
+            if actuated_velocity > self.max_velocity:
+                self.I = 0
+                return self.max_velocity
+        return  actuated_velocity
 
 
     def find_target(self, state):
