@@ -104,7 +104,11 @@ class WheelEncoderInterface(object):
                                                         msg.left_time_delta)
         self.linear_velocity = (right_wheel_velocity + left_wheel_velocity)/2
         #TODO calculate angular velocity here
-        self.angular_velocity = 0.0
+        # Calculation of the angular velocity based on a differential drive
+        # model of the wheel axis.
+
+        self.angular_velocity = (right_wheel_velocity - left_wheel_velocity)/self.wheel_base
+
         self._set_covariance(twist_msg.twist.covariance)
         #twist_msg.header = msg.header
         twist_msg.twist.twist.linear.x = self.linear_velocity
