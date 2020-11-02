@@ -96,12 +96,18 @@ def main():
         DataHandler = BasicDataHandler
 
     if is_sim:
-        # start the simulation
+
+	# start the simulation
         model_for_sim = SimpleBicycleModel(start_pt)
         simulator = SimSVEA(vehicle_name, model_for_sim,
-                            dt=dt, start_paused=True).start()
+                            dt=dt, start_paused=True, run_lidar=True,
+                 publish_pose=True,
+                 publish_odometry=True).start()
 
     # start pure pursuit SVEA manager
+    # Adding comment to test push to branch
+
+
     svea = SVEAPurePursuit(vehicle_name,
                            LocalizationInterface,
                            PurePursuitController,
