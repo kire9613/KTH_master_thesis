@@ -9,3 +9,5 @@ src/CMakeLists.txt
 
 .vscode/
 src/.vscode/
+
+*.swp
