@@ -9,6 +9,8 @@ from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
+from sensor_msgs.msg import LaserScan
+
 
 __team__ = "Team 5"
 __maintainers__ ="Bianca Otake, Holmfridur Elvarsdottir, Johanna Andersson, Marcus Norgren"
@@ -29,12 +31,12 @@ for i in range(0,len(xs)-1):
     traj_x += np.linspace(xs[i], xs[i+1]).tolist()
     traj_y += np.linspace(ys[i], ys[i+1]).tolist()
 
+
 ###############################################################################
 
 ## INIT #######################################################################
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ###############################################################################
-
 
 def param_init():
     """Initialization handles use with just python or in a launch file
@@ -59,7 +61,7 @@ def param_init():
 
 
 def main():
-    rospy.init_node('floor2_example')
+    rospy.init_node('team_5_floor2')
     start_pt, is_sim, use_rviz, use_matplotlib = param_init()
 
     # select data handler based on the ros params
@@ -92,6 +94,7 @@ def main():
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
+        rospy.Subscriber('/scan', LaserScan,svea.controller.emergency_stop)
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()

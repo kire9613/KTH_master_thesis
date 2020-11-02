@@ -15,6 +15,7 @@ class PurePursuitController(object):
     I = 0 # intialize I value (PID)
     L = 0.324  # [m] wheel base of vehicle
     max_velocity = 1
+    emergency_distance = 0.1 # [m] minimum distance until emergency_stop activated
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -73,6 +74,13 @@ class PurePursuitController(object):
         ty = self.traj_y[ind]
         self.target = (tx, ty)
         return dist
+
+    def emergency_stop(self, laserScan):
+        closestDistance = min(laserScan.ranges)
+        if closestDistance < self.emergency_distance:
+            self.is_finished = True
+            print("Controller: Too close, stopping!")
+        return
 
     def _calc_target_index(self, state):
         # search nearest point index
