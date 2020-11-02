@@ -56,7 +56,7 @@ class WheelEncoderInterface(object):
             rospy.spin()
 
     # def _init_and_spin_ros(self):
-    #     rospy.loginfo('Starting wheel encoder Interface Node for' 
+    #     rospy.loginfo('Starting wheel (right_wheel_velocity - left_wheel_velocity)/self.wheel_baseencoder Interface Node for'
     #                    + self.vehicle_name)
     #     self._start_publish()
     #     self._start_listen()
@@ -106,9 +106,9 @@ class WheelEncoderInterface(object):
         #TODO calculate angular velocity here
         # Calculation of the angular velocity based on a differential drive
         # model of the wheel axis.
-
-        self.angular_velocity = (right_wheel_velocity - left_wheel_velocity)/self.wheel_base
-
+        # steer angle = delta
+        steer_angle = (right_wheel_velocity - left_wheel_velocity)/self.wheel_base
+        self.angular_velocity = v/self.wheel_base*math.tan(steer_angle)
         self._set_covariance(twist_msg.twist.covariance)
         #twist_msg.header = msg.header
         twist_msg.twist.twist.linear.x = self.linear_velocity

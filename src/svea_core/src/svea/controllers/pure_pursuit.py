@@ -60,7 +60,6 @@ class PurePursuitController(object):
             self.last_time = state.time_stamp.to_sec()
             self.P = self.K_p*e
             self.I = self. I + self.K_i*e*dt
-            print(self.target_velocity)
             actuated_velocity = self.target_velocity + self.P + self.I
             if actuated_velocity > self.max_velocity:
                 self.I = 0
