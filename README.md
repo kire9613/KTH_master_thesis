@@ -9,4 +9,4 @@ We use the the ordinary nonlinear bicycle model defined by the ODE
 
 with the variables and parameters defined as seen in the figure below
 
-![Model](./docs/static/model.svg "Model")
+![Model](./docs/.static/model.svg "Model")
