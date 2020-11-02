@@ -10,6 +10,7 @@ class PurePursuitController(object):
     K_p = 0.6
     K_i = 0.03
     K_d = 0.0
+    T = 2500
     L = 0.324  # [m] wheel base of vehicle
     e_sum = 0
 
@@ -21,6 +22,7 @@ class PurePursuitController(object):
         self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
+        self.last_wind = 0
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -47,18 +49,28 @@ class PurePursuitController(object):
             # stop moning if trajectory done
             return 0.0
         else:
-            print("target vel: " + str(self.target_velocity) + " current vel:" + str(state.v))
             # speed control
             #TODO
 
             e = self.target_velocity - state.v
-            print("e: " + str(e))
             u = self.K_p * e    +    self.K_i * self.e_sum
             self.e_sum = e + self.e_sum
 
+            u_sat = u
+            if (abs(u) > 1.7):
+                u_sat = math.copysign(1.7, u)
+
             # Anti reset windup
-            if (abs(self.e_sum) > 35):
-                self.e_sum = math.copysign(35, self.e_sum)
+            wind = self.last_wind + 1.0/self.T * (u_sat-u)
+            self.last_wind = wind
+
+            u += wind
+
+            # Manually saturate control signal to make sure that
+            # the control limits are the ones used for the anti
+            # reset windup
+            if (abs(u) > 1.7):
+                u = math.copysign(1.7, u)
 
             return u #self.target_velocity
 
