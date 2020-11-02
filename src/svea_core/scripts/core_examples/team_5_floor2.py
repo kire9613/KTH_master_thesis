@@ -74,7 +74,7 @@ def main():
         # start the simulation
         model_for_sim = SimpleBicycleModel(start_pt)
         simulator = SimSVEA(vehicle_name, model_for_sim,
-                            dt=dt, start_paused=True).start()
+                            dt=dt, start_paused=True, run_lidar=True).start()
 
     # start pure pursuit SVEA manager
     svea = SVEAPurePursuit(vehicle_name,
