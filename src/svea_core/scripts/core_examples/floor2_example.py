@@ -38,8 +38,6 @@ traj_y.append(np.linspace(ys[-1], ys[0]).tolist())
 traj_x = [val for sublist in traj_x for val in sublist]
 traj_y = [val for sublist in traj_y for val in sublist]
 
-print(traj_x)
-#print(traj_y)
 ###############################################################################
 
 ## INIT #######################################################################
