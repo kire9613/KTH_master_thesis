@@ -11,6 +11,7 @@ from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
+from sensor_msgs.msg import LaserScan
 
 """
 __team__ = "Team 1"
@@ -70,9 +71,13 @@ def param_init():
 
     return start_pt, is_sim, use_rviz, use_matplotlib, run_lidar
 
+def callback_scan(scan):
+    """ Callback for lidarscan """
+    ranges = scan.ranges
+    min_dist = np.nanmin(ranges) # TODO: Make available as self.min_dist etc.?
 
 def main():
-    rospy.init_node('floor2_example')
+    rospy.init_node('floor2_team1')
     start_pt, is_sim, use_rviz, use_matplotlib, _run_lidar = param_init()
 
     # select data handler based on the ros params
@@ -88,6 +93,8 @@ def main():
         model_for_sim = SimpleBicycleModel(start_pt)
         simulator = SimSVEA(vehicle_name, model_for_sim,
                             dt=dt, start_paused=True, run_lidar=_run_lidar).start()
+
+    lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
 
     # start pure pursuit SVEA manager
     svea = SVEAPurePursuit(vehicle_name,
