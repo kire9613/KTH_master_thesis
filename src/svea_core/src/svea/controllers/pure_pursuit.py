@@ -26,6 +26,7 @@ class PurePursuitController(object):
         self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
+        self.emg_stop = False
         self.last_time = 0.0
         self.print_time = 0.0
 
@@ -50,9 +51,8 @@ class PurePursuitController(object):
         return delta
 
     def compute_velocity(self, state):
-        if self.is_finished:
-            # stop moning if trajectory done
-            # and reset controller.
+        if self.is_finished or self.emg_stop:
+            # stop moving if trajectory done and reset controller.
             self.I = 0.0
             self.P = 0.0
             return 0.0
@@ -62,7 +62,7 @@ class PurePursuitController(object):
             dt =  state.time_stamp.to_sec() - self.last_time
             self.last_time = state.time_stamp.to_sec()
             self.P = self.K_p*e
-            self.I = self. I + self.K_i*e*dt
+            self.I = self.I + self.K_i*e*dt
             actuated_velocity = self.target_velocity + self.P + self.I
             if actuated_velocity > self.max_velocity:
                 self.I = 0
@@ -89,13 +89,14 @@ class PurePursuitController(object):
 
         #self.print_every_second("dist", closestDistance)
 
-        if closestDistance < self.emergency_distance and not self.is_finished:
-            self.is_finished = True
+        # Check if object is too close - Emergency stop
+        if closestDistance < self.emergency_distance and not self.emg_stop:
+            self.emg_stop = True
             rospy.loginfo("Controller: Too close, stopping! Object at angle: %d degrees", angle*180/math.pi)
             if angle > 0:
                 rospy.loginfo("Object is slightly to the left of the vehicle:")
             else:
-                rodpy.loginfo("Object is slightly to the right of the vehicle:")
+                rospy.loginfo("Object is slightly to the right of the vehicle:")
         return
 
     def _calc_target_index(self, state):
