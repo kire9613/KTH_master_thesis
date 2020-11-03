@@ -1,6 +1,10 @@
 #! /bin/sh
 #
 # list_msgs.sh
+# 
+# Usage:
+#   $ roslaunch svea_core floor2.launch
+#   $ ./utilities/list_msgs.sh > docs/messages.md
 
 listmsg() {
     echo "### $1"
