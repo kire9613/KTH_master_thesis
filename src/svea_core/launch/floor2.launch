@@ -6,6 +6,7 @@
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
+    <arg name="run_lidar" default="true"/>
 
     <group if="$(eval use_rviz == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />
@@ -19,6 +20,7 @@
         <param name="use_rviz" value="$(arg use_rviz)"/>
         <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
         <param name="is_sim" value="$(arg is_sim)"/>
+        <param name="run_lidar" value="$(arg run_lidar)"/>
     </node>
 
 </launch>
