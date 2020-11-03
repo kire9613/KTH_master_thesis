@@ -1,7 +1,7 @@
 """
 Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
-import math
+import math, rospy
 from pprint import pprint
 
 class PurePursuitController(object):
@@ -16,6 +16,7 @@ class PurePursuitController(object):
     L = 0.324  # [m] wheel base of vehicle
     max_velocity = 1
     emergency_distance = 0.1 # [m] minimum distance until emergency_stop activated
+    emg_angle_range = 0.785 # angle range 
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -26,6 +27,7 @@ class PurePursuitController(object):
         self.last_index = 0
         self.is_finished = False
         self.last_time = 0.0
+        self.print_time = 0.0
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -76,10 +78,24 @@ class PurePursuitController(object):
         return dist
 
     def emergency_stop(self, laserScan):
-        closestDistance = min(laserScan.ranges)
-        if closestDistance < self.emergency_distance:
+        # Compute index ranges for emergency stop scan
+        min_index =  int(round((-self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
+        max_index =  int(round((self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
+        closestDistance = min(laserScan.ranges[min_index:max_index])
+        # Compute index of closest object
+        index = laserScan.ranges.index(closestDistance)
+        # Compute angle of closest object
+        angle = laserScan.angle_min + index*laserScan.angle_increment
+
+        #self.print_every_second("dist", closestDistance)
+
+        if closestDistance < self.emergency_distance and not self.is_finished:
             self.is_finished = True
-            print("Controller: Too close, stopping!")
+            rospy.loginfo("Controller: Too close, stopping! Object at angle: %d degrees", angle*180/math.pi)
+            if angle > 0:
+                rospy.loginfo("Object is slightly to the left of the vehicle:")
+            else:
+                rodpy.loginfo("Object is slightly to the right of the vehicle:")
         return
 
     def _calc_target_index(self, state):
@@ -105,3 +121,10 @@ class PurePursuitController(object):
             self.is_finished = True
 
         return ind, dist
+    
+    def print_every_second(self, message, data):
+                # print once per second
+        if (self.last_time - self.print_time)  > 1:
+            print(message, data)
+            self.print_time = self.last_time
+
