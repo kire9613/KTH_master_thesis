@@ -8,9 +8,12 @@
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
 
 <!--Load Obstacles, you can load arbitrary variables from memory using this command-->
-<rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
+    <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
 
+    
 
+    
+    <node pkg="svea_core" type="emergency_break.py" name="emergency_break" output="screen" />
 
     <group if="$(eval use_rviz == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />

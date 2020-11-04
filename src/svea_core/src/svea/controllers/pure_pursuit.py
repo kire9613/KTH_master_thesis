@@ -30,7 +30,7 @@ class PurePursuitController(object):
         self.last_index = 0
         self.is_finished = False
         #self.err = []
-
+        self.emergency_break = False
         self.hist_v = []
         self.errors = []
         self.errors_for_I = []
@@ -78,7 +78,10 @@ class PurePursuitController(object):
             return Vel"""
 
     def compute_velocity(self, state):
-        if self.is_finished:
+        if self.emergency_break:
+            return 0.0
+        
+        elif self.is_finished:
             # stop moning if trajectory done
             return 0.0
         else:

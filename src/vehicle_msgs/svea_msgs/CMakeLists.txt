@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
    lli_encoder.msg
    lli_emergency.msg
    VehicleState.msg
+   emergency_break.msg
  )
 
 ## Generate services in the 'srv' folder

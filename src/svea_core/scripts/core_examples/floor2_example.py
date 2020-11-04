@@ -2,6 +2,7 @@
 
 import rospy
 import numpy as np
+import math
 
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
@@ -10,6 +11,10 @@ from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
+from svea_msgs.msg import emergency_break 
+
+#from sensor_msgs.msg import LaserScan
+
 
 __team__ = "Team 3"
 __maintainers__ = "Albin Larsson Forsberg, Timotheos Souroulla, Filip Hestell, Roman Landin, Filip von Reis Marlevi"
@@ -19,6 +24,7 @@ __status__ = "Development"
 vehicle_name = "SVEA"
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
+emergency_break_state = False
 
 #TODO: create a trajectory that goes around the track
 
@@ -67,8 +73,13 @@ def param_init():
 
     return start_pt, is_sim, use_rviz, use_matplotlib, obstacles
 
+def emergency_break_callback(msg):
+    emergency_break_state = msg.emergency_break
+
+
 
 def main():
+    
     rospy.init_node('floor2_example')
     start_pt, is_sim, use_rviz, use_matplotlib, obstacles = param_init()
     print(obstacles)
@@ -98,14 +109,25 @@ def main():
         # start simulation
         simulator.toggle_pause_simulation()
 
+    
     # simualtion loop
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
-        state = svea.wait_for_state()
+        #if not svea.controller.emergency_break:
+        svea.controller.emergency_break = emergency_break_state
 
+
+        print(svea.controller.emergency_break)
+        state = svea.wait_for_state()
+        
+        #print(emergency_break)
+        #if emergency_break == False:
+        #    svea.controller.is_finished = True
+        #print(svea.controller.is_finished)
 
         index =  svea.controller.last_index
         if index > 50:
+            
             svea.controller.traj_x = traj_x
             svea.controller.traj_y = traj_y
         else:
@@ -129,4 +151,7 @@ def main():
 
 
 if __name__ == '__main__':
+    rospy.Subscriber('/emergency_break',
+                     emergency_break,
+                     emergency_break_callback)
     main()
