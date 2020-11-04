@@ -7,10 +7,12 @@ class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.0  #TODO speed control propotional gain
-    K_i = 0.0  #TODO speed control integral gain
-    K_d = 0.0  #TODO speed control derivitive gain
+    K_p = 0.6
+    K_i = 0.03
+    K_d = 0.0
+    T = 2500
     L = 0.324  # [m] wheel base of vehicle
+    e_sum = 0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -20,6 +22,7 @@ class PurePursuitController(object):
         self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
+        self.last_wind = 0
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -48,7 +51,28 @@ class PurePursuitController(object):
         else:
             # speed control
             #TODO
-            return self.target_velocity
+
+            e = self.target_velocity - state.v
+            u = self.K_p * e    +    self.K_i * self.e_sum
+            self.e_sum = e + self.e_sum
+
+            u_sat = u
+            if (abs(u) > 1.7):
+                u_sat = math.copysign(1.7, u)
+
+            # Anti reset windup
+            wind = self.last_wind + 1.0/self.T * (u_sat-u)
+            self.last_wind = wind
+
+            u += wind
+
+            # Manually saturate control signal to make sure that
+            # the control limits are the ones used for the anti
+            # reset windup
+            if (abs(u) > 1.7):
+                u = math.copysign(1.7, u)
+
+            return u #self.target_velocity
 
     def find_target(self, state):
         ind = self._calc_target_index(state)
@@ -74,6 +98,9 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
+        if math.sqrt((state.x-self.traj_x[-1]) ** 2 + (state.y-self.traj_y[-1]) ** 2) < 0.05:
+            self.is_finished = True
+        else:
+            self.is_finished = False
 
         return ind
-
