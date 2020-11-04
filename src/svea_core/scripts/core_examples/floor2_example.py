@@ -12,6 +12,7 @@ from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from svea_msgs.msg import emergency_break 
+from svea.controllers.emergency_breaker import Emergency_breaker
 
 #from sensor_msgs.msg import LaserScan
 
@@ -24,7 +25,7 @@ __status__ = "Development"
 vehicle_name = "SVEA"
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
-emergency_break_state = False
+emergency_breaker = Emergency_breaker()
 
 #TODO: create a trajectory that goes around the track
 
@@ -50,7 +51,6 @@ traj_y = [val for sublist in traj_y for val in sublist]
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ###############################################################################
 
-
 def param_init():
     """Initialization handles use with just python or in a launch file"""
     # grab parameters from launch-file
@@ -74,7 +74,8 @@ def param_init():
     return start_pt, is_sim, use_rviz, use_matplotlib, obstacles
 
 def emergency_break_callback(msg):
-    emergency_break_state = msg.emergency_break
+    if msg.emergency_break:
+        emergency_breaker.enable()
 
 
 
@@ -82,7 +83,6 @@ def main():
     
     rospy.init_node('floor2_example')
     start_pt, is_sim, use_rviz, use_matplotlib, obstacles = param_init()
-    print(obstacles)
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
@@ -113,17 +113,11 @@ def main():
     # simualtion loop
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
-        #if not svea.controller.emergency_break:
-        svea.controller.emergency_break = emergency_break_state
 
-
-        print(svea.controller.emergency_break)
         state = svea.wait_for_state()
         
-        #print(emergency_break)
-        #if emergency_break == False:
-        #    svea.controller.is_finished = True
-        #print(svea.controller.is_finished)
+        #Sets the state of the emergency controller
+        svea.controller.emergency_break = emergency_breaker.state()
 
         index =  svea.controller.last_index
         if index > 50:
