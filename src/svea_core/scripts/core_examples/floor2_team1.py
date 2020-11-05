@@ -11,6 +11,7 @@ from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
+from sensor_msgs.msg import LaserScan
 
 """
 __team__ = "Team 1"
@@ -55,6 +56,7 @@ def param_init():
     is_sim_param = rospy.search_param('is_sim')
     use_rviz_param = rospy.search_param('use_rviz')
     use_matplotlib_param = rospy.search_param('use_matplotlib')
+    run_lidar_param = rospy.search_param('run_lidar')
 
     start_pt = rospy.get_param(start_pt_param, default_init_pt)
     if isinstance(start_pt, str):
@@ -65,13 +67,18 @@ def param_init():
     is_sim = rospy.get_param(is_sim_param, True)
     use_rviz = rospy.get_param(use_rviz_param, False)
     use_matplotlib = rospy.get_param(use_matplotlib_param, False)
+    run_lidar = rospy.get_param(run_lidar_param, True)
 
-    return start_pt, is_sim, use_rviz, use_matplotlib
+    return start_pt, is_sim, use_rviz, use_matplotlib, run_lidar
 
+def callback_scan(scan):
+    """ Callback for lidarscan """
+    ranges = scan.ranges
+    min_dist = np.nanmin(ranges) # TODO: Make available as self.min_dist etc.?
 
 def main():
-    rospy.init_node('floor2_example')
-    start_pt, is_sim, use_rviz, use_matplotlib = param_init()
+    rospy.init_node('floor2_team1')
+    start_pt, is_sim, use_rviz, use_matplotlib, _run_lidar = param_init()
 
     # select data handler based on the ros params
     if use_rviz:
@@ -85,7 +92,9 @@ def main():
         # start the simulation
         model_for_sim = SimpleBicycleModel(start_pt)
         simulator = SimSVEA(vehicle_name, model_for_sim,
-                            dt=dt, start_paused=True).start()
+                            dt=dt, start_paused=True, run_lidar=_run_lidar).start()
+
+    lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
 
     # start pure pursuit SVEA manager
     svea = SVEAPurePursuit(vehicle_name,
