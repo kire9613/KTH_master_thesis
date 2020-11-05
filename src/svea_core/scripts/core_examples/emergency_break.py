@@ -13,7 +13,7 @@ def callback(msg):
     for ang in angles:
         ang_index=int(68+round(ang/(msg.angle_increment*(180/math.pi))))
         #print(msg.ranges[ang_index])
-        if msg.ranges[ang_index] < 1.0:
+        if msg.ranges[ang_index] < 0.5:
             emergency_break_msg.emergency_break = True
             #print("Emergency break")
     pub = rospy.Publisher('emergency_break', emergency_break, queue_size=10)

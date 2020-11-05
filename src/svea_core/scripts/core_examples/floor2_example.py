@@ -3,6 +3,7 @@
 import rospy
 import numpy as np
 import math
+import time
 
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
@@ -124,7 +125,9 @@ def main():
         #Get current occupancy_grid from map_service_provider
         map_requester.update()
         occupancy_grid = map_requester.getMap()
-
+        #a=np.array(occupancy_grid)
+        #print(occupancy_grid)
+        #time.sleep(1)
 
         #Sets the state of the emergency controller
         svea.controller.emergency_break = emergency_breaker.state()
