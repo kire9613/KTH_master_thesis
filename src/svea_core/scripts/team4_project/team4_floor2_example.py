@@ -10,7 +10,7 @@ __status__ = "Development"
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
 from svea.localizers import LocalizationInterface
-from svea.controllers.pure_pursuit import PurePursuitController
+from pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA

@@ -5,12 +5,13 @@ import math
 
 class PurePursuitController(object):
 
-    k = 0.6  # look forward gain
-    Lfc = 0.4  # look-ahead distance
-    K_p = 0.0  #TODO speed control propotional gain
-    K_i = 0.0  #TODO speed control integral gain
-    K_d = 0.0  #TODO speed control derivitive gain
-    L = 0.324  # [m] wheel base of vehicle
+    k = 0.6     # look forward gain
+    Lfc = 0.4   # look-ahead distance
+    K_p = 0.6   # Coefficient for P-part of PI
+    K_i = 0.03  # Coefficient for I-part of PI
+    T = 5       # Anti-windup Coefficient
+    L = 0.324   # [m] wheel base of vehicle
+    MAX_U = 1.7 # Maximum control signal
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -20,6 +21,8 @@ class PurePursuitController(object):
         self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
+        self.prev_u = 0
+        self.prev_e = 0
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -48,7 +51,24 @@ class PurePursuitController(object):
         else:
             # speed control
             #TODO
-            return self.target_velocity
+
+            e = self.target_velocity - state.v
+
+            saturated_prev_u = self.prev_u
+            if (abs(self.prev_u) > self.MAX_U):
+                saturated_prev_u = math.copysign(self.MAX_U, self.prev_u)
+            
+            u = self.K_p*e + (self.K_i-self.K_p)*self.prev_e + self.T*saturated_prev_u + (1-self.T)*self.prev_u
+            self.prev_e = e
+            self.prev_u = u
+
+            # Manually saturate control signal to make sure that
+            # the control limits are the ones used for the anti
+            # reset windup
+            if (abs(u) > self.MAX_U):
+                u = math.copysign(self.MAX_U, u)
+
+            return u #self.target_velocity
 
     def find_target(self, state):
         ind = self._calc_target_index(state)
@@ -74,6 +94,9 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
+        if math.sqrt((state.x-self.traj_x[-1]) ** 2 + (state.y-self.traj_y[-1]) ** 2) < 0.05:
+            self.is_finished = True
+        else:
+            self.is_finished = False
 
         return ind
-
