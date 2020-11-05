@@ -1,5 +1,4 @@
 #!/usr/bin/env python2
-#from sensor import Sensor
 from math import exp, fabs, atan2, fmod, pi, hypot
 import numpy as np
 from nav_msgs.msg import Path
@@ -121,98 +120,11 @@ class RRTNode:
     def cost_with_parent(self, parent):
         return parent.cost() + self.distance(parent)
 
-    # def score(self, grid_map, sensor, l):
-    #     if not self.has_parent():
-    #         self._score = 0
-    #         return self._score
-    #
-    #     if self.__score_parent is not None and self.__score_parent == self._parent:
-    #         return self._score
-    #
-    #     self._score = self.score_with_parent(
-    #         self.get_parent(), grid_map, sensor, l)
-    #
-    #     self.__score_parent = self._parent
-    #
-    #     return self._score
-    #
-    # def score_with_parent(self, parent, grid_map, sensor, l):
-    #     return parent.score(grid_map, sensor, l) + self.gain(grid_map, sensor) * \
-    #         exp(-l * self.cost_with_parent(parent))
-
     def constrain_angle(self, angle):
         angle = fmod(angle + pi, 2 * pi)
         if angle < 0:
             angle += 2 * pi
         return angle - pi
-
-    # def gain(self, grid_map, sensor):
-    #     if self._gain is not None:
-    #         return self._gain
-    #
-    #     res = grid_map.info.resolution
-    #
-    #     start_x = int((self._position[0][0] -
-    #                    grid_map.info.origin.position.x) / res)
-    #     start_y = int((self._position[0][1] -
-    #                    grid_map.info.origin.position.y) / res)
-    #
-    #     min_x = int(((self._position[0][0] - sensor.get_range_max()) -
-    #                  grid_map.info.origin.position.x) / res)
-    #     max_x = int(((self._position[0][0] + sensor.get_range_max()) -
-    #                  grid_map.info.origin.position.x) / res)
-    #
-    #     min_y = int(((self._position[0][1] - sensor.get_range_max()) -
-    #                  grid_map.info.origin.position.y) / res)
-    #     max_y = int(((self._position[0][1] + sensor.get_range_max()) -
-    #                  grid_map.info.origin.position.y) / res)
-    #
-    #     min_x = max(0, min(grid_map.info.width-1, min_x))
-    #     max_x = max(0, min(grid_map.info.width-1, max_x))
-    #
-    #     min_y = max(0, min(grid_map.info.height-1, min_y))
-    #     max_y = max(0, min(grid_map.info.height-1, max_y))
-    #
-    #     unknown_space = Set()
-    #     max_gain = Set()
-    #
-    #     for y in [min_y, max_y]:
-    #         for x in range(min_x, max_x, 50):
-    #             # Perform ray tracing
-    #             t = raytrace((start_x, start_y), (x, y))
-    #             max_gain.update(t)
-    #
-    #             for (t_x, t_y) in t:
-    #                 value = grid_map.data[t_y * grid_map.info.width + t_x]
-    #                 if -1 == value:
-    #                     unknown_space.add((t_x, t_y))
-    #                 elif 100 == value:
-    #                     break
-    #
-    #     for x in [min_x, max_x]:
-    #         for y in range(min_y, max_y, 50):
-    #             # Perform ray tracing
-    #             t = raytrace((start_x, start_y), (x, y))
-    #             max_gain.update(t)
-    #
-    #             for (t_x, t_y) in t:
-    #                 value = grid_map.data[t_y * grid_map.info.width + t_x]
-    #                 if -1 == value:
-    #                     unknown_space.add((t_x, t_y))
-    #                 elif 100 == value:
-    #                     break
-    #
-    #     self._gain = float(len(unknown_space)) / float(len(max_gain) / 10)
-    #
-    #     return self._gain
-
-    # def gain_along_path(self, grid_map, sensor):
-    #     total_gain = self.gain(grid_map, sensor)
-    #     current_node = self
-    #     while current_node.has_parent():
-    #         current_node = current_node.get_parent()
-    #         total_gain += current_node.gain(grid_map, sensor)
-    #     return total_gain
 
     def rad_bounded(self, value):
         value = fmod(value + pi, 2 * pi)
@@ -268,42 +180,85 @@ class RRTNode:
             path.poses.insert(0, pose)
             current_node = current_node.get_parent()
 
-        path = self.smooth_path(path, grid_map)
+        path = self.smooth_path(path.poses, grid_map)
 
         return path
 
     def smooth_path(self, path, grid_map):
-        new_path = Path()
+        new_path = []
 
-        pose = PoseStamped()
-        pose.pose.orientation.w = 1
-        pose.pose.position.x = path.poses[0].pose.position.x
-        pose.pose.position.y = path.poses[0].pose.position.y
-        new_path.poses.insert(0, pose)
+        ok_i = [1]
+        new_path_exists = False
 
-        ii = 0
-
-        for i in range(1,len(path.poses)):
-            ok_i = True
-            t = raytrace((pose.pose.position.x, pose.pose.position.y), (path.poses[i].pose.position.x, path.poses[i].pose.position.y))
+        for i in range(1,len(path)):
+            start_node_map_coord = [(path[0].pose.position.x - grid_map.info.origin.position.x) / grid_map.info.resolution,
+                                (path[0].pose.position.y - grid_map.info.origin.position.y) / grid_map.info.resolution]
+            end_node_map_coord = [(path[i].pose.position.x - grid_map.info.origin.position.x) / grid_map.info.resolution,
+                                (path[i].pose.position.y - grid_map.info.origin.position.y) / grid_map.info.resolution]
+            start = np.array([start_node_map_coord], dtype=np.float)
+            end = np.array([end_node_map_coord], dtype=np.float)
+            t = raytrace((start[0][0], start[0][1]), (end[0][0], end[0][1]))
+            path_ok = True
             if 1 < len(t):
                 for (t_x, t_y) in t[1:]:
-                    if 0 != grid_map.data[t_y * grid_map.info.width + t_x]:
-                        ok_i = False
+                    if 100 == grid_map.data[t_y * grid_map.info.width + t_x]:
+                        path_ok = False
 
             # Check last node
-            if 0 != grid_map.data[int(path.poses[i].pose.position.y) * grid_map.info.width + int(path.poses[i].pose.position.x)]:
-                ok_i = False
+            if 0 != grid_map.data[int(end[0][1]) * grid_map.info.width + int(end[0][0])]:
+                path_ok = False
 
-            if ok_i:
-                ii = i
+            if path_ok:
+                new_path_exists = True
+                ok_i.append(i)
 
-        if ii != 0:
+        if ok_i[-1] == len(path)-1:
+            # insert first node
             pose = PoseStamped()
             pose.pose.orientation.w = 1
-            pose.pose.position.x = path.poses[0].pose.position.x
-            pose.pose.position.y = path.poses[0].pose.position.y
-            new_path.poses.insert(0, pose)
+            pose.pose.position.x = path[0].pose.position.x
+            pose.pose.position.y = path[0].pose.position.y
+            new_path.append(pose)
+
+            # insert next node
+            pose = PoseStamped()
+            pose.pose.orientation.w = 1
+            pose.pose.position.x = path[ok_i[-1]].pose.position.x
+            pose.pose.position.y = path[ok_i[-1]].pose.position.y
+            new_path.append(pose)
+
+            return new_path
+        elif ok_i[-1]+1 == len(path)-1:
+            # insert first node
+            pose = PoseStamped()
+            pose.pose.orientation.w = 1
+            pose.pose.position.x = path[0].pose.position.x
+            pose.pose.position.y = path[0].pose.position.y
+            new_path.append(pose)
+
+            # insert next node
+            pose = PoseStamped()
+            pose.pose.orientation.w = 1
+            pose.pose.position.x = path[ok_i[-1]].pose.position.x
+            pose.pose.position.y = path[ok_i[-1]].pose.position.y
+            new_path.append(pose)
+
+            # add last node
+            pose = PoseStamped()
+            pose.pose.orientation.w = 1
+            pose.pose.position.x = path[-1].pose.position.x
+            pose.pose.position.y = path[-1].pose.position.y
+            new_path.append(pose)
+
             return new_path
         else:
-            return path
+            # insert first node
+            pose = PoseStamped()
+            pose.pose.orientation.w = 1
+            pose.pose.position.x = path[0].pose.position.x
+            pose.pose.position.y = path[0].pose.position.y
+            new_path.append(pose)
+
+            new_path += self.smooth_path(path[ok_i[-1]:-1], grid_map)
+
+        return new_path
