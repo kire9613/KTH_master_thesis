@@ -12,7 +12,10 @@ from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from svea_msgs.msg import emergency_break 
-from svea.controllers.emergency_breaker import Emergency_breaker
+from svea.controllers.emergency_breaker import EmergencyBreaker
+from svea.controllers.map_requester import MapRequester
+
+from nav_msgs.msg import OccupancyGrid
 
 #from sensor_msgs.msg import LaserScan
 
@@ -25,7 +28,7 @@ __status__ = "Development"
 vehicle_name = "SVEA"
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
-emergency_breaker = Emergency_breaker()
+emergency_breaker = EmergencyBreaker()
 
 #TODO: create a trajectory that goes around the track
 
@@ -110,12 +113,19 @@ def main():
         simulator.toggle_pause_simulation()
 
     
+    #Test if service is correctly 
+    map_requester = MapRequester()
     # simualtion loop
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
 
         state = svea.wait_for_state()
         
+        #Get current occupancy_grid from map_service_provider
+        map_requester.update()
+        occupancy_grid = map_requester.getMap()
+
+
         #Sets the state of the emergency controller
         svea.controller.emergency_break = emergency_breaker.state()
 
@@ -137,6 +147,8 @@ def main():
             svea.visualize_data()
         else:
             rospy.loginfo_throttle(1, state)
+
+    
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")

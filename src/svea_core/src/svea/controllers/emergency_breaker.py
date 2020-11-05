@@ -1,5 +1,5 @@
 
-class Emergency_breaker():
+class EmergencyBreaker():
     def __init__(self):
         self._emergency_break = False
     def toggle(self):

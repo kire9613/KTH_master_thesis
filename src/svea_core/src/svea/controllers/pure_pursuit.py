@@ -148,7 +148,7 @@ class PurePursuitController(object):
 
 
         
-        rospy.loginfo_throttle(10,"Speed is: {}".format(np.mean(self.hist_v[-400:-1])))
+        #rospy.loginfo_throttle(10,"Speed is: {}".format(np.mean(self.hist_v[-400:-1])))
         if ind > len(self.traj_x)/2 and ind < len(self.traj_x)/2+30:
             self.flag_halfway = True
             rospy.loginfo_throttle(1000,"Passed the Halfway point!")
