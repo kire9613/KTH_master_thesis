@@ -12,6 +12,8 @@ from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
+from math import radians, cos, sin
+
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
@@ -146,8 +148,7 @@ def main():
 	    obs_x = cos(angle_lidar)*dist + state.x
 	    obs_y = sin(angle_lidar)*dist + state.y
 
-            #print([obs_x, obs_y])
-            print(simulator.simulated_lidar.obstacles())
+            print([obs_x, obs_y])
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")
