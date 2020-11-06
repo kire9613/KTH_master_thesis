@@ -109,9 +109,16 @@ def main():
         simulator.toggle_pause_simulation()
 
     # simualtion loop
+    
+    # TODO:planner = LocalPlanner(traj_x, traj_y)
+    
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
+
+        # TODO: ind = svea.controller.last_index
+        # TODO: upd_traj_x, upd_traj_y = planner.plan(state,ind)
+        # TODO: svea.update_traj(self, upd_traj_x, upd_traj_y)
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
