@@ -128,6 +128,18 @@ def main():
         else:
             rospy.loginfo_throttle(1, state)
 
+	if svea.lidar.scan != []:
+	    dist = min(svea.lidar.scan)
+
+            index = svea.lidar.scan.index(dist)
+	    angle_lidar = radians(-135 + 2*index)
+
+	    obs_x = cos(angle_lidar)*dist + state.x
+	    obs_y = sin(angle_lidar)*dist + state.y
+
+            #print([obs_x, obs_y])
+            print(simulator.simulated_lidar.obstacles())
+
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")
 
