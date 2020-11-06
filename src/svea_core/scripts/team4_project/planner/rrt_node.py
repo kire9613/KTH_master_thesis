@@ -152,7 +152,7 @@ class RRTNode:
         return self._position
 
     def get_path(self, frame_id, grid_map):
-        path = Path()
+        path = []
 
         current_node = self
         while current_node is not None:
@@ -177,10 +177,10 @@ class RRTNode:
             pose.pose.orientation.z = q[2]
             pose.pose.orientation.w = q[3]
 
-            path.poses.insert(0, pose)
+            path.append(pose)
             current_node = current_node.get_parent()
 
-        path = self.smooth_path(path.poses, grid_map)
+        path = self.smooth_path(path, grid_map)
 
         return path
 

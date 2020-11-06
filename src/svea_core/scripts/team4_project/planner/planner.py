@@ -122,9 +122,9 @@ def map_to_print_format(grid_map):
         i = 0
         x = -18
 
-    print(len(xv_n))
-    print(len(xv_100))
-    print(len(xv_0))
+    #print(len(xv_n))
+    #print(len(xv_100))
+    #print(len(xv_0))
 
     #map = np.array(grid_map.data).reshape(880, 721)
     #print(map)
