@@ -5,9 +5,9 @@ import casadi as ca
 import numpy as np
 
 class SVEAcar(object):
-    def __init__(self, x_d, h):
+    def __init__(self, h):
         """
-        Quadrotor model class.
+        SVEA model class.
 
         All methods should return casadi.MX or casadi.DM variable
         types.
@@ -17,15 +17,9 @@ class SVEAcar(object):
         """
 
         # Model, gravity and sampling time parameters
-        self.model = self.svea_linear_dynamics
         self.model_nl = self.svea_nonlinear_dynamics
-        self.model_ag = self.svea_augmented_dynamics
-        self.model_ag_nl = self.svea_augmented_nonlinear_dynamics
         self.g = 9.81
         self.dt = h
-
-        # System reference (x_d) and disturbance (w)
-        self.x_d = x_d
 
         self.L = 0.32 # The wheel base
 
@@ -39,15 +33,10 @@ class SVEAcar(object):
                      0, # δ: steering
                      ]
 
-        self.Integrator_lin = None
         self.Integrator = None
-        self.Integrator_ag = None
-        self.Integrator_ag_nl = None
 
-        self.set_svea_discretized_dynamics(self.x_eq)
-        self.set_integrators() # TODO: Necessary to call this 2 times??
-        self.set_discrete_time_system()
         self.set_integrators()
+        self.set_discrete_time_system()
 
     def __str__(self):
         return ""
@@ -58,18 +47,13 @@ class SVEAcar(object):
         """
 
         # Set CasADi variables
-        x = ca.MX.sym('x', 12)
-        u = ca.MX.sym('u', 4)
-        w = ca.MX.sym('w', 1)
+        x = ca.MX.sym('x', 4)
+        u = ca.MX.sym('u', 2)
 
         # Integration method - integrator options an be adjusted
         options = {"abstol" : 1e-5, "reltol" : 1e-9, "max_num_steps": 100,
                    "tf" : self.dt,
                    }
-
-        # Create linear dynamics integrator
-        dae = {'x': x, 'ode': self.model(x,u), 'p':ca.vertcat(u)}
-        self.Integrator_lin = ca.integrator('integrator', 'cvodes', dae, options)
 
         # Create nonlinear dynamics integrator
         dae = {'x': x, 'ode': self.model_nl(x,u), 'p':ca.vertcat(u)}
@@ -77,80 +61,37 @@ class SVEAcar(object):
 
     def set_discrete_time_system(self):
         """
-        Set discrete-time system matrices from linear continuous dynamics.
+        SVEA dynamics discretized using Euler forward step, inspired by
+        PythonRobotics
         """
-
-        # Check for integrator definition
-        if self.Integrator_lin is None:
-            print("Integrator_lin not defined. Set integrators first.")
-            exit()
 
         # Set CasADi variables
-        x = ca.MX.sym('x', 12)
-        u = ca.MX.sym('u', 4)
+        x = ca.MX.sym('x', 4)
+        u = ca.MX.sym('u', 2)
 
-        # Jacobian of exact discretization
-        self.Ad = ca.Function('jac_x_Ad', [x, u], [ca.jacobian(
-                            self.Integrator_lin(x0=x, p=ca.vertcat(u))['xf'], x)])
-        self.Bd = ca.Function('jac_u_Bd', [x, u], [ca.jacobian(
-                            self.Integrator_lin(x0=x, p=ca.vertcat(u))['xf'], u)])
+        A = ca.MX.zeros(4,4)
+        A[0, 0] = 1.0
+        A[1, 1] = 1.0
+        A[2, 2] = 1.0
+        A[3, 3] = 1.0
+        A[0, 2] = self.dt * ca.cos(x[2])
+        A[0, 3] = - self.dt * x[3] * ca.sin(x[2])
+        A[1, 2] = self.dt * ca.sin(x[2])
+        A[1, 3] = self.dt * x[3] * ca.cos(x[2])
+        A[3, 2] = self.dt * ca.tan(u[1]) / self.L
 
+        B = ca.MX.zeros(4,2)
+        B[2, 0] = self.dt
+        B[3, 1] = self.dt * x[3] / (self.L * ca.cos(u[1]) ** 2)
 
-        # C matrix does not depend on the state
-        # TODO: put this in a better place later!
-        Cd_eq = ca.DM.eye(12)
+        C = ca.MX.zeros(1,4)
+        C[0,0] = self.dt * x[3] * ca.sin(x[2]) * x[2]
+        C[0,1] = - self.dt * x[3] * ca.cos(x[2]) * x[2]
+        C[0,3] = x[3] * u[1] / (self.L * ca.cos(u[1]) ** 2)
 
-
-        self.Cd_eq = Cd_eq
-
-    def svea_linear_dynamics(self, x, u):
-        """
-        Pendulum continuous-time linearized dynamics.
-
-        :param x: state
-        :type x: MX variable, 4x1
-        :param u: control input
-        :type u: MX variable, 1x1
-        :param w: disturbance
-        :type w: MX variable, 1x1
-        :return: dot(x)
-        :rtype: MX variable, 4x1
-        """
-
-        Ac = ca.MX.zeros(12,12)
-        Bc = ca.MX.zeros(12,4)
-
-        # Ac = ca.DM.zeros(12,12)
-        # Bc = ca.DM.zeros(12,4)
-
-        yaw = self.yaw
-
-        ### Build Ac matrix
-        Ac[0:3,3:6] = np.eye(3)
-        Ac[6:9,9:12] = np.eye(3)
-        Ac[3,6] = ca.sin(yaw)
-        Ac[3,7] = ca.cos(yaw)
-        Ac[4,7] = ca.sin(yaw)
-        Ac[4,6] = -ca.cos(yaw)
-
-        ### Build Bc matrix
-        Bc[5, 0] = 1./(self.m)
-        Bc[9, 1] = 1./self.I_x
-        Bc[10,2] = 1./self.I_y
-        Bc[11,3] = 1./self.I_z
-
-
-        ### Store matrices as class variables
-        self.Ac = Ac
-        self.Bc = Bc
-        # print(Ac)
-        # print(Bc)
-
-        return ca.mtimes(Ac, x) + ca.mtimes(Bc, u)
-
-    def set_svea_discretized_dynamics(self, x):
-        # TODO: DISCRETEIZED MODEL HERE (Atsushi)
-        pass
+        self.Ad = ca.Function('Ad', [x, u], [A])
+        self.Bd = ca.Function('Bd', [x, u], [B])
+        self.Cd = ca.Function('Cd', [x, u], [C])
 
     def svea_nonlinear_dynamics(self, x, u, *_):
         """
@@ -163,8 +104,6 @@ class SVEAcar(object):
         :return: state time derivative
         :rtype: casadi.DM or casadi.MX, depending on inputs
         """
-        x = x[0]
-        y = x[1]
         yaw = x[2]
         v = x[3]
 
@@ -227,20 +166,6 @@ class SVEAcar(object):
 
         return Ad_eq, Bd_eq, self.Cd_eq
 
-    def continuous_time_linear_dynamics(self, x0, u):
-        """
-        Perform a time step iteration in continuous dynamics.
-
-        :param x0: initial state
-        :type x0: 4x1 ( list [a, b, c, d] , ca.MX )
-        :param u: control input
-        :type u: scalar, 1x1
-        :return: dot(x), time derivative
-        :rtype: 4x1, ca.DM
-        """
-        out = self.Integrator_lin(x0=x0, p=ca.vertcat(u))
-        return out["xf"]
-
     def continuous_time_nonlinear_dynamics(self, x0, u):
         out = self.Integrator(x0=x0, p=ca.vertcat(u))
         return out["xf"]
@@ -257,5 +182,14 @@ class SVEAcar(object):
         :rtype: 4x1, ca.DM
         """
 
-        return ca.mtimes(self.Ad(self.x_eq, self.u_eq,  ), x0) + \
-                ca.mtimes(self.Bd(self.x_eq, self.u_eq, ), u)
+        return ca.mtimes(self.Ad(self.x0, self.u,  ), x0) + \
+                ca.mtimes(self.Bd(self.x0, self.u, ), u)
+
+def main():
+    """
+    Run some tests
+    """
+    svea = SVEAcar(h=0.1)
+
+if __name__ == "__main__":
+    main()
