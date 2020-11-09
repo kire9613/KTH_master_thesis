@@ -12,8 +12,8 @@
     </group>
 
 
-    <!--node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
-    <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" /-->
+    <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
+    <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" >
 
 
 
