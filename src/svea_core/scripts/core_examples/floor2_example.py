@@ -14,10 +14,15 @@ from svea.simulators.sim_SVEA import SimSVEA
 
 from math import radians, cos, sin
 
+from svea.controllers.rrt import *
+
+#import sys
+#sys.path.insert(1, 'Home/svea_starter/src/svea_core/resources/param')
+#from Home.svea_starter.src.svea_core.resources.param.read_obs import *
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
-target_velocity = 1.0 # [m/s]
+target_velocity =  1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
@@ -44,17 +49,6 @@ traj_y4 = np.linspace(-4.15, -6.5)
 
 traj_x = np.concatenate((traj_x, traj_x4), axis = None)
 traj_y = np.concatenate((traj_y, traj_y4), axis = None)
-
-#r = 2
-#v = np.linspace(0, 2*math.pi, num = 100)
-#traj_x = []
-#traj_y = []
-#for i in v:
-  #x = r*math.cos(i) + 1
-  #y = r*math.sin(i) + 3
-  
-  #traj_x.append(x)
-  #traj_y.append(y)
 
 ###############################################################################
 
@@ -110,13 +104,24 @@ def main():
 
 
 
-    # Adding comment to test 
+    # Adding comment to test
 
+    x_t = [-5.63, 0, 3]
+    y_t = [-8.62, 0, 0]
+
+    #cur_path = os.path.dirname(__file__)
+    #print(cur_path)
+    #new_path = os.path.relpath('/resources/param/obstacles.yaml', cur_path)
+    #print(new_path)
+    #f = open('multi.py', "r")
+    #print(f.read()) 
+
+    traj_x1, traj_y1 = solution(start_pt.x, start_pt.y, -4.23, -10, [])
 
     svea = SVEAPurePursuit(vehicle_name,
                            LocalizationInterface,
                            PurePursuitController,
-                           traj_x, traj_y,
+                           traj_x1, traj_y1,
                            data_handler = DataHandler)
     svea.start(wait=True)
 
@@ -126,29 +131,42 @@ def main():
 
     # simualtion loop
     svea.controller.target_velocity = target_velocity
-    while not svea.is_finished and not rospy.is_shutdown():
-        state = svea.wait_for_state()
-	
-        # compute control input via pure pursuit
-        steering, velocity = svea.compute_control()
-        svea.send_control(steering, velocity)
-	rospy.loginfo_throttle(1, velocity)
-        # visualize data
-        if use_matplotlib or use_rviz:
-            svea.visualize_data()
-        else:
-            rospy.loginfo_throttle(1, state)
 
-	if svea.lidar.scan != []:
-	    dist = min(svea.lidar.scan)
+    angle_lidar = [radians(angle) for angle in range(-135, 135, 2)]
 
-            index = svea.lidar.scan.index(dist)
-	    angle_lidar = radians(-135 + 2*index)
+    j = 1
+    while not rospy.is_shutdown():
+	    while not svea.is_finished and not rospy.is_shutdown():
+		state = svea.wait_for_state()
 
-	    obs_x = cos(angle_lidar)*dist + state.x
-	    obs_y = sin(angle_lidar)*dist + state.y
+		obs = []
+		
+		# compute control input via pure pursuit
+		steering, velocity = svea.compute_control()
+		svea.send_control(steering, velocity)
+		rospy.loginfo_throttle(1, velocity)
+		# visualize data
+		if use_matplotlib or use_rviz:
+		    svea.visualize_data()
+		else:
+		    rospy.loginfo_throttle(1, state)
 
-            print([obs_x, obs_y])
+		if svea.lidar.scan != []:
+		    dist = svea.lidar.scan
+
+		    for i in range(0,135):
+			obs.append( (cos(angle_lidar[i])*dist[i] + state.x, sin(angle_lidar[i])*dist[i] + state.y) )
+
+	    svea.send_control(steering, 0)
+            
+	    traj_x2, traj_y2 = solution(state.x, state.y, x_t[j], y_t[j], [])
+	    print("hej")
+
+	    svea = SVEAPurePursuit(vehicle_name, LocalizationInterface, PurePursuitController, traj_x2, traj_y2, data_handler = DataHandler)
+    	    svea.start(wait=True)
+            svea.controller.target_velocity = target_velocity
+
+	    j = j +1
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")

@@ -11,6 +11,7 @@ class Node:
 def crash(x, y, obstacles):
 
     margin = 0.2
+    #print("chrash")
 
     #if x >= car.xub or x <= car.xlb or y >= car.yub or y <= car.ylb:
     #    return True
@@ -36,14 +37,20 @@ def nearmest_node(nodes, random_point):
 
     return node_nearmest
 
-def solution(x0, y0, xt, yt, simulator):
-
-    obstacles = simulator.simulated_lidar.obstacles()
+def solution(x0, y0, xt, yt, obstacles):
 
     nodes = []
-    phis = [-pi/4, 0, pi/4]
+    #phis = [-pi/3, 0, pi/3]
+    #phis = [pi/6, pi/4, pi/3]
+    #phis = [pi/3]
     
     x, y = x0, y0
+
+    #xt, yt = x0+12, y0+12
+
+    angle = atan((yt-y0)/(xt-x0))
+    print(angle)
+    phis = [angle-pi/12, angle, angle+pi/12]
 
     start_node = Node(x, y)
     nodes.append(start_node)
@@ -53,8 +60,14 @@ def solution(x0, y0, xt, yt, simulator):
 
     while True:
 
-        random_x = random.uniform(car.xlb, car.xub)
-        random_y = random.uniform(car.ylb, car.yub)
+        random_x = random.uniform(x-cos(pi/6), x+cos(pi/6))
+        random_y = random.uniform(y-sin(pi/6), y+sin(pi/6))
+
+	#random_x = random.uniform(x-0.5, x+0.5)
+        #random_y = random.uniform(y-0.5, y+0.5)
+
+        #random_x = random.uniform(x, x+0.2)
+        #random_y = random.uniform(y-cos(pi/3), y+cos(pi/3))
 
         node_nearmest = nearmest_node(nodes, [random_x,random_y])
 
@@ -69,8 +82,8 @@ def solution(x0, y0, xt, yt, simulator):
 
                 #x, y, theta = step(car, x, y, theta, phi)
 
-		x = x + cos(phi)
-                y = y + sin(phi)
+		x = x + cos(phi)/25
+                y = y + sin(phi)/25
 
                 if crash(x, y, obstacles) == True:
                     break
@@ -87,12 +100,15 @@ def solution(x0, y0, xt, yt, simulator):
         i = distances.index(min(distances))
         state = states[i]
 
-        new_node = Node(state[0], state[1])
+        new_node = Node((state[0]+nodes[-1].x)/2, (state[1]+nodes[-1].y)/2)
         nodes.append(new_node)
 
-        if hypot(new_node.x-xt, new_node.y-yt) < 1.25:
+        if hypot(new_node.x-xt, new_node.y-yt) < 2:
             break
 
+	#print("jakob")
+
+    del nodes[::2]
     for node in nodes:
 	traj_x.append(node.x)
 	traj_y.append(node.y)

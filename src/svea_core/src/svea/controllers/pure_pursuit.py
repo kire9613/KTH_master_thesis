@@ -6,10 +6,10 @@ import math
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
-    Lfc = 0.4  # look-ahead distance
-    K_p = 0.1  #TODO speed control propotional gain
+    Lfc = 0.4  # var 0.4 look-ahead distance
+    K_p = 1.5  #TODO speed control propotional gain
     K_i = 0.1  #TODO speed control integral gain
-    K_d = 0.1  #TODO speed control derivitive gain
+    K_d = 0.0  #TODO speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
 
     def __init__(self, vehicle_name=''):
@@ -22,7 +22,7 @@ class PurePursuitController(object):
         self.is_finished = False
 
 	self.error = []
-	self.dt = 1
+	self.dt = 0.01
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -55,15 +55,17 @@ class PurePursuitController(object):
 
             if self.error == []:
                 e_prev = 0
-
             else:
-                e_prev = self.error[self.last_index - 1]    
+                e_prev = self.error[self.last_index - 1] 
+   
             e = self.target_velocity - state.v
             e_sum = sum(self.error) + e*self.dt
             dedt = (e - e_prev) / self.dt
+
             self.error.append(e)
             self.last_index = self.last_index + 1 
-            u = self.K_p*e + self.K_i *e_sum + self.K_d*dedt	
+
+            u = self.K_p*e + self.K_i*e_sum + self.K_d*dedt	
             
             return u
 
@@ -91,5 +93,11 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
+	if self.target != None:
+	  tx, ty = self.target #condition for distance between state and target position
+	  dx = tx - state.x
+	  dy = ty - state.y 
+	  if math.sqrt(dx**2 + dy**2) < 0.1:
+	    self.is_finished = True
 
         return ind
