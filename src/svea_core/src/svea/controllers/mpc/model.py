@@ -5,7 +5,7 @@ import casadi as ca
 import numpy as np
 
 class SVEAcar(object):
-    def __init__(self, h):
+    def __init__(self, h, target_velocity, tau):
         """
         SVEA model class.
 
@@ -20,6 +20,8 @@ class SVEAcar(object):
         self.model_nl = self.svea_nonlinear_dynamics
         self.g = 9.81
         self.dt = h
+        self.target_velocity = target_velocity
+        self.TAU = tau
 
         self.L = 0.32 # The wheel base
 
@@ -74,20 +76,20 @@ class SVEAcar(object):
         A[1, 1] = 1.0
         A[2, 2] = 1.0
         A[3, 3] = 1.0
-        A[0, 2] = self.dt * ca.cos(x[2])
-        A[0, 3] = - self.dt * x[3] * ca.sin(x[2])
-        A[1, 2] = self.dt * ca.sin(x[2])
-        A[1, 3] = self.dt * x[3] * ca.cos(x[2])
-        A[3, 2] = self.dt * ca.tan(u[1]) / self.L
+        A[0, 2] = -self.dt * x[3] * ca.sin(x[2])
+        A[0, 3] = self.dt * ca.cos(x[2])
+        A[1, 2] = self.dt * x[3] * ca.cos(x[2])
+        A[1, 3] = self.dt * ca.sin(x[2])
+        A[2, 3] = self.dt * ca.tan(u[1]) / self.L
 
         B = ca.MX.zeros(4,2)
-        B[2, 0] = self.dt
-        B[3, 1] = self.dt * x[3] / (self.L * ca.cos(u[1]) ** 2)
+        B[2, 1] = self.dt * x[3] / (self.L * ca.cos(u[1]) ** 2)
+        B[3, 0] = self.dt
 
         C = ca.MX.zeros(1,4)
         C[0,0] = self.dt * x[3] * ca.sin(x[2]) * x[2]
         C[0,1] = - self.dt * x[3] * ca.cos(x[2]) * x[2]
-        C[0,3] = x[3] * u[1] / (self.L * ca.cos(u[1]) ** 2)
+        C[0,2] = x[3] * u[1] / (self.L * ca.cos(u[1]) ** 2)
 
         self.Ad = ca.Function('Ad', [x, u], [A])
         self.Bd = ca.Function('Bd', [x, u], [B])
@@ -114,6 +116,7 @@ class SVEAcar(object):
         xdot2  = v*ca.sin(yaw)
         xdot3  = v/self.L * ca.tan(delta)
         xdot4  = a # TODO: Simulate ESC as in bicycle.py?
+        # xdot4  = 1/self.TAU*(self.target_velocity-v)
 
         dxdt = [xdot1,
                 xdot2,
@@ -163,8 +166,9 @@ class SVEAcar(object):
         """
         Ad_eq = self.Ad(self.x_eq, self.u_eq)
         Bd_eq = self.Bd(self.x_eq, self.u_eq)
+        Cd_eq = self.Cd(self.x_eq, self.u_eq)
 
-        return Ad_eq, Bd_eq, self.Cd_eq
+        return Ad_eq, Bd_eq, Cd_eq
 
     def continuous_time_nonlinear_dynamics(self, x0, u):
         out = self.Integrator(x0=x0, p=ca.vertcat(u))
@@ -182,8 +186,8 @@ class SVEAcar(object):
         :rtype: 4x1, ca.DM
         """
 
-        return ca.mtimes(self.Ad(self.x0, self.u,  ), x0) + \
-                ca.mtimes(self.Bd(self.x0, self.u, ), u)
+        return ca.mtimes(self.Ad(x0, u), x0) + \
+               ca.mtimes(self.Bd(x0, u), u )
 
 def main():
     """
