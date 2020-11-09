@@ -80,9 +80,9 @@
     <param name="publish_pose" value="$(arg publish_pose)" />
   </node>
 
-  <include file="$(find svea_sensors)/launch/localize.launch">
+  <!--include file="$(find svea_sensors)/launch/localize.launch">
     <arg name="use_rs" value="true"/>
     <arg name="file_name" value="$(arg map_file)"/>
-  </include>
+  </include-->
 
 </launch>
