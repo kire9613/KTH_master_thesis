@@ -78,7 +78,7 @@ def param_init():
         start_pt = [float(curr) for curr in start_pt]
         start_pt = VehicleState(*start_pt)
 
-    is_sim = rospy.get_param(is_sim_param, False)
+    is_sim = rospy.get_param(is_sim_param, True)
     use_rviz = rospy.get_param(use_rviz_param, False)
     use_matplotlib = rospy.get_param(use_matplotlib_param, False)
 
@@ -88,7 +88,7 @@ def param_init():
 def main():
     rospy.init_node('floor2_example')
     start_pt, is_sim, use_rviz, use_matplotlib = param_init()
-    
+
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler

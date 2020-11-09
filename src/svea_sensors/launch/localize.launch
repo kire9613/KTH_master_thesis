@@ -53,9 +53,9 @@
   </group>
 
   <!-- Start map server -->
-  <arg name="map_name" default="itrl.yaml"/>
+  <!--arg name="map_name" default="itrl.yaml"/>
   <arg name="file_name" default="$(find svea_sensors)/maps/$(arg map_name)" />
-  <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg file_name)" />
+  <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg file_name)" /-->
   
   <!-- Start localization (AMCL) -->
   <arg name="initial_pose_x" default="0.0" />
