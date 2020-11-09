@@ -12,6 +12,11 @@ from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import String
+
+import sync_lidar
+import explored_map
+import tf
 
 """
 __team__ = "Team 1"
@@ -76,9 +81,20 @@ def callback_scan(scan):
     ranges = scan.ranges
     min_dist = np.nanmin(ranges) # TODO: Make available as self.min_dist etc.?
 
+#def publish_map_base_link_tf(br,state):
+#    t = geometry_msgs.msg.TransformStamped()
+#    t.header.stamp = rospy.Time.now()
+#    t.header.frame_id = state.frame_id
+#    t.child_frame_id = state.child_frame
+#    t.transform = state._pose_msg
+#    br.sendTransform(t)
+
 def main():
     rospy.init_node('floor2_team1')
     start_pt, is_sim, use_rviz, use_matplotlib, _run_lidar = param_init()
+
+    scanner = sync_lidar.LidarScan()
+    obs_map = explored_map.ObstacleMap()
 
     # select data handler based on the ros params
     if use_rviz:
@@ -94,7 +110,7 @@ def main():
         simulator = SimSVEA(vehicle_name, model_for_sim,
                             dt=dt, start_paused=True, run_lidar=_run_lidar).start()
 
-    lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
+    #lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
 
     # start pure pursuit SVEA manager
     svea = SVEAPurePursuit(vehicle_name,
@@ -115,7 +131,11 @@ def main():
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
+        scan = scanner.scan
 
+        obs_map.update_map(state,scan)
+
+        print(obs_map.map_matrix)
         # TODO: ind = svea.controller.last_index
         # TODO: upd_traj_x, upd_traj_y = planner.plan(state,ind)
         # TODO: svea.update_traj(self, upd_traj_x, upd_traj_y)
