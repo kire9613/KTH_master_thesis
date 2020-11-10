@@ -18,10 +18,28 @@ import casadi.tools as ctools
 from scipy.stats import norm
 import scipy.linalg
 
+from svea.controllers.mpc.model import SVEAcar
+
+import math
 
 class MPC(object):
+    N_IND_SEARCH = 5  # Search index number
+    TAU = 0.1 # TODO: Hardcoded
+    def __init__(self, vehicle_name=''):
+        self.traj_x = []
+        self.traj_y = []
+        self.traj_yaw = []
+        self.sp = []
+        self.target = None
+        # initialize with 0 velocity
+        self.target_velocity = 0.0
+        self.last_index = 0
+        self.is_finished = False
 
-    def __init__(self, model, dynamics,
+        self.target_ind = None
+        self.u0 = None
+
+    def build_solver(self, dt, model=None, dynamics=None,
                  horizon=10, Q=None, P=None, R=None,
                  ulb=None, uub=None, xlb=None, xub=None, terminal_constraint=None,
                  solver_opts=None,
@@ -50,17 +68,19 @@ class MPC(object):
                     e.g.: solver_opts['print_time'] = False
                           solver_opts['ipopt.tol'] = 1e-8
         """
+        model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
+        # dynamics = model.discrete_time_dynamics
+        dynamics = model.continuous_time_nonlinear_dynamics
 
-
-        self.horizon = horizon
-        self.set_reference(x_d)
-        model.set_reference(x_d)
+        self.horizon = horizon*dt
+        # self.set_reference(x_d)
+        # model.set_reference(x_d)
 
         build_solver_time = -time.time()
         self.dt = model.dt
-        self.Nx, self.Nu = len(self.x_sp), 4 # TODO
+        self.Nx, self.Nu = 4, 2 # TODO
         Nopt = self.Nu + self.Nx
-        self.Nt = int(horizon/self.dt)
+        self.Nt = int(self.horizon/self.dt)
         self.dynamics = dynamics
 
         # Initialize variables
@@ -91,11 +111,10 @@ class MPC(object):
 
 
         # Starting state parameters - add slack here
-        # yaw      = ca.MX.sym('yaw', 1)
         x0       = ca.MX.sym('x0', self.Nx)
-        x0_ref   = ca.MX.sym('x0_ref', self.Nx)
+        x0_ref   = ca.MX.sym('x0_ref', self.Nx*(self.Nt+1))
+        # x0_ref   = ca.MX.sym('x0_ref', self.Nx)
         u0       = ca.MX.sym('u0', self.Nu)
-        # param_s  = ca.vertcat(x0, x0_ref, u0, yaw)
         param_s  = ca.vertcat(x0, x0_ref, u0)
 
 
@@ -129,7 +148,6 @@ class MPC(object):
             u_t = opt_var['u', t]
 
             # Dynamics constraint
-            # x_t_next = self.dynamics(x_t, u_t, yaw)
             x_t_next = self.dynamics(x_t, u_t)
             con_eq.append(x_t_next - opt_var['x', t+1])
 
@@ -154,14 +172,18 @@ class MPC(object):
                 con_ineq_lb.append(xlb)
 
             # Objective Function / Cost Function
-            obj += self.running_cost( (x_t - x0_ref), self.Q, u_t, self.R)
+            # print((t+1)*self.Nx)
+            # print(self.Nx*(self.Nt+1))
+            # print("size of x_t",x_t.size())
+            # print("size of xref",x0_ref[t*self.Nx:(t+1)*self.Nx].size())
+            obj += self.running_cost( (x_t - x0_ref[t*self.Nx:(t+1)*self.Nx]), self.Q, u_t, self.R)
 
         # Terminal Cost
-        obj += self.terminal_cost(opt_var['x', self.Nt] - x0_ref, self.P)
+        obj += self.terminal_cost(opt_var['x', self.Nt] - x0_ref[self.Nt*self.Nx:], self.P)
 
         # Terminal contraint
         if terminal_constraint is not None:
-            con_ineq.append(opt_var['x', self.Nt] - x0_ref)
+            con_ineq.append(opt_var['x', self.Nt] - x0_ref[self.Nt*self.Nx:])
             con_ineq_lb.append(np.full((self.Nx,), - np.array(terminal_constraint)))
             con_ineq_ub.append(np.full((self.Nx,),   np.array(terminal_constraint)))
             # con_ineq_lb.append(np.full((self.Nx,), - terminal_constraint))
@@ -182,39 +204,39 @@ class MPC(object):
         # Build NLP Solver (can also solve QP)
         nlp = dict(x=opt_var, f=obj, g=con, p=param_s)
         options = {
-            # 'ipopt.print_level' : 0,
-            # 'ipopt.mu_init' : 0.01,
-            # 'ipopt.tol' : 1e-8,
-            # 'ipopt.sb' : 'yes',
-            # 'ipopt.warm_start_init_point' : 'yes',
-            # 'ipopt.warm_start_bound_push' : 1e-9,
-            # 'ipopt.warm_start_bound_frac' : 1e-9,
-            # 'ipopt.warm_start_slack_bound_frac' : 1e-9,
-            # 'ipopt.warm_start_slack_bound_push' : 1e-9,
-            # 'ipopt.warm_start_mult_bound_push' : 1e-9,
-            # 'ipopt.mu_strategy' : 'adaptive',
-            # 'ipopt.max_iter': max_iter,
-            # 'ipopt.max_cpu_time': max_cpu_time,
-            'osqp.verbose': False,
-            'warm_start_primal': True,
-            'error_on_fail': False,
+            'ipopt.print_level' : 0,
+            'ipopt.mu_init' : 0.01,
+            'ipopt.tol' : 1e-8,
+            'ipopt.sb' : 'yes',
+            'ipopt.warm_start_init_point' : 'yes',
+            'ipopt.warm_start_bound_push' : 1e-9,
+            'ipopt.warm_start_bound_frac' : 1e-9,
+            'ipopt.warm_start_slack_bound_frac' : 1e-9,
+            'ipopt.warm_start_slack_bound_push' : 1e-9,
+            'ipopt.warm_start_mult_bound_push' : 1e-9,
+            'ipopt.mu_strategy' : 'adaptive',
+            'ipopt.max_iter': max_iter,
+            'ipopt.max_cpu_time': max_cpu_time,
+            # 'osqp.verbose': False,
+            # 'warm_start_primal': True,
+            # 'error_on_fail': False,
             'print_time' : False,
             'verbose' : False,
-            'expand' : True,
-            'jit': True
+            # 'expand' : True,
+            # 'jit': True
         }
         if solver_opts is not None:
             options.update(solver_opts)
-        self.solver = ca.qpsol('mpc_solver', 'osqp', nlp, options)
+        # self.solver = ca.qpsol('mpc_solver', 'osqp', nlp, options)
+        self.solver = ca.nlpsol('mpc_solver', 'ipopt', nlp, options)
 
         build_solver_time += time.time()
-        print('\n________________________________________')
+        print('________________________________________')
         print('# Time to build mpc solver: %f sec' % build_solver_time)
         print('# Number of variables: %d' % self.num_var)
         print('# Number of equality constraints: %d' % num_eq_con)
         print('# Number of inequality constraints: %d' % num_ineq_con)
         print('----------------------------------------')
-        pass
 
     def set_cost_functions(self):
 
@@ -249,7 +271,6 @@ class MPC(object):
             mean: Simulated output using the optimal control inputs
             u: Optimal control inputs
         """
-        # yaw = x0[8]
 
         # Initial state
         if u0 is None:
@@ -268,8 +289,7 @@ class MPC(object):
         # print('\nSolving MPC with %d step horizon' % self.Nt)
         solve_time = -time.time()
 
-        # param  = ca.vertcat(x0, self.x_sp, u0, yaw)
-        param  = ca.vertcat(x0, self.x_sp, u0)
+        param = ca.vertcat(x0, self.x_sp, u0)
         # print(x0.shape)
         # print(self.x_sp.shape)
         # print(u0.shape)
@@ -293,11 +313,147 @@ class MPC(object):
 
         return optvar['x'], optvar['u']
 
-    def mpc_controller(self, x0, u0=None):
-
-        x_pred, u_pred = self.solve_mpc(x0)
-
-        return x_pred, u_pred[0]
-
     def set_reference(self, x_sp):
         self.x_sp = x_sp
+
+    def calc_ref_trajectory(self, state, pind):
+        cx = self.traj_x
+        cy = self.traj_y
+        cyaw = self.traj_yaw
+        sp = self.sp
+
+        xref = np.zeros((self.Nx, self.Nt + 1))
+        dref = np.zeros((1, self.Nt + 1))
+        ncourse = len(cx)
+
+        ind, _ = self.calc_nearest_index(state, pind)
+
+        if pind >= ind:
+            ind = pind
+
+        xref[0, 0] = cx[ind]
+        xref[1, 0] = cy[ind]
+        xref[2, 0] = cyaw[ind]
+        xref[3, 0] = sp[ind]
+        # dref[0, 0] = 0.0  # steer operational point should be 0
+
+        travel = 0.0
+
+        for i in range(self.Nt + 1):
+            travel += abs(state[3]) * self.dt
+            dind = int(round(travel / self.dl))
+
+            if (ind + dind) < ncourse:
+                xref[0, i] = cx[ind + dind]
+                xref[1, i] = cy[ind + dind]
+                xref[2, i] = cyaw[ind + dind]
+                xref[3, i] = sp[ind + dind]
+                # dref[0, i] = 0.0
+            else:
+                xref[0, i] = cx[ncourse - 1]
+                xref[1, i] = cy[ncourse - 1]
+                xref[2, i] = cyaw[ncourse - 1]
+                xref[3, i] = sp[ncourse - 1]
+                # dref[0, i] = 0.0
+        self.ref_target = (xref[0,:],xref[1,:])
+        self.x_sp = xref.flatten(order='F')
+
+        return ind, dref
+
+    def calc_nearest_index(self,state, pind):
+        cx = self.traj_x
+        cy = self.traj_y
+        cyaw = self.traj_yaw
+
+        dx = [state[0] - icx for icx in cx[pind:(pind + self.N_IND_SEARCH)]]
+        dy = [state[1] - icy for icy in cy[pind:(pind + self.N_IND_SEARCH)]]
+
+        d = [idx ** 2 + idy ** 2 for (idx, idy) in zip(dx, dy)]
+
+        mind = min(d)
+
+        ind = d.index(mind) + pind
+
+        mind = math.sqrt(mind)
+
+        dxl = cx[ind] - state[0]
+        dyl = cy[ind] - state[1]
+
+        angle = self.pi_2_pi(cyaw[ind] - math.atan2(dyl, dxl))
+        if angle < 0:
+            mind *= -1
+
+        return ind, mind
+
+    def pi_2_pi(self,angle):
+        while(angle > math.pi):
+            angle = angle - 2.0 * math.pi
+
+        while(angle < -math.pi):
+            angle = angle + 2.0 * math.pi
+
+        return angle
+
+    def compute_control(self, state, u0=None):
+        x0 = np.array([state.x,state.y,state.yaw,state.v])
+
+        if self.u0 is None:
+            self.u0 = np.zeros(self.Nu)
+
+        if self.target_ind == None:
+            self.target_ind, _ = self.calc_nearest_index(x0, 0)
+        self.calc_ref_trajectory(x0, self.target_ind)
+
+        x_pred, u_pred = self.solve_mpc(x0,self.u0)
+
+        self.u0 = u_pred[0]
+
+        # self.target =  ([i[0] for i in x_pred], [i[1] for i in x_pred])
+        # self.target =  (self.ref_target[0], self.ref_target[1])
+        # t0 =  [ [i[0] for i in x_pred] , self.ref_target[0][:] ][:]
+        # t1 =  [ [i[1] for i in x_pred] , self.ref_target[1][:] ][:]
+        # self.target = (t0,t1)
+        self.target =  (self.ref_target[0][0], self.ref_target[1][0]) # FOR RVIZ
+
+        vd = self.TAU*u_pred[0][0] + state.v
+
+        return float(u_pred[0][1]), float(vd)
+        # return float(u_pred[0][1]), float(x_pred[1][3])
+
+
+
+def main():
+    """
+    Run some tests
+    """
+    svea = SVEAcar(h=0.1)
+
+    horizon = 10
+    x_d=[0,0,0,0]
+
+    A, B, C = svea.get_discrete_system_matrices_at_eq()
+    Q = np.eye(4)
+    R = np.eye(2)
+    # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
+    P_LQR = np.eye(4)
+
+    ulb = [-1e2,-np.deg2rad(40)]
+    uub = [ 1e2, np.deg2rad(40)]
+    xlb = [-np.inf]*3+[ 1.5]
+    xub = [ np.inf]*3+[-1.5]
+
+    ctl = MPC(""
+        # model=svea,
+        # dynamics=svea.discrete_time_dynamics,
+        # Q = Q , R = R, P = P_LQR,
+        # horizon=horizon,
+        # ulb=ulb,
+        # uub= uub,
+        # xlb=xlb,
+        # xub=xub,
+        # x_d=x_d,
+        # terminal_constraint=...,
+    )
+
+if __name__ == "__main__":
+    main()

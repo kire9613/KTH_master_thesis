@@ -44,7 +44,7 @@ class SVEAMPC(SVEAPurePursuit):
         self.controller.traj_y = cy
         self.controller.traj_yaw = cyaw
         self.controller.sp = self.calc_speed_profile(
-            cx,cy,cyaw,self.controller.TARGET_SPEED
+            cx,cy,cyaw,self.controller.target_velocity
         )
 
     def calc_speed_profile(self, cx, cy, cyaw, target_speed):

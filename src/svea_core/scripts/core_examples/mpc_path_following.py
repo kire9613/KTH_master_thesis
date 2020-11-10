@@ -13,16 +13,16 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
 ## SIMULATION PARAMS ##########################################################
-vehicle_name = "SVEA"
+vehicle_name = ""
 init_state = [0.0, 0.0, 0.0, 0.0] #[x, y, yaw, v], units: [m, m, rad, m/s]
 init_state = VehicleState(*init_state)
 target_velocity = 0.6 # [m/s]
-dt = 0.1
+dt = 0.05
 
 # trajectory
 traj_x = np.linspace(0, 10, 10)
 # traj_y = [math.sin(ix) * ix for ix in traj_x]
-traj_y = np.linspace(0, 0, 10)
+traj_y = np.linspace(0, 2, 10)
 
 show_animation = True
 ###############################################################################
@@ -54,7 +54,6 @@ def main():
     svea.controller.DT = dt
 
     svea.start(wait=True)
-
 
     if is_sim:
         # start simulation
