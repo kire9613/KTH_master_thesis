@@ -418,7 +418,7 @@ class MPC(object):
         vd = self.TAU*u_pred[0][0] + state.v
 
         return float(u_pred[0][1]), float(vd)
-        return float(u_pred[0][1]), float(x_pred[1][3])
+        # return float(u_pred[0][1]), float(x_pred[1][3])
 
 
 
@@ -442,7 +442,7 @@ def main():
     xlb = [-np.inf]*3+[ 1.5]
     xub = [ np.inf]*3+[-1.5]
 
-    ctl = MPC("SVEA"
+    ctl = MPC(""
         # model=svea,
         # dynamics=svea.discrete_time_dynamics,
         # Q = Q , R = R, P = P_LQR,

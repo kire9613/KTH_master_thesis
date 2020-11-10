@@ -25,7 +25,7 @@ __status__ = "Development"
 """
 
 ## SIMULATION PARAMS ##########################################################
-vehicle_name = "SVEA"
+vehicle_name = ""
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
@@ -135,7 +135,7 @@ def main():
 
         obs_map.update_map(state,scan)
 
-        print(obs_map.map_matrix)
+        # print(obs_map.map_matrix)
         # TODO: ind = svea.controller.last_index
         # TODO: upd_traj_x, upd_traj_y = planner.plan(state,ind)
         # TODO: svea.update_traj(self, upd_traj_x, upd_traj_y)
