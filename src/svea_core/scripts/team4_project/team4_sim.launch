@@ -18,6 +18,7 @@
     </group>
 
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
+    <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
 
     <node pkg="svea_core" type="team4_floor2_example.py" name="team4_floor2_example" output="screen">
         <param name="start_pt" value="$(arg start_pt)"/>
@@ -35,6 +36,6 @@
             <arg name="use_rs" value="true"/>
             <arg name="file_name" value="$(arg map_file)"/>
         </include>
-    </group> 
+    </group>
 
 </launch>
