@@ -2,6 +2,7 @@
 
 import rospy
 from nav_msgs.msg import Path
+from std_msgs.msg import Float32
 import numpy as np
 
 __team__ = "Team 4"
@@ -63,6 +64,14 @@ def target_path_setter(svea):
 
     return listener
 
+# Set target velocity according ot what
+# is published on /
+def target_vel_setter(svea):
+    def listener(vel_msg):
+        svea.controller.target_velocity = vel_msg.data
+
+    return listener
+
 def param_init():
     """Initialization handles use with just python or in a launch file
     """
@@ -119,6 +128,8 @@ def main():
     
     # Listen for updates in the path to follow
     rospy.Subscriber('/targets', Path, target_path_setter(svea))
+    # Listen for updates in the target velocity
+    rospy.Subscriber('/target_vel', Float32, target_vel_setter(svea))
 
     if is_sim:
         # start simulation
