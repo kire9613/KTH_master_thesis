@@ -2,6 +2,7 @@
 
 import rospy
 from nav_msgs.msg import Path
+from std_msgs.msg import Float32
 import numpy as np
 
 __team__ = "Team 4"
@@ -63,6 +64,14 @@ def target_path_setter(svea):
 
     return listener
 
+# Set target velocity according to what
+# is published on /target_vel
+def target_vel_setter(svea):
+    def listener(vel_msg):
+        svea.controller.target_velocity = vel_msg.data
+
+    return listener
+
 def param_init():
     """Initialization handles use with just python or in a launch file
     """
@@ -71,7 +80,7 @@ def param_init():
     is_sim_param = rospy.search_param('is_sim')
     use_rviz_param = rospy.search_param('use_rviz')
     use_matplotlib_param = rospy.search_param('use_matplotlib')
-    use_lidar = rospy.search_param('use_lidar')
+    use_lidar_param = rospy.search_param('use_lidar')
 
     start_pt = rospy.get_param(start_pt_param, default_init_pt)
     if isinstance(start_pt, str):
@@ -82,7 +91,7 @@ def param_init():
     is_sim = rospy.get_param(is_sim_param, True)
     use_rviz = rospy.get_param(use_rviz_param, False)
     use_matplotlib = rospy.get_param(use_matplotlib_param, False)
-    use_lidar = rospy.get_param(use_lidar)
+    use_lidar = rospy.get_param(use_lidar_param)
 
     return start_pt, is_sim, use_rviz, use_matplotlib, use_lidar
 
@@ -119,6 +128,8 @@ def main():
     
     # Listen for updates in the path to follow
     rospy.Subscriber('/targets', Path, target_path_setter(svea))
+    # Listen for updates in the target velocity
+    rospy.Subscriber('/target_vel', Float32, target_vel_setter(svea))
 
     if is_sim:
         # start simulation
