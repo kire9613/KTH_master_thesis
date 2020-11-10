@@ -49,8 +49,9 @@ class EngineROS:
                                  occupied_space, inflate_radius, optional)
 
         print("Get default map...")
-        self.__default_map_sub = rospy.Subscriber('/map', OccupancyGrid, self.default_map_callback)
-        self.default_map = None
+        #self.__default_map_sub = rospy.Subscriber('/map', OccupancyGrid, self.default_map_callback)
+        #self.default_map = None
+        self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
 
         # Init map publishers
         self.__map_pub = rospy.Publisher('map', OccupancyGrid, queue_size=1,
