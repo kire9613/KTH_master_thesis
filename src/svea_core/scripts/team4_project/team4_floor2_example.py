@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+from nav_msgs.msg import Path
 import numpy as np
 
 __team__ = "Team 4"
@@ -46,6 +47,20 @@ traj_y += np.linspace(ys[0], ys[1]).tolist()
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ###############################################################################
 
+# Update controller trajectory when new plan
+# is pulished
+def target_path_setter(svea):
+    def listener(path_msg):
+        traj_x = []
+        traj_y = []
+
+        for pose in path_msg.poses:
+            traj_x.append(pose.pose.position.x)
+            traj_y.append(pose.pose.position.y)
+
+        svea.update_traj(traj_x, traj_y)
+
+    return listener
 
 def param_init():
     """Initialization handles use with just python or in a launch file
@@ -96,6 +111,9 @@ def main():
                            traj_x, traj_y,
                            data_handler = DataHandler)
     svea.start(wait=True)
+
+    # Listen for updates in the path to follow
+    rospy.Subscriber('/targets', Path, target_path_setter(svea))
 
     if is_sim:
         # start simulation
