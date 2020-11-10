@@ -4,14 +4,15 @@
 import rospy
 import numpy as np
 
-from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
 from svea.localizers import LocalizationInterface
-from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
+
+from svea.svea_managers.mpc_path_following_sveas import SVEAMPC
+from svea.controllers.mpc_atsushi import ModelPredictiveController as MPC
 
 """
 __team__ = "Team 1"
@@ -97,28 +98,23 @@ def main():
     lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
 
     # start pure pursuit SVEA manager
-    svea = SVEAPurePursuit(vehicle_name,
-                           LocalizationInterface,
-                           PurePursuitController,
-                           traj_x, traj_y,
-                           data_handler = DataHandler)
+    svea = SVEAMPC(vehicle_name,
+                   LocalizationInterface,
+                   MPC,
+                   traj_x, traj_y,
+                   data_handler = DataHandler)
+    svea.controller.DT = dt
+
     svea.start(wait=True)
 
     if is_sim:
         # start simulation
         simulator.toggle_pause_simulation()
 
-    # simualtion loop
-
-    # TODO:planner = LocalPlanner(traj_x, traj_y)
-
+    # simulation loop
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
-
-        # TODO: ind = svea.controller.last_index
-        # TODO: upd_traj_x, upd_traj_y = planner.plan(state,ind)
-        # TODO: svea.update_traj(self, upd_traj_x, upd_traj_y)
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()

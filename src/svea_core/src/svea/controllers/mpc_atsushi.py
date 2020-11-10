@@ -103,6 +103,7 @@ class ModelPredictiveController(object):
 
         # self.target = (cx[self.target_ind],cy[self.target_ind])
         # self.target = (xref[0,:],xref[1,:])
+        self.target = (xref[0,0],xref[1,0]) # FOR RVIZ
 
         x0 = [state.x, state.y, state.yaw, state.v]  # current state
 
@@ -118,7 +119,9 @@ class ModelPredictiveController(object):
             print("Goal")
             self.is_finished = True
         steering = di
-        velocity = ov[1]
+        # velocity = ov[1]
+        vd = self.TAU*self.oa[0] + state.v
+        velocity = vd
         return steering, velocity
 
     def pi_2_pi(self,angle):
@@ -163,9 +166,6 @@ class ModelPredictiveController(object):
             delta = self.MAX_STEER
         elif delta <= -self.MAX_STEER:
             delta = -self.MAX_STEER
-
-        # a = 1/self.TAU * (self.TARGET_SPEED - state.v)
-        # a = 1/self.TAU * (self.TARGET_SPEED - ov)
 
         state.x += state.v * math.cos(state.yaw) * self.DT
         state.y += state.v * math.sin(state.yaw) * self.DT
@@ -222,7 +222,7 @@ class ModelPredictiveController(object):
             xbar[1, i] = state.y
             xbar[2, i] = state.yaw
             xbar[3, i] = state.v
-        self.target = (xbar[0,:],xbar[1,:])
+        # self.target = (xbar[0,:],xbar[1,:])
 
         return xbar
 

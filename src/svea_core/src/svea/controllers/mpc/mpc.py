@@ -24,6 +24,7 @@ import math
 
 class MPC(object):
     N_IND_SEARCH = 5  # Search index number
+    TAU = 0.1 # TODO: Hardcoded
     def __init__(self, vehicle_name=''):
         self.traj_x = []
         self.traj_y = []
@@ -67,7 +68,7 @@ class MPC(object):
                     e.g.: solver_opts['print_time'] = False
                           solver_opts['ipopt.tol'] = 1e-8
         """
-        model = SVEAcar(dt,target_velocity=self.target_velocity,tau=0.1)
+        model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
         # dynamics = model.discrete_time_dynamics
         dynamics = model.continuous_time_nonlinear_dynamics
 
@@ -171,8 +172,10 @@ class MPC(object):
                 con_ineq_lb.append(xlb)
 
             # Objective Function / Cost Function
-            print((t+1)*self.Nx)
-            print(self.Nx*(self.Nt+1))
+            # print((t+1)*self.Nx)
+            # print(self.Nx*(self.Nt+1))
+            # print("size of x_t",x_t.size())
+            # print("size of xref",x0_ref[t*self.Nx:(t+1)*self.Nx].size())
             obj += self.running_cost( (x_t - x0_ref[t*self.Nx:(t+1)*self.Nx]), self.Q, u_t, self.R)
 
         # Terminal Cost
@@ -180,7 +183,7 @@ class MPC(object):
 
         # Terminal contraint
         if terminal_constraint is not None:
-            con_ineq.append(opt_var['x', self.Nt] - x0_ref[:,-1])
+            con_ineq.append(opt_var['x', self.Nt] - x0_ref[self.Nt*self.Nx:])
             con_ineq_lb.append(np.full((self.Nx,), - np.array(terminal_constraint)))
             con_ineq_ub.append(np.full((self.Nx,),   np.array(terminal_constraint)))
             # con_ineq_lb.append(np.full((self.Nx,), - terminal_constraint))
@@ -343,17 +346,17 @@ class MPC(object):
             if (ind + dind) < ncourse:
                 xref[0, i] = cx[ind + dind]
                 xref[1, i] = cy[ind + dind]
-                xref[2, i] = sp[ind + dind]
-                xref[3, i] = cyaw[ind + dind]
+                xref[2, i] = cyaw[ind + dind]
+                xref[3, i] = sp[ind + dind]
                 # dref[0, i] = 0.0
             else:
                 xref[0, i] = cx[ncourse - 1]
                 xref[1, i] = cy[ncourse - 1]
-                xref[2, i] = sp[ncourse - 1]
-                xref[3, i] = cyaw[ncourse - 1]
+                xref[2, i] = cyaw[ncourse - 1]
+                xref[3, i] = sp[ncourse - 1]
                 # dref[0, i] = 0.0
         self.ref_target = (xref[0,:],xref[1,:])
-        self.x_sp = xref.flatten(order='C')
+        self.x_sp = xref.flatten(order='F')
 
         return ind, dref
 
@@ -407,11 +410,15 @@ class MPC(object):
 
         # self.target =  ([i[0] for i in x_pred], [i[1] for i in x_pred])
         # self.target =  (self.ref_target[0], self.ref_target[1])
-        t0 =  [ [i[0] for i in x_pred] , self.ref_target[0][:] ][:]
-        t1 =  [ [i[1] for i in x_pred] , self.ref_target[1][:] ][:]
-        self.target = (t0,t1)
+        # t0 =  [ [i[0] for i in x_pred] , self.ref_target[0][:] ][:]
+        # t1 =  [ [i[1] for i in x_pred] , self.ref_target[1][:] ][:]
+        # self.target = (t0,t1)
+        self.target =  (self.ref_target[0][0], self.ref_target[1][0]) # FOR RVIZ
 
-        return u_pred[0][1], x_pred[1][0]
+        vd = self.TAU*u_pred[0][0] + state.v
+
+        return float(u_pred[0][1]), float(vd)
+        return float(u_pred[0][1]), float(x_pred[1][3])
 
 
 

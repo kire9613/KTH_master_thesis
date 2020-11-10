@@ -51,8 +51,13 @@ def main():
         traj_x,
         traj_y
     )
-    Q = np.eye(4)
-    R = np.eye(2)*0.01
+    Q = np.diag([
+        1, # x
+        1, # y
+        1, # ψ
+        1, # v
+    ])
+    R = np.diag(2)*0.01
     # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
     P_LQR = np.eye(4)*10
 
