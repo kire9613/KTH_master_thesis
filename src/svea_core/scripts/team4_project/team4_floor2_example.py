@@ -64,8 +64,8 @@ def target_path_setter(svea):
 
     return listener
 
-# Set target velocity according ot what
-# is published on /
+# Set target velocity according to what
+# is published on /target_vel
 def target_vel_setter(svea):
     def listener(vel_msg):
         svea.controller.target_velocity = vel_msg.data
