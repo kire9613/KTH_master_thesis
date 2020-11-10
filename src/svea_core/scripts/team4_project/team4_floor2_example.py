@@ -80,7 +80,7 @@ def param_init():
     is_sim_param = rospy.search_param('is_sim')
     use_rviz_param = rospy.search_param('use_rviz')
     use_matplotlib_param = rospy.search_param('use_matplotlib')
-    use_lidar = rospy.search_param('use_lidar')
+    use_lidar_param = rospy.search_param('use_lidar')
 
     start_pt = rospy.get_param(start_pt_param, default_init_pt)
     if isinstance(start_pt, str):
@@ -91,7 +91,7 @@ def param_init():
     is_sim = rospy.get_param(is_sim_param, True)
     use_rviz = rospy.get_param(use_rviz_param, False)
     use_matplotlib = rospy.get_param(use_matplotlib_param, False)
-    use_lidar = rospy.get_param(use_lidar)
+    use_lidar = rospy.get_param(use_lidar_param)
 
     return start_pt, is_sim, use_rviz, use_matplotlib, use_lidar
 
