@@ -38,9 +38,12 @@ class PurePursuitController(object):
 
         tx, ty = self.target
         alpha = math.atan2(ty - state.y, tx - state.x) - state.yaw
+        k = self.k
         if state.v < 0:  # back
             alpha = math.pi - alpha
-        Lf = self.k * state.v + self.Lfc
+            # Decrease gain when going backwards to increase stability
+            k *= 0.5
+        Lf = k * state.v + self.Lfc
         delta = math.atan2(2.0 * self.L * math.sin(alpha) / Lf, 1.0)
         return delta
 
@@ -83,10 +86,10 @@ class PurePursuitController(object):
         d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]
         ind = d.index(min(d))
         dist = 0.0
-        Lf = self.k * state.v + self.Lfc
+        Lf = self.k * state.v + math.copysign(self.Lfc, state.v)
 
         # search look ahead target point index
-        while Lf > dist and (ind + 1) < len(self.traj_x):
+        while abs(Lf) > dist and (ind + 1) < len(self.traj_x):
             dx = self.traj_x[ind + 1] - self.traj_x[ind]
             dy = self.traj_y[ind + 1] - self.traj_y[ind]
             dist += math.sqrt(dx ** 2 + dy ** 2)
