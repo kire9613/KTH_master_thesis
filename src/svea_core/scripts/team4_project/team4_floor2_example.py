@@ -20,7 +20,7 @@ from svea.track import Track
 
 
 ## SIMULATION PARAMS ##########################################################
-vehicle_name = "SVEA"
+vehicle_name = ""
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
@@ -103,10 +103,8 @@ def main():
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
-    elif use_matplotlib:
-        DataHandler = TrajDataHandler
     else:
-        DataHandler = BasicDataHandler
+        DataHandler = TrajDataHandler
 
     if is_sim:
         # start the simulation
