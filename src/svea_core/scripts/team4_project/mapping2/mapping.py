@@ -182,28 +182,25 @@ class Mapping:
 
         return grid_map
 
-    # def inflate_map(self, grid_map):
+    # def inflate_map(self, map):
     #     """
-    #     needs to read map from /map topic to get map with all updates!!!!!!!!!!!!!!!!
+    #     Inflates map
     #     """
+    #
+    #     grid_map = np.array(map.data).reshape(880, 721)
     #
     #     x,y = 0,0
     #     while y < len(grid_map[:,0]):
     #         while x < len(grid_map[0,:]):
     #             if grid_map[x,y] == self.occupied_space:
-    #                 for xp in range(-self.radius,self.radius+1):
-    #                     for yp in range(-self.radius,self.radius+1):
-    #                         if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
-    #                             if not grid_map[x+xp,y+yp] == self.occupied_space:
-    #                                 if sqrt(xp**2+yp**2) <= self.radius:
-    #                                     self.add_to_map(grid_map, x+xp, y+yp, self.c_space, map_info)
-    #             x += 1
+    #              for xp in range(-self.radius,self.radius+1):
+    #                  for yp in range(-self.radius,self.radius+1):
+    #                      if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
+    #                          if not grid_map[x+xp,y+yp] == self.occupied_space:
+    #                              if sqrt(xp**2+yp**2) <= self.radius:
+    #                                  self.add_to_map(grid_map, x+xp, y+yp, self.c_space, map_info)
+    #                                  x += 1
     #         x = 1
     #         y +=1
     #
-    #     """
-    #     Fill in your solution here
-    #     """
-    #
-    #     # Return the inflated map
     #     return grid_map

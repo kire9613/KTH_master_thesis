@@ -42,6 +42,8 @@ class EngineROS:
                                  occupied_space, inflate_radius, optional)
 
         self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
+        self.__map = None
+        #self.__infl_map = None
 
         # Init map publishers
         self.__map_pub = rospy.Publisher('map', OccupancyGrid, queue_size=1,
@@ -75,7 +77,7 @@ class EngineROS:
             self.add_polygons()
             while not self.added_polygons:
                 rospy.sleep(1)
-            self.publish_map()
+            self.__map_pub.publish(self.__map)
             rospy.sleep(5)
             self.write_map_to_file()
 
@@ -119,8 +121,11 @@ class EngineROS:
         map.data = d
         self.default_map = map
         self.__map = map
+        #self.__infl_map = map
+        #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
+        #self.__map_inflated_pub(self.__infl_map)
 
-        self.publish_map()
+        self.__map_pub.publish(self.__map)
         rospy.sleep(5)
         self.setup_ok = True
         print("Read map from file done.")
@@ -133,6 +138,9 @@ class EngineROS:
             rospy.sleep(0.1)
 
         self.__map = self.default_map
+        #self.__infl_map = self.default_map
+        #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
+        #self.__map_inflated_pub(self.__infl_map)
         self.__map_pub.publish(self.__map)
         print("Default map published.")
 
@@ -306,19 +314,6 @@ class EngineROS:
             map = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info)
             new_map.data = map.reshape(self.width*self.height).tolist()
             self.__map_pub.publish(new_map)
-
-    def publish_map(self):
-        """
-        Publishing complete map to topic /map
-        """
-        print("Publish_map.")
-        self.__map_pub.publish(self.__map)
-
-    # def publish_inflated_map(self):
-    #     """
-    #     Publishing inflated complete map to topic 'inflated_map'
-    #     """
-    #     print("publish_inflated_map")
-    #     #map = self.__inflated_map.to_message()
-    #     map =
-    #     self.__map_inflated_pub.publish(map)
+            #self.__infl_map = self.__map
+            #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
+            #self.__map_inflated_pub(self.__infl_map)
