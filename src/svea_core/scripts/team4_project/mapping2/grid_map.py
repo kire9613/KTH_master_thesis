@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-    @author: Daniel Duberg (dduberg@kth.se)
-"""
-
 # Python standard library
 from math import sin, cos
 import rospy

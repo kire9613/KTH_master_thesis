@@ -3,6 +3,9 @@ import rospy
 
 def main():
 
+    """
+    Script for testing mapping
+    """
     # start track publisher
     #track = Track("SVEA4", publish_track=True)
     #track.start()
@@ -23,8 +26,6 @@ def main():
     mapping_engine = EngineROS(map_frame_id, map_resolution, map_width, map_height,
                  map_origin_x, map_origin_y, map_origin_yaw, inflate_radius,
                  unknown_space, free_space, c_space, occupied_space)
-
-    # add initial map and polygons using function in EnginROS init
 
     rospy.spin()
 
