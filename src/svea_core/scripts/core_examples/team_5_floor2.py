@@ -108,10 +108,10 @@ def main():
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
-        tic = rospy.get_time()
+        # tic = rospy.get_time() # disabled emergency brake
         svea.send_control(steering, velocity)
-        toc = rospy.get_time()
-        rospy.loginfo_throttle(0.5, toc-tic)
+        #toc = rospy.get_time() # disabled emergency brake
+        #rospy.loginfo_throttle(0.5, toc-tic) # disabled emergency brake
 
         svea.send_control(steering, velocity)
 
