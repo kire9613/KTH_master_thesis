@@ -101,25 +101,25 @@ class Mapping:
                 return True
         return False
 
-    def update_map(self, map, pose, scan, map_info, polygon_index):
+    def update_map(self, map, pose, scan, map_info):
         """
         Create OccupancyGridUpdate from lidar scan info
         Pose in map coordinates, type geometry_msgs.msg PoseStamped
         Scan of type sensor_msgs.msg LaserScan
         Map of type OccupancyGrid
         map_inf = [width, height, x_origin, y_origin, resolution]
-        Polygon index...
         """
 
-        print("update_map")
+        #print("update_map")
 
         origin_x = map_info[2]
         origin_y = map_info[3]
         resolution = map_info[4]
         grid_map = np.array(map.data).reshape(880, 721)
 
-        #plt.imshow(grid_map)
-        #plt.show()
+        # Adjust lidar pos. in relation to car
+        pose.pose.position.y += 0.2#0.39
+        pose.pose.position.x += 0.4#0.598
 
         # Current yaw of the robot
         robot_yaw = self.get_yaw(pose.pose.orientation)
@@ -159,84 +159,48 @@ class Mapping:
                 x_index_e = int(x_scan_map/resolution)
                 y_index_e = int(y_scan_map/resolution)
 
-                free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
-                for cell in free_cells:
-                    if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
+                # Update free cells in map
+                #free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
+                #for cell in free_cells:
+                    #if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
                         #print("free")
-                        self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
-                        x_index_list.append(cell[0])
-                        y_index_list.append(cell[1])
+                        #self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
+                        #x_index_list.append(cell[0])
+                        #y_index_list.append(cell[1])
 
                 obs_ind_list.append((x_index_e,y_index_e))
 
             angle += scan.angle_increment
             scan_index += 1
 
+        # Update occupied cells in map
         for obs in obs_ind_list:
             if self.is_in_bounds(grid_map, obs[0],obs[1], map_info):
-                #print("obs")
                 self.add_to_map(grid_map, obs[0], obs[1], self.occupied_space, map_info)
                 x_index_list.append(obs[0])
                 y_index_list.append(obs[1])
 
-        x_index_list.sort()
-        y_index_list.sort()
-        min_x = x_index_list[0]
-        max_x = x_index_list[-1]
-        min_y = y_index_list[0]
-        max_y = y_index_list[-1]
+        return grid_map
 
-        # Only get the part that has been updated
-        update = OccupancyGridUpdate()
-        # The minimum x index in 'grid_map' that has been updated
-        update.x = min_x
-        #print("x_min:" + str(update.x))
-        # The minimum y index in 'grid_map' that has been updated
-        update.y = min_y
-        #print("y_min: " + str(update.y))
-        # Maximum x index - minimum x index + 1
-        update.width = max_x - min_x + 1
-        # Maximum y index - minimum y index + 1
-        update.height = max_y - min_y + 1
-        # The map data inside the rectangle, in row-major order.
-        update.data = []
-
-        x = min_x
-        y = min_y
-        while y <= max_y:
-            while x <= max_x:
-                if (x,y) in polygon_index:
-                    update.data.append(100)
-                else:
-                    update.data.append(grid_map[y,x])
-                x += 1
-            x = min_x
-            y += 1
-
-        return grid_map, update
-
-    # def inflate_map(self, grid_map):
+    # def inflate_map(self, map):
     #     """
-    #     needs to read map from /map topic to get map with all updates!!!!!!!!!!!!!!!!
+    #     Inflates map
     #     """
+    #
+    #     grid_map = np.array(map.data).reshape(880, 721)
     #
     #     x,y = 0,0
     #     while y < len(grid_map[:,0]):
     #         while x < len(grid_map[0,:]):
     #             if grid_map[x,y] == self.occupied_space:
-    #                 for xp in range(-self.radius,self.radius+1):
-    #                     for yp in range(-self.radius,self.radius+1):
-    #                         if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
-    #                             if not grid_map[x+xp,y+yp] == self.occupied_space:
-    #                                 if sqrt(xp**2+yp**2) <= self.radius:
-    #                                     self.add_to_map(grid_map, x+xp, y+yp, self.c_space, map_info)
-    #             x += 1
+    #              for xp in range(-self.radius,self.radius+1):
+    #                  for yp in range(-self.radius,self.radius+1):
+    #                      if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
+    #                          if not grid_map[x+xp,y+yp] == self.occupied_space:
+    #                              if sqrt(xp**2+yp**2) <= self.radius:
+    #                                  self.add_to_map(grid_map, x+xp, y+yp, self.c_space, map_info)
+    #                                  x += 1
     #         x = 1
     #         y +=1
     #
-    #     """
-    #     Fill in your solution here
-    #     """
-    #
-    #     # Return the inflated map
     #     return grid_map
