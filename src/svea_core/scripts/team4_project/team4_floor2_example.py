@@ -50,10 +50,10 @@ traj_y += np.linspace(ys[0], ys[1]).tolist()
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ###############################################################################
 
-def visualize(svea):
+def visualize(svea, viz):
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
-        if use_matplotlib or use_rviz:
+        if viz:
             svea.visualize_data()
         else:
             rospy.loginfo_throttle(1, state)
@@ -145,7 +145,7 @@ def main():
 
     # simualtion loop
     svea.controller.target_velocity = target_velocity
-    t = Thread(target=visualize, args=(svea,))
+    t = Thread(target=visualize, args=(svea, use_matplotlib or use_rviz))
     t.start()
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
