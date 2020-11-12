@@ -10,6 +10,7 @@ from map_msgs.msg import OccupancyGridUpdate
 
 from grid_map import GridMap
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 class Mapping:
     """
@@ -115,11 +116,13 @@ class Mapping:
         origin_x = map_info[2]
         origin_y = map_info[3]
         resolution = map_info[4]
-        grid_map = np.array(map.data).reshape(880, 721)
+        
+        gm = deepcopy(np.array(map.data))
+        grid_map = gm.reshape(880, 721)
 
         # Adjust lidar pos. in relation to car
-        pose.pose.position.y += 0.2#0.39
-        pose.pose.position.x += 0.4#0.598
+        #pose.pose.position.y += 0.2#0.39
+        #pose.pose.position.x += 0.4#0.598
 
         # Current yaw of the robot
         robot_yaw = self.get_yaw(pose.pose.orientation)
@@ -160,13 +163,13 @@ class Mapping:
                 y_index_e = int(y_scan_map/resolution)
 
                 # Update free cells in map
-                #free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
-                #for cell in free_cells:
-                    #if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
-                        #print("free")
-                        #self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
-                        #x_index_list.append(cell[0])
-                        #y_index_list.append(cell[1])
+                # free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
+                # for cell in free_cells:
+                #     if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
+                #         #print("free")
+                #         self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
+                #         x_index_list.append(cell[0])
+                #         y_index_list.append(cell[1])
 
                 obs_ind_list.append((x_index_e,y_index_e))
 

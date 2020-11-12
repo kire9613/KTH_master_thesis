@@ -5,6 +5,7 @@ import copy
 import numpy as np
 import os.path
 import re
+from copy import deepcopy
 
 # ROS
 import rospy
@@ -41,12 +42,22 @@ class EngineROS:
         self.__mapping = Mapping(unknown_space, free_space, c_space,
                                  occupied_space, inflate_radius, optional)
 
-        self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
+        #self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
         self.__map = None
         #self.__infl_map = None
+        #self.__map_sub = rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
 
         # Init map publishers
         self.__map_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=1,
+                                         latch=True)
+
+        self.__map_pub_2 = rospy.Publisher('/map2', OccupancyGrid, queue_size=1,
+                                         latch=True)
+
+        self.__map_pub_3 = rospy.Publisher('/map3', OccupancyGrid, queue_size=1,
+                                         latch=True)
+
+        self._pub = rospy.Publisher('/map10', OccupancyGrid, queue_size=1,
                                          latch=True)
 
         #self.__map_inflated_pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=1, latch=True)
@@ -81,15 +92,22 @@ class EngineROS:
         if os.path.isfile("default_map.txt"):
             self.set_map_from_file()
         else:
-            self.set_default_map()
-            self.add_polygons()
-            while not self.added_polygons:
-                rospy.sleep(1)
-            self.__map_pub.publish(self.__map)
-            rospy.sleep(5)
-            self.write_map_to_file()
+            pass
+            # self.set_default_map()
+            # self.add_polygons()
+            # while not self.added_polygons:
+            #     rospy.sleep(1)
+            # self.__map_pub.publish(self.__map)
+            # rospy.sleep(5)
+            # self.write_map_to_file()
 
         rospy.spin()
+
+    def map_callback(self, map):
+        pass
+        #self.__map = map
+        #print(map.header)
+        #print(map.info)
 
     def write_map_to_file(self):
         """ Saves map at initialization to file """
@@ -127,8 +145,8 @@ class EngineROS:
         for i in range(0,len(d)):
             d[i] = int(d[i])
         map.data = d
-        self.default_map = map
         self.__map = map
+        print(type(self.__map))
         #self.__infl_map = map
         #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
         #self.__map_inflated_pub(self.__infl_map)
@@ -138,22 +156,19 @@ class EngineROS:
         self.setup_ok = True
         print("Read map from file done.")
 
-    def set_default_map(self):
-        """
-        Publish floor2 map as map
-        """
-        while self.default_map == None:
-            rospy.sleep(0.1)
-
-        self.__map = self.default_map
-        #self.__infl_map = self.default_map
-        #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
-        #self.__map_inflated_pub(self.__infl_map)
-        self.__map_pub.publish(self.__map)
-        print("Default map published.")
-
-    def default_map_callback(self, map):
-        self.default_map = map
+    # def set_default_map(self):
+    #     """
+    #     Publish floor2 map as map
+    #     """
+    #     while self.default_map == None:
+    #         rospy.sleep(0.1)
+    #
+    #     self.__map = self.default_map
+    #     #self.__infl_map = self.default_map
+    #     #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
+    #     #self.__map_inflated_pub(self.__infl_map)
+    #     self.__map_pub.publish(self.__map)
+    #     print("Default map published.")
 
     def track_callback_out(self, polygon):
         self.keep_outside_polygon = polygon
@@ -167,110 +182,110 @@ class EngineROS:
         self.po_ok = True
         print("Outer polygon ok!")
 
-    def add_polygons(self):
-        """
-        Adding polygons (virtual walls) to map as obstacles.
-        """
-
-        while self.pi_ok != True and self.po_ok != True:
-            rospy.sleep(0.1)
-
-        # Create lines of obstacle dots along polygon edges
-        obs_l_x = []
-        obs_l_y = []
-
-        for i in range(1,len(self.keep_outside_polygon.polygon.points)):
-            p1 = self.keep_outside_polygon.polygon.points[i-1]
-            p2 = self.keep_outside_polygon.polygon.points[i]
-            dx = abs(p1.x-p2.x)
-            dy = abs(p1.y-p2.y)
-            if dx > dy:
-                lx = np.linspace(float(p1.x), float(p2.x), num=int(dx/0.05)).tolist()
-                ly = np.linspace(float(p1.y), float(p2.y), num=len(lx)).tolist()
-                obs_l_x = obs_l_x + lx
-                obs_l_y = obs_l_y + ly
-            else:
-                ly = np.linspace(float(p1.y), float(p2.y), num=int(dy/0.05)).tolist()
-                lx = np.linspace(float(p1.x), float(p2.x), num=len(ly)).tolist()
-                obs_l_y = obs_l_y + ly
-                obs_l_x = obs_l_x + lx
-
-        ps = self.keep_outside_polygon.polygon.points[0]
-        pe = self.keep_outside_polygon.polygon.points[-1]
-        dx = abs(ps.x-pe.x)
-        dy = abs(ps.y-pe.y)
-        if dx > dy:
-            lx = np.linspace(float(ps.x), float(pe.x), num=int(dx/0.05)).tolist()
-            ly = np.linspace(float(ps.y), float(pe.y), num=len(lx)).tolist()
-            obs_l_x = obs_l_x + lx
-            obs_l_y = obs_l_y + ly
-        else:
-            ly = np.linspace(float(ps.y), float(pe.y), num=int(dy/0.05)).tolist()
-            lx = np.linspace(float(ps.x), float(pe.x), num=len(ly)).tolist()
-            obs_l_y = obs_l_y + ly
-            obs_l_x = obs_l_x + lx
-
-
-        for i in range(1,len(self.stay_inside_polygon.polygon.points)):
-            p1 = self.stay_inside_polygon.polygon.points[i-1]
-            p2 = self.stay_inside_polygon.polygon.points[i]
-            dx = abs(p1.x-p2.x)
-            dy = abs(p1.y-p2.y)
-            if dx > dy:
-                lx = np.linspace(float(p1.x), float(p2.x), num=int(dx/0.05)).tolist()
-                ly = np.linspace(float(p1.y), float(p2.y), num=len(lx)).tolist()
-                obs_l_x = obs_l_x + lx
-                obs_l_y = obs_l_y + ly
-            else:
-                ly = np.linspace(float(p1.y), float(p2.y), num=int(dy/0.05)).tolist()
-                lx = np.linspace(float(p1.x), float(p2.x), num=len(ly)).tolist()
-                obs_l_y = obs_l_y + ly
-                obs_l_x = obs_l_x + lx
-
-        ps = self.stay_inside_polygon.polygon.points[0]
-        pe = self.stay_inside_polygon.polygon.points[-1]
-        dx = abs(ps.x-pe.x)
-        dy = abs(ps.y-pe.y)
-        if dx > dy:
-            lx = np.linspace(float(ps.x), float(pe.x), num=int(dx/0.05)).tolist()
-            ly = np.linspace(float(ps.y), float(pe.y), num=len(lx)).tolist()
-            obs_l_x = obs_l_x + lx
-            obs_l_y = obs_l_y + ly
-        else:
-            ly = np.linspace(float(ps.y), float(pe.y), num=int(dy/0.05)).tolist()
-            lx = np.linspace(float(ps.x), float(pe.x), num=len(ly)).tolist()
-            obs_l_y = obs_l_y + ly
-            obs_l_x = obs_l_x + lx
-
-
-        obs_l = []
-        for i in range(len(obs_l_x)):
-            obs_l.append((int((obs_l_x[i] - self.xo)/self.res),int((obs_l_y[i] - self.yo)/self.res)))
-        self.polygon_index = obs_l
-
-        min_x = int((min(obs_l_x) - self.xo)/self.res)
-        max_x = int((max(obs_l_x) - self.xo)/self.res)
-        min_y = int((min(obs_l_y) - self.yo)/self.res)
-        max_y = int((max(obs_l_y) - self.yo)/self.res)
-
-        d = np.array(self.__map.data).reshape(self.height, self.width)
-
-        # Add polygons to map
-        x = min_x
-        y = min_y
-        while y <= max_y:
-            while x <= max_x:
-                if (x,y) in obs_l:
-                    d[y][x] = 100
-                else:
-                    pass
-                x += 1
-            x = min_x
-            y += 1
-
-        print("Set polygons to map.")
-        self.added_polygons = True
-        self.__map.data = d.reshape(self.width*self.height).tolist()
+    # def add_polygons(self):
+    #     """
+    #     Adding polygons (virtual walls) to map as obstacles.
+    #     """
+    #
+    #     while self.pi_ok != True and self.po_ok != True:
+    #         rospy.sleep(0.1)
+    #
+    #     # Create lines of obstacle dots along polygon edges
+    #     obs_l_x = []
+    #     obs_l_y = []
+    #
+    #     for i in range(1,len(self.keep_outside_polygon.polygon.points)):
+    #         p1 = self.keep_outside_polygon.polygon.points[i-1]
+    #         p2 = self.keep_outside_polygon.polygon.points[i]
+    #         dx = abs(p1.x-p2.x)
+    #         dy = abs(p1.y-p2.y)
+    #         if dx > dy:
+    #             lx = np.linspace(float(p1.x), float(p2.x), num=int(dx/0.05)).tolist()
+    #             ly = np.linspace(float(p1.y), float(p2.y), num=len(lx)).tolist()
+    #             obs_l_x = obs_l_x + lx
+    #             obs_l_y = obs_l_y + ly
+    #         else:
+    #             ly = np.linspace(float(p1.y), float(p2.y), num=int(dy/0.05)).tolist()
+    #             lx = np.linspace(float(p1.x), float(p2.x), num=len(ly)).tolist()
+    #             obs_l_y = obs_l_y + ly
+    #             obs_l_x = obs_l_x + lx
+    #
+    #     ps = self.keep_outside_polygon.polygon.points[0]
+    #     pe = self.keep_outside_polygon.polygon.points[-1]
+    #     dx = abs(ps.x-pe.x)
+    #     dy = abs(ps.y-pe.y)
+    #     if dx > dy:
+    #         lx = np.linspace(float(ps.x), float(pe.x), num=int(dx/0.05)).tolist()
+    #         ly = np.linspace(float(ps.y), float(pe.y), num=len(lx)).tolist()
+    #         obs_l_x = obs_l_x + lx
+    #         obs_l_y = obs_l_y + ly
+    #     else:
+    #         ly = np.linspace(float(ps.y), float(pe.y), num=int(dy/0.05)).tolist()
+    #         lx = np.linspace(float(ps.x), float(pe.x), num=len(ly)).tolist()
+    #         obs_l_y = obs_l_y + ly
+    #         obs_l_x = obs_l_x + lx
+    #
+    #
+    #     for i in range(1,len(self.stay_inside_polygon.polygon.points)):
+    #         p1 = self.stay_inside_polygon.polygon.points[i-1]
+    #         p2 = self.stay_inside_polygon.polygon.points[i]
+    #         dx = abs(p1.x-p2.x)
+    #         dy = abs(p1.y-p2.y)
+    #         if dx > dy:
+    #             lx = np.linspace(float(p1.x), float(p2.x), num=int(dx/0.05)).tolist()
+    #             ly = np.linspace(float(p1.y), float(p2.y), num=len(lx)).tolist()
+    #             obs_l_x = obs_l_x + lx
+    #             obs_l_y = obs_l_y + ly
+    #         else:
+    #             ly = np.linspace(float(p1.y), float(p2.y), num=int(dy/0.05)).tolist()
+    #             lx = np.linspace(float(p1.x), float(p2.x), num=len(ly)).tolist()
+    #             obs_l_y = obs_l_y + ly
+    #             obs_l_x = obs_l_x + lx
+    #
+    #     ps = self.stay_inside_polygon.polygon.points[0]
+    #     pe = self.stay_inside_polygon.polygon.points[-1]
+    #     dx = abs(ps.x-pe.x)
+    #     dy = abs(ps.y-pe.y)
+    #     if dx > dy:
+    #         lx = np.linspace(float(ps.x), float(pe.x), num=int(dx/0.05)).tolist()
+    #         ly = np.linspace(float(ps.y), float(pe.y), num=len(lx)).tolist()
+    #         obs_l_x = obs_l_x + lx
+    #         obs_l_y = obs_l_y + ly
+    #     else:
+    #         ly = np.linspace(float(ps.y), float(pe.y), num=int(dy/0.05)).tolist()
+    #         lx = np.linspace(float(ps.x), float(pe.x), num=len(ly)).tolist()
+    #         obs_l_y = obs_l_y + ly
+    #         obs_l_x = obs_l_x + lx
+    #
+    #
+    #     obs_l = []
+    #     for i in range(len(obs_l_x)):
+    #         obs_l.append((int((obs_l_x[i] - self.xo)/self.res),int((obs_l_y[i] - self.yo)/self.res)))
+    #     self.polygon_index = obs_l
+    #
+    #     min_x = int((min(obs_l_x) - self.xo)/self.res)
+    #     max_x = int((max(obs_l_x) - self.xo)/self.res)
+    #     min_y = int((min(obs_l_y) - self.yo)/self.res)
+    #     max_y = int((max(obs_l_y) - self.yo)/self.res)
+    #
+    #     d = np.array(self.__map.data).reshape(self.height, self.width)
+    #
+    #     # Add polygons to map
+    #     x = min_x
+    #     y = min_y
+    #     while y <= max_y:
+    #         while x <= max_x:
+    #             if (x,y) in obs_l:
+    #                 d[y][x] = 100
+    #             else:
+    #                 pass
+    #             x += 1
+    #         x = min_x
+    #         y += 1
+    #
+    #     print("Set polygons to map.")
+    #     self.added_polygons = True
+    #     self.__map.data = d.reshape(self.width*self.height).tolist()
 
     def pose_callback(self, pose):
         #print("pose_callback")
@@ -318,13 +333,21 @@ class EngineROS:
         update map with detected Obstacles
         publish updated map
         """
+        print("check for updates")
 
         if self.pose != None and self.scan != None:
             map_info = [self.width, self.height, self.xo, self.yo, self.res]
-            new_map = self.__map
-            map = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info)
-            new_map.data = map.reshape(self.width*self.height).tolist()
-            self.__map_pub.publish(new_map)
-            #self.__infl_map = self.__map
-            #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
-            #self.__map_inflated_pub(self.__infl_map)
+            new_map = deepcopy(self.__map)
+            new_map.data = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info).reshape(self.width*self.height)
+            self.__map_pub_3.publish(new_map)
+
+        # if self.pose != None and self.scan != None:
+        #     map_info = [self.width, self.height, self.xo, self.yo, self.res]
+        #     new_map = self.__map
+        #     map = self.__mapping.update_map(new_map, self.pose, self.scan, map_info)
+        #     new_map.data = map.reshape(self.width*self.height).tolist()
+        #     #new_map.header. =rospy.time()
+        #     self.__map_pub.publish(new_map)
+        #     #self.__infl_map = self.__map
+        #     #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
+        #     #self.__map_inflated_pub(self.__infl_map)
