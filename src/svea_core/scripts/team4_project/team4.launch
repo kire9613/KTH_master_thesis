@@ -21,17 +21,18 @@
 
     <node pkg="svea_core" type="team4_floor2_example.py" name="team4_floor2_example" output="screen">
         <param name="start_pt" value="$(arg start_pt)"/>
-        <param name="use_rviz" value="$(arg is_sim)"/>
+        <param name="use_rviz" value="true"/>
         <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
         <param name="is_sim" value="$(arg is_sim)"/>
 	<param name="use_lidar" value="$(arg use_lidar)"/>
     </node>
 
     <group unless="$(eval is_sim == true)">
-        <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
-             <param name="port" value="/dev/ttyACM0"/>
+	<!--<node pkg="rosserial_python" type="serial_node.py" name="serial_node">
+             <param name="port" value="/dev/ttyACM1"/>
              <param name="baud" value="250000"/>
-        </node>
+	</node>-->
+	<node pkg="svea_core" name="serial" type="start_serial" output="screen"/>
         <include file="$(find svea_sensors)/launch/localize.launch">
             <arg name="use_rs" value="true"/>
             <arg name="file_name" value="$(arg map_file)"/>
