@@ -4,6 +4,7 @@ import rospy
 from nav_msgs.msg import Path
 from std_msgs.msg import Float32
 import numpy as np
+from threading import Thread
 
 __team__ = "Team 4"
 __maintainers__ = "Adam Miksits, Caroline Skoglund, Oscar Gustavsson, Ylva Modahl "
@@ -48,6 +49,15 @@ traj_y += np.linspace(ys[0], ys[1]).tolist()
 ## INIT #######################################################################
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ###############################################################################
+
+def visualize(svea):
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        if use_matplotlib or use_rviz:
+            svea.visualize_data()
+        else:
+            rospy.loginfo_throttle(1, state)
+        rate.sleep()
 
 # Update controller trajectory when new plan
 # is pulished
@@ -135,6 +145,8 @@ def main():
 
     # simualtion loop
     svea.controller.target_velocity = target_velocity
+    t = Thread(target=visualize, args=(svea,))
+    t.start()
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
 
@@ -142,11 +154,11 @@ def main():
         steering, velocity = svea.compute_control()
         svea.send_control(steering, velocity)
 
-        # visualize data
-        if use_matplotlib or use_rviz:
-            svea.visualize_data()
-        else:
-            rospy.loginfo_throttle(1, state)
+        # visualize data. Moved to it's own thread
+        #if use_matplotlib or use_rviz:
+        #    svea.visualize_data()
+        #else:
+        #    rospy.loginfo_throttle(1, state)
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")
