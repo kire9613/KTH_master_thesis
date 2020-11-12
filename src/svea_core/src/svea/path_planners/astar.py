@@ -89,7 +89,7 @@ class gridpt(object):
 
 
     def generate_children(self,list_obs_x,list_obs_y):
-        safety_dist = 0.25
+        safety_dist = 0.3
         new_pose = []
         for dTheta in ([-math.pi/8, -math.pi/12, 0, math.pi/12, math.pi/8 ]):
             new_pose.append([self.x + self.v*self.dt*math.cos(self.theta +dTheta), self.y + self.v*self.dt*math.sin(self.theta +dTheta), self.theta +dTheta, dTheta])
@@ -114,7 +114,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
     print('calling A*')
 
     global grid, dl, xlb, ylb
-    dl = 0.1
+    dl = 0.075
     xub, xlb = max(list_obs_x),min(list_obs_x)
     yub, ylb = max(list_obs_y),min(list_obs_y)
     # initialize grid to keep track of explored coordinates
@@ -145,8 +145,8 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
                 children_nodes[index][0].parent = currnode[0]
                 steering_angle = children_nodes[index][1]
                 children_nodes[index][0].howtofindme.append(steering_angle) # append the angle # append x,y
-                if currnode[2] + 0.2 + abs(steering_angle)*0.1 < Qchild[2]: # cost to reach
-                    Q[Q.index(Qchild)][2] = currnode[2] + 0.2 + abs(steering_angle)*0.1 # cost to reach from start
+                if currnode[2] + 0.01 + abs(steering_angle)*0.01 < Qchild[2]: # cost to reach
+                    Q[Q.index(Qchild)][2] = currnode[2] + 0.01 + abs(steering_angle)*0.01 # cost to reach from start
                     Q[Q.index(Qchild)][3] = currnode[0]    # update pointer to mother-node
                     Q[Q.index(Qchild)][4] = children_nodes[index][1] # heuristic cost from child to goal
         if S[-1][0].heuristic <= 0.3: # if we're close to the target --> stop
@@ -165,7 +165,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
 
 def __main__():
     xt, yt = -3.46, -6.93
-    x0, y0, theta0 =  -2.84,-8.11,  0.8978652
+    x0, y0, theta0 =  -7,-14.8,  0.8978652
     return generateTrajectory(x0,y0,theta0,xt,yt,plotBool=True)
 
 
