@@ -80,7 +80,7 @@ def main():
     if use_rviz:
         DataHandler = RVIZPathHandler
     else:
-        DataHandler = BasicDataHandler
+        DataHandler = TrajDataHandler
 
     if is_sim:
         # start the simulation
@@ -108,6 +108,11 @@ def main():
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
+        tic = rospy.get_time()
+        svea.send_control(steering, velocity)
+        toc = rospy.get_time()
+        rospy.loginfo_throttle(0.5, toc-tic)
+
         svea.send_control(steering, velocity)
 
         # visualize data
