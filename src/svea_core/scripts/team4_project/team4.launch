@@ -37,6 +37,6 @@
             <arg name="use_rs" value="true"/>
             <arg name="file_name" value="$(arg map_file)"/>
         </include>
-    </group> 
+    </group>
 
 </launch>
