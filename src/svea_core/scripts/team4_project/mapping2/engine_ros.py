@@ -46,7 +46,7 @@ class EngineROS:
         #self.__infl_map = None
 
         # Init map publishers
-        self.__map_pub = rospy.Publisher('map', OccupancyGrid, queue_size=1,
+        self.__map_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=1,
                                          latch=True)
 
         #self.__map_inflated_pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=1, latch=True)
@@ -58,15 +58,23 @@ class EngineROS:
         self.stay_inside_polygon = None # Polygon variables
         self.keep_outside_polygon = None
         self.polygon_index = []
-        self.__stay_in_sub = rospy.Subscriber('track/stay_in', PolygonStamped, self.track_callback_in)
-        self.__keep_out_sub = rospy.Subscriber('track/keep_out', PolygonStamped, self.track_callback_out)
+        self.__stay_in_sub = rospy.Subscriber('/track/stay_in', PolygonStamped, self.track_callback_in)
+        self.__keep_out_sub = rospy.Subscriber('/track/keep_out', PolygonStamped, self.track_callback_out)
 
         #Init subscribers and variables for poses and scans
         self.pose = None
         self.scan = None
         self.received_scan = False
-        self.__state_sub = rospy.Subscriber('/SVEA/vis_pose', PoseStamped, self.pose_callback)
-        self.__scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback)
+        self.received_pose = False
+        self.__state_sub = rospy.Subscriber('/state', VehicleState, self.pose_callback)
+        self.__scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+
+        """
+        Freq. difference for state and scan gives bad performance
+        Trigger map update on slowest message
+        Tune mapping based on performance on car
+        Solution? -> Interpolate position between messages?
+        """
 
         self.setup_ok = False
 
@@ -266,11 +274,11 @@ class EngineROS:
 
     def pose_callback(self, pose):
         #print("pose_callback")
-        self.pose = pose #self.to_pose_stamped(pose)
-
-        if self.setup_ok and self.received_scan:
+        self.pose = self.to_pose_stamped(pose)
+        self.received_pose = True
+        #if self.setup_ok and self.received_scan:
             #print("trigger map update")
-            self.check_for_updates()
+            #self.check_for_updates()
 
     def to_pose_stamped(self, vehicle_state):
         """
@@ -300,6 +308,9 @@ class EngineROS:
         #print("scan_callback")
         self.scan = scan
         self.received_scan = True
+        if self.setup_ok and self.received_pose:
+            #print("trigger map update")
+            self.check_for_updates()
 
     def check_for_updates(self):
         """
