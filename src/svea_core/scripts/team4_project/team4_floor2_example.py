@@ -22,7 +22,7 @@ from svea.track import Track
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = ""
-target_velocity = 1.0 # [m/s]
+target_velocity = 0.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
