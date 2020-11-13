@@ -64,7 +64,7 @@ def main():
     # Run check continuously
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
-        state = rospy.wait_for_message('/SVEA/state', VehicleState)
+        state = rospy.wait_for_message('/state', VehicleState)
         grid_msg = rospy.wait_for_message('/map', OccupancyGrid)
         path_msg = rospy.wait_for_message('/targets', Path)
 
