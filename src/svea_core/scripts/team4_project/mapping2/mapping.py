@@ -102,6 +102,51 @@ class Mapping:
                 return True
         return False
 
+    def update_map_sim(self, map, pose, scan, map_info):
+        """
+        Create OccupancyGridUpdate from lidar scan info
+        Pose in map coordinates, type geometry_msgs.msg PoseStamped
+        Scan of type sensor_msgs.msg LaserScan
+        Map of type OccupancyGrid
+        map_inf = [width, height, x_origin, y_origin, resolution]
+        """
+
+        #print("update_map_sim")
+
+        origin_x = map_info[2]
+        origin_y = map_info[3]
+        resolution = map_info[4]
+
+        gm = deepcopy(np.array(map.data))
+        grid_map = gm.reshape(880, 721)
+
+        # Adjust lidar pos. in relation to car
+        #pose.pose.position.y += 0.2#0.39
+        #pose.pose.position.x += 0.4#0.598
+
+        # Current yaw of the robot
+        robot_yaw = self.get_yaw(pose.pose.orientation)
+        robot_x = pose.pose.position.x
+        robot_y = pose.pose.position.y
+
+        x_robot_map = robot_x - origin_x
+        y_robot_map = robot_y - origin_y
+        x_index_s = int(x_robot_map/resolution)
+        y_index_s = int(y_robot_map/resolution)
+
+        x_index_list = []
+        y_index_list = []
+
+        for point in scan.points:
+            #print("loop over pointcloud")
+            x_index = int((point.x - origin_x)/resolution)
+            y_index = int((point.y - origin_y)/resolution)
+            if self.is_in_bounds(grid_map, x_index, y_index, map_info):
+                #print("add point to map")
+                self.add_to_map(grid_map, x_index, y_index, self.occupied_space, map_info)
+
+        return grid_map
+
     def update_map(self, map, pose, scan, map_info):
         """
         Create OccupancyGridUpdate from lidar scan info
@@ -116,7 +161,7 @@ class Mapping:
         origin_x = map_info[2]
         origin_y = map_info[3]
         resolution = map_info[4]
-        
+
         gm = deepcopy(np.array(map.data))
         grid_map = gm.reshape(880, 721)
 

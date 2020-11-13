@@ -13,7 +13,7 @@ import message_filters
 
 # ROS messages
 from geometry_msgs.msg import PoseStamped, PolygonStamped
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, PointCloud
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import Odometry
 from map_msgs.msg import OccupancyGridUpdate
@@ -42,7 +42,7 @@ class EngineROS:
         self.__mapping = Mapping(unknown_space, free_space, c_space,
                                  occupied_space, inflate_radius, optional)
 
-        #self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
+        self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
         self.__map = None
         #self.__infl_map = None
         #self.__map_sub = rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
@@ -51,13 +51,7 @@ class EngineROS:
         self.__map_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=1,
                                          latch=True)
 
-        self.__map_pub_2 = rospy.Publisher('/map2', OccupancyGrid, queue_size=1,
-                                         latch=True)
-
-        self.__map_pub_3 = rospy.Publisher('/map3', OccupancyGrid, queue_size=1,
-                                         latch=True)
-
-        self._pub = rospy.Publisher('/map10', OccupancyGrid, queue_size=1,
+        self.__d_map_pub = rospy.Publisher('/dmap', OccupancyGrid, queue_size=1,
                                          latch=True)
 
         #self.__map_inflated_pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=1, latch=True)
@@ -77,8 +71,10 @@ class EngineROS:
         self.scan = None
         self.received_scan = False
         self.received_pose = False
-        self.__state_sub = rospy.Subscriber('/state', VehicleState, self.pose_callback)
-        self.__scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+        #self.__state_sub = rospy.Subscriber('/state', VehicleState, self.pose_callback)
+        self.__state_sub = rospy.Subscriber('/vis_pose', PoseStamped, self.pose_callback_sim)
+        #self.__scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+        self.__scan_sub = rospy.Subscriber('/viz_lidar_points', PointCloud, self.scan_callback_sim)
 
         """
         Freq. difference for state and scan gives bad performance
@@ -93,13 +89,13 @@ class EngineROS:
             self.set_map_from_file()
         else:
             pass
-            # self.set_default_map()
-            # self.add_polygons()
-            # while not self.added_polygons:
-            #     rospy.sleep(1)
-            # self.__map_pub.publish(self.__map)
-            # rospy.sleep(5)
-            # self.write_map_to_file()
+            self.set_default_map()
+            self.add_polygons()
+            while not self.added_polygons:
+                rospy.sleep(1)
+            self.__map_pub.publish(self.__map)
+            rospy.sleep(5)
+            self.write_map_to_file()
 
         rospy.spin()
 
@@ -146,12 +142,14 @@ class EngineROS:
             d[i] = int(d[i])
         map.data = d
         self.__map = map
-        print(type(self.__map))
+        self.default_map = deepcopy(self.__map)
+        #print(type(self.__map))
         #self.__infl_map = map
         #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
         #self.__map_inflated_pub(self.__infl_map)
 
         self.__map_pub.publish(self.__map)
+        self.__d_map_pub.publish(self.default_map)
         rospy.sleep(5)
         self.setup_ok = True
         print("Read map from file done.")
@@ -295,6 +293,14 @@ class EngineROS:
             #print("trigger map update")
             #self.check_for_updates()
 
+    def pose_callback_sim(self, pose):
+        #print("pose_callback")
+        self.pose = pose
+        self.received_pose = True
+        #if self.setup_ok and self.received_scan:
+            #print("trigger map update")
+            #self.check_for_updates()
+
     def to_pose_stamped(self, vehicle_state):
         """
         Transform vehicle pose on format svea_msgs.msg VehicleState
@@ -319,6 +325,14 @@ class EngineROS:
 
         return pose
 
+    def scan_callback_sim(self, scan):
+        #print("scan_callback sim")
+        self.scan = scan
+        self.received_scan = True
+        if self.setup_ok and self.received_pose:
+            #print("trigger map update")
+            self.check_for_updates_sim()
+
     def scan_callback(self, scan):
         #print("scan_callback")
         self.scan = scan
@@ -326,6 +340,24 @@ class EngineROS:
         if self.setup_ok and self.received_pose:
             #print("trigger map update")
             self.check_for_updates()
+
+    def check_for_updates_sim(self):
+        """
+        If lidar scans and vehicle pose available
+        update map with detected Obstacles
+        publish updated map
+        """
+        print("check for updates_sim")
+
+        if self.pose != None and self.scan != None:
+            map_info = [self.width, self.height, self.xo, self.yo, self.res]
+            new_map = rospy.wait_for_message('/dmap', OccupancyGrid)
+            #print(self.__map.header)
+            #self.__map.header.seq += 1
+            #new_map = deepcopy(self.__map)
+            new_map.data = self.__mapping.update_map_sim(self.__map, self.pose, self.scan, map_info).reshape(self.width*self.height)
+            print(new_map.header)
+            self.__map_pub.publish(new_map)
 
     def check_for_updates(self):
         """
@@ -339,7 +371,7 @@ class EngineROS:
             map_info = [self.width, self.height, self.xo, self.yo, self.res]
             new_map = deepcopy(self.__map)
             new_map.data = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info).reshape(self.width*self.height)
-            self.__map_pub_3.publish(new_map)
+            self.__map_pub.publish(new_map)
 
         # if self.pose != None and self.scan != None:
         #     map_info = [self.width, self.height, self.xo, self.yo, self.res]
