@@ -18,6 +18,7 @@ from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import Odometry
 from map_msgs.msg import OccupancyGridUpdate
 from svea_msgs.msg import VehicleState
+from std_msgs.msg import Bool
 
 from grid_map import GridMap, quaternion_from_euler
 from mapping import Mapping
@@ -90,6 +91,9 @@ class EngineROS:
             self.write_map_to_file()
 
         self.__map = np.array(self.__map.data).reshape(self.height,self.width)
+        
+        started_pub = rospy.Publisher('/node_started/mapping', Bool, latch=True, queue_size=5)
+        started_pub.publish(True)
         rospy.loginfo("Start mapping main loop")
         # Loop adding updates to map from lidar
         while not rospy.is_shutdown():
