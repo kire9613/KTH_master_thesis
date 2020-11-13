@@ -144,8 +144,41 @@ class Mapping:
             if self.is_in_bounds(grid_map, x_index, y_index, map_info):
                 #print("add point to map")
                 self.add_to_map(grid_map, x_index, y_index, self.occupied_space, map_info)
+                x_index_list.append(x_index)
+                y_index_list.append(y_index)
 
-        return grid_map
+        x_index_list.sort()
+        y_index_list.sort()
+        min_x = x_index_list[0]
+        max_x = x_index_list[-1]
+        min_y = y_index_list[0]
+        max_y = y_index_list[-1]
+
+        # Only get the part that has been updated
+        update = OccupancyGridUpdate()
+        # The minimum x index in 'grid_map' that has been updated
+        update.x = min_x
+        #print("x_min:" + str(update.x))
+        # The minimum y index in 'grid_map' that has been updated
+        update.y = min_y
+        #print("y_min: " + str(update.y))
+        # Maximum x index - minimum x index + 1
+        update.width = max_x - min_x + 1
+        # Maximum y index - minimum y index + 1
+        update.height = max_y - min_y + 1
+        # The map data inside the rectangle, in row-major order.
+        update.data = []
+
+        x = min_x
+        y = min_y
+        while y <= max_y:
+            while x <= max_x:
+                update.data.append(grid_map[y][x])
+                x += 1
+            x = min_x
+            y += 1
+
+        return grid_map, update
 
     def update_map(self, map, pose, scan, map_info):
         """
@@ -228,7 +261,38 @@ class Mapping:
                 x_index_list.append(obs[0])
                 y_index_list.append(obs[1])
 
-        return grid_map
+        x_index_list.sort()
+        y_index_list.sort()
+        min_x = x_index_list[0]
+        max_x = x_index_list[-1]
+        min_y = y_index_list[0]
+        max_y = y_index_list[-1]
+
+        # Only get the part that has been updated
+        update = OccupancyGridUpdate()
+        # The minimum x index in 'grid_map' that has been updated
+        update.x = min_x
+        #print("x_min:" + str(update.x))
+        # The minimum y index in 'grid_map' that has been updated
+        update.y = min_y
+        #print("y_min: " + str(update.y))
+        # Maximum x index - minimum x index + 1
+        update.width = max_x - min_x + 1
+        # Maximum y index - minimum y index + 1
+        update.height = max_y - min_y + 1
+        # The map data inside the rectangle, in row-major order.
+        update.data = []
+
+        x = min_x
+        y = min_y
+        while y <= max_y:
+            while x <= max_x:
+                update.data.append(grid_map[y][x])
+                x += 1
+            x = min_x
+            y += 1
+
+        return grid_map, update
 
     # def inflate_map(self, map):
     #     """

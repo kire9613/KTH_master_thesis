@@ -54,6 +54,11 @@ class EngineROS:
         self.__d_map_pub = rospy.Publisher('/dmap', OccupancyGrid, queue_size=1,
                                          latch=True)
 
+        self.__map_updates_pub = rospy.Publisher("map_updates",
+                                                 OccupancyGridUpdate,
+                                                 queue_size=10)
+
+
         #self.__map_inflated_pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=1, latch=True)
 
         # Subscribe to polygons typic
@@ -355,9 +360,14 @@ class EngineROS:
             #print(self.__map.header)
             #self.__map.header.seq += 1
             #new_map = deepcopy(self.__map)
-            new_map.data = self.__mapping.update_map_sim(self.__map, self.pose, self.scan, map_info).reshape(self.width*self.height)
-            print(new_map.header)
-            self.__map_pub.publish(new_map)
+            tic = rospy.Time.now()
+            d, update = self.__mapping.update_map_sim(self.__map, self.pose, self.scan, map_info)
+            new_map.data = d.reshape(self.width*self.height)
+            #print(new_map.header)
+            toc = rospy.Time.now()
+            #print(str((toc-tic).to_sec()))
+            self.__map_updates_pub.publish(update)
+            #self.__map_pub.publish(new_map)
 
     def check_for_updates(self):
         """
@@ -367,11 +377,33 @@ class EngineROS:
         """
         print("check for updates")
 
+        #tic = rospy.Time.now()
+        #if use_matplotlib or use_rviz:
+        #    svea.visualize_data()
+        #else:
+        #    rospy.loginfo_throttle(1, state)
+        #toc = rospy.Time.now()
+        #rospy.loginfo_throttle(0.5, (tic-toc).to_sec())
+        #rospy.loginfo_throttle(0.5, 'len(svea.data_handler.x): ' + str(len(svea.data_handler.x)))
+
         if self.pose != None and self.scan != None:
             map_info = [self.width, self.height, self.xo, self.yo, self.res]
-            new_map = deepcopy(self.__map)
-            new_map.data = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info).reshape(self.width*self.height)
-            self.__map_pub.publish(new_map)
+            new_map = rospy.wait_for_message('/dmap', OccupancyGrid)
+            tic = rospy.Time.now()
+            d, update = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info)
+            new_map.data = d.reshape(self.width*self.height)
+            toc = rospy.Time.now()
+            self.__map_updates_pub.publish(update)
+            #self.__map_pub.publish(new_map)
+
+        # if self.pose != None and self.scan != None:
+        #     map_info = [self.width, self.height, self.xo, self.yo, self.res]
+        #     new_map = deepcopy(self.__map)
+        #     tic = rospy.Time.now()
+        #     new_map.data = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info).reshape(self.width*self.height)
+        #     self.__map_pub.publish(new_map)
+        #     toc = rospy.Time.now()
+        #     #print(str((toc-tic).to_sec()))
 
         # if self.pose != None and self.scan != None:
         #     map_info = [self.width, self.height, self.xo, self.yo, self.res]
