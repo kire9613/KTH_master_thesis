@@ -79,7 +79,7 @@ class EngineROS:
 
         self.setup_ok = False
 
-        if os.path.isfile("default_map.txt"):
+        if (os.path.isfile(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt")):
             self.set_map_from_file()
         else:
             self.add_polygons()
@@ -103,7 +103,7 @@ class EngineROS:
         """ Saves map at initialization to file """
 
         current_map = self.__map
-        f = open("default_map.txt", "a")
+        f = open(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt", "a")
         content = str(current_map)
         f.write(content)
         f.close()
@@ -115,7 +115,7 @@ class EngineROS:
 
         rospy.loginfo("Read map from file...")
         map = OccupancyGrid()
-        f = open("default_map.txt", "r")
+        f = open(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt", "r")
         Lines = f.readlines()
         map.header.seq = 0
         map.header.frame_id = "map"
