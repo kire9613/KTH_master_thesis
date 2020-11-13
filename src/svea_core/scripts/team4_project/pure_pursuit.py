@@ -37,6 +37,10 @@ class PurePursuitController(object):
             # allow manual setting of target
             self.target = target
 
+        # Don't apply any steering if car is standing still
+        if self.target_velocity == 0:
+            return 0
+
         tx, ty = self.target
         alpha = math.atan2(ty - state.y, tx - state.x) - state.yaw
         k = self.k
