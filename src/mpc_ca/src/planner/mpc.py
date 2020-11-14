@@ -89,10 +89,16 @@ class NonLinearMPC(object):
         self.T = self.solver.variable()
 
         for obstacle_edges in obstacles:
-            self.lambdas.append(self.solver.variable(4, self.N + 1))
-            self.mus.append(self.solver.variable(4, self.N + 1))
+            #self.lambdas.append(self.solver.variable(4, self.N + 1))
+            #self.mus.append(self.solver.variable(4, self.N + 1))
 
+            #Removed hardcoded matrix sizes
             A, b = self._compute_convex_hull_equations(obstacle_edges)
+            num_rowsA, num_colA = A.shape
+            num_rowsG, num_colG = self.G.shape
+
+            self.lambdas.append(self.solver.variable(num_rowsA, self.N + 1))
+            self.mus.append(self.solver.variable(num_rowsG, self.N + 1))
 
             self.as_.append(casadi.DM(A))
             self.bs.append(casadi.DM(b))
@@ -104,7 +110,24 @@ class NonLinearMPC(object):
         self._add_inequality_constraints()
         self._add_cost_function()
 
-        self.solver.solver('ipopt')
+        #Removes the prints from the mpc solver
+        options = {
+            'ipopt.print_level' : 0,
+            'ipopt.mu_init' : 0.01,
+            'ipopt.tol' : 1e-8,
+            'ipopt.warm_start_init_point' : 'yes',
+            'ipopt.warm_start_bound_push' : 1e-9,
+            'ipopt.warm_start_bound_frac' : 1e-9,
+            'ipopt.warm_start_slack_bound_frac' : 1e-9,
+            'ipopt.warm_start_slack_bound_push' : 1e-9,
+            'ipopt.warm_start_mult_bound_push' : 1e-9,
+            'ipopt.mu_strategy' : 'adaptive',
+            'print_time' : False,
+            'verbose' : False,
+            'expand' : False
+        }
+
+        self.solver.solver('ipopt',options)
 
     def _add_equality_constraints(self):
         """Adds the equality constraints to the solver

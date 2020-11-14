@@ -1,5 +1,7 @@
 <launch>
-    <arg name="obstacles_list" default="$(find mpc_ca)/config/obstacles.yaml" />
+    <!--arg name="obstacles_list" default="$(find mpc_ca)/config/obstacles.yaml" /-->
+    <arg name="obstacles_list" default="$(find mpc_ca)/config/aStarTrack.yaml" />
+    <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
 
     <!-- Occupancy grid parameters -->
     <arg name="og_width" default="100" />
@@ -12,8 +14,11 @@
     <arg name="use_rviz" default="true"/>
 
     <group if="$(eval use_rviz == true)">
-        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mpc_ca)/rviz/obstacle_sandbox.rviz" />
+        <!--node type="rviz" name="rviz" pkg="rviz" args="-d $(find mpc_ca)/rviz/obstacle_sandbox.rviz" /-->
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mpc_ca)/rviz/SVEA_floor2.rviz" />
     </group>
+
+    <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
 
     <node name="planner" pkg="mpc_ca" type="run_planner.py" output="screen">
         <rosparam file="$(find mpc_ca)/config/planner.yaml" command="load" />

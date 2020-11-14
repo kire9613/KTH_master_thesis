@@ -23,8 +23,15 @@ class ROSInterface(object):
         self._has_endpoint_changed = False
         self._obstacles = None
 
-        rospy.Subscriber('~initial_state', PoseWithCovarianceStamped, self._cb_initial_state)  # noqa
-        rospy.Subscriber('~goal_state', PoseStamped, self._cb_goal_state)
+        self.x0, self.y0, self.theta0 =  -7.4,-15.3,  0.8978652
+        self.xt, self.yt = -4.51, -5.74 #10.2, 11.3
+
+        #rospy.Subscriber('~initial_state', PoseWithCovarianceStamped, self._cb_initial_state)  # noqa
+        #rospy.Subscriber('~goal_state', PoseStamped, self._cb_goal_state)
+
+        #At the moment the inital state and goal state are hardcoded
+        self._cb_initial_state()
+        self._cb_goal_state()
 
         self.path_publisher = rospy.Publisher('~path', Path, queue_size=1)
 
@@ -94,14 +101,17 @@ class ROSInterface(object):
             rospy.loginfo(
                 '[planner] Program terminated. Exception: {}'.format(e))
 
-    def _cb_initial_state(self, msg):
+    def _cb_initial_state(self):
+        #def _cb_initial_state(self, msg):
         """Callback to get the initial state from a ROS message
 
         :param msg: ROS message
         :type msg: ROS message
         """
+        
         old_initial_state = self.initial_state
-
+        #At the moment the inital state is hardcoded
+        '''
         x, y = [getattr(msg.pose.pose.position, coord) for coord in ('x', 'y')]
 
         quaternion = [
@@ -111,6 +121,8 @@ class ROSInterface(object):
 
         yaw = euler_from_quaternion(quaternion)[2]
         self.initial_state = [x, y, yaw]
+        '''
+        self.initial_state = [self.x0,self.y0,self.theta0]
 
         self._has_endpoint_changed = True
 
@@ -126,14 +138,17 @@ class ROSInterface(object):
         else:
             rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
 
-    def _cb_goal_state(self, msg):
+    def _cb_goal_state(self):
+        #def _cb_goal_state(self, msg):
         """Callback to get the goal state from a ROS message
 
         :param msg: ROS message
         :type msg: ROS message
         """
+        
         old_goal_state = self.goal_state
-
+        #At the moment the goal state is hardcoded
+        '''
         x, y = [getattr(msg.pose.position, coord) for coord in ('x', 'y')]
 
         quaternion = [
@@ -143,6 +158,8 @@ class ROSInterface(object):
 
         yaw = euler_from_quaternion(quaternion)[2]
         self.goal_state = [x, y, yaw]
+        '''
+        self.goal_state = [self.xt,self.yt,0]
 
         kwargs = {
             'first_node': old_goal_state,
