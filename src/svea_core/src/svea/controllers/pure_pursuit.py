@@ -5,7 +5,7 @@ import math
 import rospy
 import numpy as np
 from datetime import datetime
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class PurePursuitController(object):
 
@@ -157,8 +157,8 @@ class PurePursuitController(object):
             self.is_finished = True
             rospy.loginfo_throttle(1000,"The Average speed was: {}".format(np.mean(self.hist_v)))
             t = np.linspace(0,len(self.hist_v)-1,len(self.hist_v))
-            plt.plot(t,self.hist_v,'r--',t,self.pid_hist,'b--')
-            plt.show(block=False)
+            #plt.plot(t,self.hist_v,'r--',t,self.pid_hist,'b--')
+            #plt.show(block=False)
             
         """dx_to_target = self.traj_x[-1] - state.x
         dy_to_target = self.traj_y[-1] - state.y

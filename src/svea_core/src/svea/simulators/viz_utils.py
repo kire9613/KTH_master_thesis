@@ -11,7 +11,10 @@ Currently, contains vizualization functions for:
 
 import numpy as np
 import math
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except TypeError:
+    pass
 import rospy
 
 import tf

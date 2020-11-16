@@ -11,9 +11,12 @@ import pickle
 from collections import deque
 import rospy
 from copy import deepcopy
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-mpl.style.use('seaborn-muted')
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    mpl.style.use('seaborn-muted')
+except TypeError:
+    pass
 
 from geometry_msgs.msg import PolygonStamped, PoseStamped, PointStamped
 from nav_msgs.msg import Path
@@ -131,19 +134,19 @@ class BasicDataHandler(object):
         log_x = self.x
         log_y = self.y
 
-        plot_car(curr_state.x,
-                 curr_state.y,
-                 curr_state.yaw,
-                 curr_steer)
+        #plot_car(curr_state.x,
+        #         curr_state.y,
+        #         curr_state.yaw,
+        #         curr_steer)
 
-        plt.plot(log_x, log_y, ".r", label="course")
+        #plt.plot(log_x, log_y, ".r", label="course")
 
-        plt.axis("equal")
-        plt.grid(True)
-        plt.title("Heading[deg]: "
-                + str(math.degrees(curr_state.yaw))[:4]
-                + " | Speed[m/s]:"
-                + str(curr_state.v)[:4])
+        #plt.axis("equal")
+        #plt.grid(True)
+        #plt.title("Heading[deg]: "
+        #        + str(math.degrees(curr_state.yaw))[:4]
+        #        + " | Speed[m/s]:"
+        #        + str(curr_state.v)[:4])
 
     def update_animation(self, only_plot=True):
         """ Clear and update animation between each frame
@@ -155,13 +158,13 @@ class BasicDataHandler(object):
                           defaults to True.
         :type only_plot: bool
         """
-        if only_plot:
-            plt.cla() # clear last plot/frame
+        #if only_plot:
+        #    plt.cla() # clear last plot/frame
 
         self.plot_data()
 
-        if only_plot:
-            plt.pause(0.001)
+        #if only_plot:
+        #    plt.pause(0.001)
 
     def visualize_data(self, only_plot=True):
         """ Visualize logged data
@@ -232,13 +235,13 @@ class TrajDataHandler(BasicDataHandler):
         """
         BasicDataHandler.plot_data(self)
 
-        plt.plot(self.traj_x, self.traj_y, "-b", label="trajectory")
-        if not self.target is None:
-            plt.plot(self.target[0],
-                     self.target[1],
-                     "xg", label="target")
+        #plt.plot(self.traj_x, self.traj_y, "-b", label="trajectory")
+        #if not self.target is None:
+        #    plt.plot(self.target[0],
+        #             self.target[1],
+        #             "xg", label="target")
 
-        plt.axis("equal")
+        #plt.axis("equal")
 
     def save_data(self, filename):
         """ Save logged data
