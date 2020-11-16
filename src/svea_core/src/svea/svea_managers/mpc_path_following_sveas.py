@@ -25,7 +25,7 @@ class SVEAMPC(SVEAPurePursuit):
         self.goto_vel = 0.6 # m/s
         self.goto_thresh = 0.05 # m
 
-    def update_traj(self, traj_x, traj_y, dl=0.2):
+    def update_traj(self, traj_x, traj_y):
         """Update trajectory
 
         :param traj_x: X coordinates of trajectory, defaults to []
@@ -33,18 +33,17 @@ class SVEAMPC(SVEAPurePursuit):
         :param traj_y: Y coordinates of trajectory, defaults to []
         :type traj_y: list
         """
-        self.controller.dl = dl
 
         assert len(traj_x) == len(traj_y)
         cx, cy, cyaw, ckappa, s = cubic_spline_planner.calc_spline_course(
-            traj_x, traj_y, ds=dl
+            traj_x, traj_y, ds=self.controller.dl
         )
         self.data_handler.update_traj(traj_x, traj_y)
         self.controller.traj_x = cx
         self.controller.traj_y = cy
         self.controller.traj_yaw = cyaw
         self.controller.sp = self.calc_speed_profile(
-            cx,cy,cyaw,self.controller.TARGET_SPEED
+            cx,cy,cyaw,self.controller.target_velocity
         )
 
     def calc_speed_profile(self, cx, cy, cyaw, target_speed):

@@ -8,7 +8,7 @@ import numpy as np
 from svea.svea_managers.mpc_path_following_sveas import SVEAMPC
 from svea.states import VehicleState
 from svea.localizers import LocalizationInterface
-from svea.controllers.mpc_atsushi import ModelPredictiveController
+from svea.controllers.mpc.mpc import MPC
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 
@@ -20,9 +20,9 @@ target_velocity = 0.6 # [m/s]
 dt = 0.05
 
 # trajectory
-traj_x = np.linspace(0, 10, 10)
+traj_x = np.linspace(0.5, 10, 10)
 # traj_y = [math.sin(ix) * ix for ix in traj_x]
-traj_y = np.linspace(0, 2, 10)
+traj_y = np.linspace(0, 1, 10)
 
 show_animation = True
 ###############################################################################
@@ -47,13 +47,36 @@ def main():
     svea = SVEAMPC(
         vehicle_name,
         LocalizationInterface,
-        ModelPredictiveController,
+        MPC,
         traj_x,
         traj_y
     )
-    svea.controller.DT = dt
+    Q = np.diag([
+        1, # x
+        1, # y
+        1, # ψ
+        1, # v
+    ])
+    R = np.diag(2)*0.01
+    # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
+    P_LQR = np.eye(4)*10
+
+    ulb = [-1e1,-np.deg2rad(40)]
+    uub = [ 1e1, np.deg2rad(40)]
+    xlb = [-np.inf]*3+[ 1.5]
+    xub = [ np.inf]*3+[-1.5]
+    svea.controller.build_solver(dt,
+                                 Q=Q,
+                                 R=R,
+                                 P=Q,
+                                 ulb=ulb,
+                                 uub=uub,
+                                 xlb=xlb,
+                                 xub=xub,
+                                 )
 
     svea.start(wait=True)
+
 
     if is_sim:
         # start simulation

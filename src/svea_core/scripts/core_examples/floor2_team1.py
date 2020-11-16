@@ -23,7 +23,7 @@ __status__ = "Development"
 """
 
 ## SIMULATION PARAMS ##########################################################
-vehicle_name = "SVEA"
+vehicle_name = ""
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
@@ -41,8 +41,8 @@ traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:])
 traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:])
 xs = [-6.78,-2.33]
 ys = [-4.00,-7.09]
-traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:])
-traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:])
+traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:-1])
+traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:-1])
 
 ###############################################################################
 
@@ -105,19 +105,27 @@ def main():
         simulator.toggle_pause_simulation()
 
     # simualtion loop
+<<<<<<< HEAD
     
     #trajectory_map = TrajectoryMap()
     #trajectory_map.update(traj_x, traj_y)
 
     #explored_map = ExploredMap()
+=======
+
+>>>>>>> 9f61ba1ad6034577c88a7f94b08a515d0e258b69
     # TODO:planner = LocalPlanner(traj_x, traj_y)
-    
+
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
         #obs_map.update_map(state,scan)
 
+<<<<<<< HEAD
         #print(obs_map.map_matrix)
+=======
+        # print(obs_map.map_matrix)
+>>>>>>> 9f61ba1ad6034577c88a7f94b08a515d0e258b69
         # TODO: ind = svea.controller.last_index
         # TODO: upd_traj_x, upd_traj_y = planner.plan(state,ind)
         # TODO: svea.update_traj(self, upd_traj_x, upd_traj_y)
