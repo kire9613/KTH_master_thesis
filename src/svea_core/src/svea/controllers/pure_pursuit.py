@@ -91,7 +91,7 @@ class PurePursuitController(object):
 
         # Check if object is too close - Emergency stop
         if closestDistance < self.emergency_distance and not self.emg_stop:
-            self.emg_stop = True
+            #self.emg_stop = True
             rospy.loginfo("Controller: Too close, stopping! Object at angle: %d degrees", angle*180/math.pi)
             if angle > 0:
                 rospy.loginfo("Object is slightly to the left of the vehicle:")
