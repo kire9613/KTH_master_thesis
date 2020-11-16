@@ -15,6 +15,7 @@ from svea.simulators.sim_SVEA import SimSVEA
 from svea_msgs.msg import emergency_break 
 from svea.controllers.emergency_breaker import EmergencyBreaker
 from svea.controllers.map_requester import MapRequester
+from svea.track import Track
 
 from nav_msgs.msg import OccupancyGrid
 
@@ -29,7 +30,7 @@ __maintainers__ = "Albin Larsson Forsberg, Timotheos Souroulla, Filip Hestell, R
 __status__ = "Development"
 
 ## SIMULATION PARAMS ##########################################################
-vehicle_name = "SVEA"
+vehicle_name = ""
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 emergency_breaker = EmergencyBreaker()
@@ -93,10 +94,8 @@ def main():
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
-    elif use_matplotlib:
-        DataHandler = TrajDataHandler
     else:
-        DataHandler = BasicDataHandler
+        DataHandler = TrajDataHandler
 
     if is_sim:
         # start the simulation
@@ -115,6 +114,10 @@ def main():
     #svea.wait_until_ready(timeout=10.0)
     #rate = 10
     #r = rospy.Rate(rate)
+
+    # start track handler
+    track = Track(vehicle_name, publish_track=True)
+    track.start()
 
     if is_sim:
         # start simulation

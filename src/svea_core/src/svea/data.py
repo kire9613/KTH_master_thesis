@@ -8,6 +8,7 @@ accessing, data visualizing, and saving data.
 
 import math
 import pickle
+from collections import deque
 import rospy
 from copy import deepcopy
 import matplotlib.pyplot as plt
@@ -22,7 +23,8 @@ from svea.simulators.viz_utils import (
     publish_path,
     publish_3Dcar,
     publish_target,
-    plot_car)
+    plot_car,
+    lists_to_pose_stampeds)
 
 __license__ = "MIT"
 __maintainer__ = "Frank Jiang"
@@ -52,6 +54,11 @@ class BasicDataHandler(object):
         self.ctrl_steer = [0.0]
         self.ctrl_v = [0.0]
         self.ctrl_t = [rospy.get_time()]
+
+        # emergencies record
+        self.emergency_start_end = [] # 1 start, 0 end
+        self.emergency_reasons = []
+        self.emergency_t = []
 
         self._last_published_state = None
 
@@ -91,18 +98,30 @@ class BasicDataHandler(object):
         self.t.append(state.time_stamp)
 
     def log_ctrl(self, steering, v, t):
-        """ Log control input and time of control
+        """ Log control input and time of control at time of request
 
         :param steering: Steering input
         :type steering: float
         :param v: Velocity input
         :type v: float
-        :param t: Ttamp of control input
+        :param t: Timestamp of control input [s]
         :type t: float
         """
         self.ctrl_steer.append(steering)
         self.ctrl_v.append(v)
         self.ctrl_t.append(t)
+
+    def log_emergency(self, is_start, reason, t):
+        """ Log when emergencies are called and ended
+
+        :param is_start: Whether it's start of emergency or not
+        :type is_start: bool
+        :param t: Timestame of emergency [s]
+        :type t: float
+        """
+        self.emergency_start_end.append(int(is_start))
+        self.emergency_reasons.append(reason)
+        self.emergency_t.append(t)
 
     def plot_data(self):
         """ Plot data collected so far """
@@ -247,11 +266,12 @@ class RVIZPathHandler(TrajDataHandler):
     :type traj_y: list
     """
 
-    TRAVEL_DIST_THRESH = 0.2
+    TRAVEL_DIST_THRESH = 0.1
+    PATH_MAX_LEN = 1000
 
     def __init__(self, vehicle_name='', traj_x=[], traj_y=[]):
         TrajDataHandler.__init__(self, vehicle_name, traj_x, traj_y)
-
+        self.past_path = deque(maxlen=self.PATH_MAX_LEN)
         self.sub_namespace = vehicle_name + '/' if vehicle_name else ''
         poly_topic = self.sub_namespace + "3D_car"
         self.car_poly_pub = \
@@ -302,7 +322,13 @@ class RVIZPathHandler(TrajDataHandler):
 
     def pub_path(self):
         """ Publish path """
-        publish_path(self.past_path_pub, self.x, self.y)
+        new_path = lists_to_pose_stampeds(self.x[-1:], self.y[-1:])
+        self.past_path += new_path
+        path = Path()
+        path.header.stamp = rospy.Time.now()
+        path.header.frame_id = 'map'
+        path.poses = self.past_path
+        self.past_path_pub.publish(path)
 
     def pub_target(self):
         """ Publish target """
