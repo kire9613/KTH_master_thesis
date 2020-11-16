@@ -83,13 +83,13 @@ class gridpt(object):
         # heuristic values set as the euclidean distance to target node
         self.heuristic = math.sqrt((x-xt)**2+(y-yt)**2)
         # time interval of one step
-        self.dt = 0.2    # should not be put too larer number than 2times safety distance
+        self.dt = 0.25    # should not be put too larer number than 2times safety distance
         # estimated speed of car when planning
         self.v = 1 # keep as 1
 
 
     def generate_children(self,list_obs_x,list_obs_y):
-        safety_dist = 0.3
+        safety_dist = 0.4
         new_pose = []
         for dTheta in ([-math.pi/8, -math.pi/12, 0, math.pi/12, math.pi/8 ]):
             new_pose.append([self.x + self.v*self.dt*math.cos(self.theta +dTheta), self.y + self.v*self.dt*math.sin(self.theta +dTheta), self.theta +dTheta, dTheta])
@@ -149,7 +149,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
                     Q[Q.index(Qchild)][2] = currnode[2] + 0.01 + abs(steering_angle)*0.01 # cost to reach from start
                     Q[Q.index(Qchild)][3] = currnode[0]    # update pointer to mother-node
                     Q[Q.index(Qchild)][4] = children_nodes[index][1] # heuristic cost from child to goal
-        if S[-1][0].heuristic <= 0.3: # if we're close to the target --> stop
+        if S[-1][0].heuristic <= 0.4: # if we're close to the target --> stop
             print('\n target found!')
             endnode = S[-1][0]
             xtraj.append(endnode.x)
@@ -165,7 +165,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
 
 def __main__():
     xt, yt = -3.46, -6.93
-    x0, y0, theta0 =  -7,-14.8,  0.8978652
+    x0, y0, theta0 =  -7.276, -15.047, 1.119
     return generateTrajectory(x0,y0,theta0,xt,yt,plotBool=True)
 
 
