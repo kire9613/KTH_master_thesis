@@ -23,7 +23,7 @@ __status__ = "Development"
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = ""
 target_velocity = 1.0 # [m/s]
-dt = 0.01 # frequency of the model updates
+dt = 0.05 # frequency of the model updates
 
 xs = [-2.33, 10.48]
 ys = [-7.09, 11.71]
@@ -98,9 +98,12 @@ def main():
     lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
 
     # start pure pursuit SVEA manager
+    mpc = MPC
+    mpc.target_velocity = 0.6
+    mpc.dl = 0.05
     svea = SVEAMPC(vehicle_name,
                    LocalizationInterface,
-                   MPC,
+                   mpc,
                    traj_x, traj_y,
                    data_handler = DataHandler)
     Q = np.diag([
