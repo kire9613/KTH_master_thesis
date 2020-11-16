@@ -11,6 +11,7 @@ from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
+from svea.track import Track
 
 from math import radians, cos, sin
 
@@ -21,8 +22,10 @@ from svea.controllers.rrt import *
 #from Home.svea_starter.src.svea_core.resources.param.read_obs import *
 
 ## SIMULATION PARAMS ##########################################################
-vehicle_name = "SVEA"
-target_velocity =  1.0 # [m/s]
+
+vehicle_name = ""
+target_velocity = 1.0 # [m/s]
+
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
@@ -86,10 +89,8 @@ def main():
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
-    elif use_matplotlib:
-        DataHandler = TrajDataHandler
     else:
-        DataHandler = BasicDataHandler
+        DataHandler = TrajDataHandler
 
     if is_sim:
 
@@ -124,6 +125,10 @@ def main():
                            traj_x1, traj_y1,
                            data_handler = DataHandler)
     svea.start(wait=True)
+
+    # start track handler
+    track = Track(vehicle_name, publish_track=True)
+    track.start()
 
     if is_sim:
         # start simulation
