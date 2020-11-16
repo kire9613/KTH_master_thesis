@@ -105,14 +105,13 @@ def main():
                             dt=dt, start_paused=True, run_lidar = True).start()
 
     # start pure pursuit SVEA manager
-    vehicle_name = ""
     svea = SVEAPurePursuit(vehicle_name,
                            LocalizationInterface,
                            PurePursuitController,
                            traj_x, traj_y,
                            data_handler = DataHandler)
-    svea.start(wait=True)
-    #svea.wait_until_ready(timeout=10.0)
+    svea.start(wait=False)
+    svea.wait_until_ready(timeout=10.0)
     #rate = 10
     #r = rospy.Rate(rate)
 
