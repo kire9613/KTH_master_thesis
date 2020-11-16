@@ -16,7 +16,7 @@ class PurePursuitController(object):
     L = 0.324  # [m] wheel base of vehicle
     max_velocity = 1
     emergency_distance = 0.1 # [m] minimum distance until emergency_stop activated
-    emg_angle_range = 0.785 # angle range 
+    emg_angle_range = 0.785 # angle range
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -77,28 +77,6 @@ class PurePursuitController(object):
         self.target = (tx, ty)
         return dist
 
-    def emergency_stop(self, laserScan):
-        # Compute index ranges for emergency stop scan
-        min_index =  int(round((-self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
-        max_index =  int(round((self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
-        closestDistance = min(laserScan.ranges[min_index:max_index])
-        # Compute index of closest object
-        index = laserScan.ranges.index(closestDistance)
-        # Compute angle of closest object
-        angle = laserScan.angle_min + index*laserScan.angle_increment
-
-        #self.print_every_second("dist", closestDistance)
-
-        # Check if object is too close - Emergency stop
-        if closestDistance < self.emergency_distance and not self.emg_stop:
-            #self.emg_stop = True
-            rospy.loginfo("Controller: Too close, stopping! Object at angle: %d degrees", angle*180/math.pi)
-            if angle > 0:
-                rospy.loginfo("Object is slightly to the left of the vehicle:")
-            else:
-                rospy.loginfo("Object is slightly to the right of the vehicle:")
-        return
-
     def _calc_target_index(self, state):
         # search nearest point index
         dx = [state.x - icx for icx in self.traj_x]
@@ -122,10 +100,9 @@ class PurePursuitController(object):
             self.is_finished = True
 
         return ind, dist
-    
+
     def print_every_second(self, message, data):
                 # print once per second
         if (self.last_time - self.print_time)  > 1:
             print(message, data)
             self.print_time = self.last_time
-

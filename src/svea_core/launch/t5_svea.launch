@@ -6,11 +6,12 @@
     <arg name="is_sim" default="false"/>
     <arg name="use_astar" default="false"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
+
     <group if="$(eval is_sim == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />
+        <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
     </group>
 
-    <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
 
     <!--rosparam command="load" file="$(find svea_core)/resources/params/crazyObstacle.yaml" /-->
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />

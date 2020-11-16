@@ -37,8 +37,8 @@ def extract_trajectory(use_astar):
         traj_x.reverse()
         traj_y.reverse()
     else:
-        xs = [-7.4 , -2.33, 10.3, 5.9, -7.2, -2.5]
-        ys = [-15.3,  -7.09, 11.4, 14.8, -4.2, -7.6]
+        xs = [-7.4 , -2.33, 10.3, 5.9, -7.2]
+        ys = [-15.3,  -7.09, 11.4, 14.8, -4.2]
         traj_x = []
         traj_y = []
         for i in range(0,len(xs)-1):
@@ -104,7 +104,6 @@ def main():
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
-        rospy.Subscriber('/scan', LaserScan,svea.controller.emergency_stop)
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
