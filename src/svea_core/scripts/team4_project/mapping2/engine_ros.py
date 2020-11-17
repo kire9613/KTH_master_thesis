@@ -5,6 +5,7 @@ import copy
 import numpy as np
 import os.path
 import re
+from copy import deepcopy
 
 # ROS
 import rospy
@@ -12,11 +13,12 @@ import message_filters
 
 # ROS messages
 from geometry_msgs.msg import PoseStamped, PolygonStamped
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, PointCloud
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import Odometry
 from map_msgs.msg import OccupancyGridUpdate
 from svea_msgs.msg import VehicleState
+from std_msgs.msg import Bool
 
 from grid_map import GridMap, quaternion_from_euler
 from mapping import Mapping
@@ -28,7 +30,7 @@ class EngineROS:
                  map_origin_x, map_origin_y, map_origin_yaw, inflate_radius,
                  unknown_space, free_space, c_space, occupied_space, optional=None):
 
-        print("Init EngineROS")
+        rospy.loginfo("Init EngineROS")
         rospy.init_node('Mapper')
 
         # Map properties
@@ -38,16 +40,25 @@ class EngineROS:
         self.xo = map_origin_x
         self.yo = map_origin_y
 
-        self.__mapping = Mapping(unknown_space, free_space, c_space,
+        self.polygon_space = 120
+
+        self.__mapping = Mapping(self.polygon_space, unknown_space, free_space, c_space,
                                  occupied_space, inflate_radius, optional)
 
         self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
-        self.__map = None
+        self.__map = rospy.wait_for_message('/map', OccupancyGrid)
         #self.__infl_map = None
+        #self.__map_sub = rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
 
         # Init map publishers
         self.__map_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=1,
                                          latch=True)
+
+
+        self.__map_updates_pub = rospy.Publisher("map_updates",
+                                                 OccupancyGridUpdate,
+                                                 queue_size=10)
+
 
         #self.__map_inflated_pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=1, latch=True)
 
@@ -66,22 +77,12 @@ class EngineROS:
         self.scan = None
         self.received_scan = False
         self.received_pose = False
-        self.__state_sub = rospy.Subscriber('/state', VehicleState, self.pose_callback)
-        self.__scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
-
-        """
-        Freq. difference for state and scan gives bad performance
-        Trigger map update on slowest message
-        Tune mapping based on performance on car
-        Solution? -> Interpolate position between messages?
-        """
 
         self.setup_ok = False
 
-        if os.path.isfile("default_map.txt"):
+        if (os.path.isfile(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt")):
             self.set_map_from_file()
         else:
-            self.set_default_map()
             self.add_polygons()
             while not self.added_polygons:
                 rospy.sleep(1)
@@ -89,25 +90,36 @@ class EngineROS:
             rospy.sleep(5)
             self.write_map_to_file()
 
-        rospy.spin()
+        self.__map = np.array(self.__map.data).reshape(self.height,self.width)
+        
+        started_pub = rospy.Publisher('/node_started/mapping', Bool, latch=True, queue_size=5)
+        started_pub.publish(True)
+        rospy.loginfo("Start mapping main loop")
+        # Loop adding updates to map from lidar
+        while not rospy.is_shutdown():
+            scan = rospy.wait_for_message("/scan", LaserScan)
+            pose = rospy.wait_for_message("/state", VehicleState)
+            pose = self.to_pose_stamped(pose)
+            #print("check for updates")
+            self.check_for_updates(pose, scan)
 
     def write_map_to_file(self):
         """ Saves map at initialization to file """
 
         current_map = self.__map
-        f = open("default_map.txt", "a")
+        f = open(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt", "a")
         content = str(current_map)
         f.write(content)
         f.close()
-        print("Map written to file.")
+        rospy.loginfo("Map written to file.")
         self.setup_ok = True
 
     def set_map_from_file(self):
         """ Set map at initialization from file """
 
-        print("Read map from file...")
+        rospy.loginfo("Read map from file...")
         map = OccupancyGrid()
-        f = open("default_map.txt", "r")
+        f = open(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt", "r")
         Lines = f.readlines()
         map.header.seq = 0
         map.header.frame_id = "map"
@@ -127,45 +139,24 @@ class EngineROS:
         for i in range(0,len(d)):
             d[i] = int(d[i])
         map.data = d
-        self.default_map = map
         self.__map = map
-        #self.__infl_map = map
-        #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
-        #self.__map_inflated_pub(self.__infl_map)
 
         self.__map_pub.publish(self.__map)
         rospy.sleep(5)
         self.setup_ok = True
-        print("Read map from file done.")
-
-    def set_default_map(self):
-        """
-        Publish floor2 map as map
-        """
-        while self.default_map == None:
-            rospy.sleep(0.1)
-
-        self.__map = self.default_map
-        #self.__infl_map = self.default_map
-        #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
-        #self.__map_inflated_pub(self.__infl_map)
-        self.__map_pub.publish(self.__map)
-        print("Default map published.")
-
-    def default_map_callback(self, map):
-        self.default_map = map
+        rospy.loginfo("Read map from file done.")
 
     def track_callback_out(self, polygon):
         self.keep_outside_polygon = polygon
         rospy.sleep(3)
         self.pi_ok = True
-        print("Inner polygon ok!")
+        #print("Inner polygon ok!")
 
     def track_callback_in(self, polygon):
         self.stay_inside_polygon = polygon
         rospy.sleep(3)
         self.po_ok = True
-        print("Outer polygon ok!")
+        #print("Outer polygon ok!")
 
     def add_polygons(self):
         """
@@ -261,24 +252,16 @@ class EngineROS:
         while y <= max_y:
             while x <= max_x:
                 if (x,y) in obs_l:
-                    d[y][x] = 100
+                    d[y][x] = self.polygon_space
                 else:
                     pass
                 x += 1
             x = min_x
             y += 1
 
-        print("Set polygons to map.")
+        rospy.loginfo("Set polygons to map.")
         self.added_polygons = True
         self.__map.data = d.reshape(self.width*self.height).tolist()
-
-    def pose_callback(self, pose):
-        #print("pose_callback")
-        self.pose = self.to_pose_stamped(pose)
-        self.received_pose = True
-        #if self.setup_ok and self.received_scan:
-            #print("trigger map update")
-            #self.check_for_updates()
 
     def to_pose_stamped(self, vehicle_state):
         """
@@ -304,27 +287,14 @@ class EngineROS:
 
         return pose
 
-    def scan_callback(self, scan):
-        #print("scan_callback")
-        self.scan = scan
-        self.received_scan = True
-        if self.setup_ok and self.received_pose:
-            #print("trigger map update")
-            self.check_for_updates()
-
-    def check_for_updates(self):
+    def check_for_updates(self, pose, scan):
         """
         If lidar scans and vehicle pose available
         update map with detected Obstacles
         publish updated map
         """
+        #print("check for updates")
 
-        if self.pose != None and self.scan != None:
-            map_info = [self.width, self.height, self.xo, self.yo, self.res]
-            new_map = self.__map
-            map = self.__mapping.update_map(self.__map, self.pose, self.scan, map_info)
-            new_map.data = map.reshape(self.width*self.height).tolist()
-            self.__map_pub.publish(new_map)
-            #self.__infl_map = self.__map
-            #self.__infl_map.data = self.__mapping.inflate_map(self.__infl_map).reshape(self.width*self.heigh)
-            #self.__map_inflated_pub(self.__infl_map)
+        map_info = [self.width, self.height, self.xo, self.yo, self.res]
+        _, update = self.__mapping.update_map(self.__map, pose, scan, map_info)
+        self.__map_updates_pub.publish(update)

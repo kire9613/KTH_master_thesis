@@ -10,6 +10,7 @@ from map_msgs.msg import OccupancyGridUpdate
 
 from grid_map import GridMap
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 class Mapping:
     """
@@ -18,9 +19,10 @@ class Mapping:
                 Inflate map
     """
 
-    def __init__(self, unknown_space, free_space, c_space, occupied_space,
+    def __init__(self, polygon_space, unknown_space, free_space, c_space, occupied_space,
                  radius, optional=None):
         # Map values
+        self.polygon_space = polygon_space
         self.unknown_space = unknown_space
         self.free_space = free_space
         self.c_space = c_space
@@ -87,8 +89,9 @@ class Mapping:
                             "Which can be found in the '__init__' function.")
 
         if self.is_in_bounds(grid_map, x, y, map_info):
-            grid_map[y,x] = value
-            return True
+            if not grid_map[y,x] == self.polygon_space:
+                grid_map[y,x] = value
+                return True
         return False
 
     def is_in_bounds(self, grid_map, x, y, map_info):
@@ -101,7 +104,7 @@ class Mapping:
                 return True
         return False
 
-    def update_map(self, map, pose, scan, map_info):
+    def update_map(self, grid_map, pose, scan, map_info):
         """
         Create OccupancyGridUpdate from lidar scan info
         Pose in map coordinates, type geometry_msgs.msg PoseStamped
@@ -115,11 +118,10 @@ class Mapping:
         origin_x = map_info[2]
         origin_y = map_info[3]
         resolution = map_info[4]
-        grid_map = np.array(map.data).reshape(880, 721)
 
         # Adjust lidar pos. in relation to car
-        pose.pose.position.y += 0.2#0.39
-        pose.pose.position.x += 0.4#0.598
+        #pose.pose.position.y += 0.2#0.39
+        #pose.pose.position.x += 0.4#0.598
 
         # Current yaw of the robot
         robot_yaw = self.get_yaw(pose.pose.orientation)
@@ -160,13 +162,12 @@ class Mapping:
                 y_index_e = int(y_scan_map/resolution)
 
                 # Update free cells in map
-                #free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
-                #for cell in free_cells:
-                    #if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
-                        #print("free")
-                        #self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
-                        #x_index_list.append(cell[0])
-                        #y_index_list.append(cell[1])
+                free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
+                for cell in free_cells:
+                    if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
+                         self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
+                         x_index_list.append(cell[0])
+                         y_index_list.append(cell[1])
 
                 obs_ind_list.append((x_index_e,y_index_e))
 
@@ -180,7 +181,32 @@ class Mapping:
                 x_index_list.append(obs[0])
                 y_index_list.append(obs[1])
 
-        return grid_map
+        x_index_list.sort()
+        y_index_list.sort()
+        min_x = x_index_list[0]
+        max_x = x_index_list[-1]
+        min_y = y_index_list[0]
+        max_y = y_index_list[-1]
+
+        # Only get the part that has been updated
+        update = OccupancyGridUpdate()
+        # The minimum x index in 'grid_map' that has been updated
+        update.x = min_x
+        #print("x_min:" + str(update.x))
+        # The minimum y index in 'grid_map' that has been updated
+        update.y = min_y
+        #print("y_min: " + str(update.y))
+        # Maximum x index - minimum x index + 1
+        update.width = max_x - min_x + 1
+        # Maximum y index - minimum y index + 1
+        update.height = max_y - min_y + 1
+        # The map data inside the rectangle, in row-major order.
+        update.data = []
+
+        slice = grid_map[min_y:(max_y+1), min_x:(max_x+1)]
+        update.data = slice.reshape((update.width*update.height,)).tolist()
+
+        return grid_map, update
 
     # def inflate_map(self, map):
     #     """
