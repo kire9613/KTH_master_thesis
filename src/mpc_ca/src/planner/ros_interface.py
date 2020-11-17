@@ -1,6 +1,7 @@
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav_msgs.msg import Path
 import rospy
+import numpy as np
 from tf.transformations import euler_from_quaternion
 
 from planner.utils import are_nodes_close_enough
@@ -23,8 +24,8 @@ class ROSInterface(object):
         self._has_endpoint_changed = False
         self._obstacles = None
 
-        self.x0, self.y0, self.theta0 =  -7.4,-15.3,  0.8978652
-        self.xt, self.yt = -4.51, -5.74 #10.2, 11.3
+        self.x0, self.y0, self.theta0 =  -7.4,-15.3, 1.12
+        self.xt, self.yt, self.thetat = 6.1, 15.8, np.pi #-4.44, -5.4 #10.2, 11.3
 
         #rospy.Subscriber('~initial_state', PoseWithCovarianceStamped, self._cb_initial_state)  # noqa
         #rospy.Subscriber('~goal_state', PoseStamped, self._cb_goal_state)
@@ -159,7 +160,7 @@ class ROSInterface(object):
         yaw = euler_from_quaternion(quaternion)[2]
         self.goal_state = [x, y, yaw]
         '''
-        self.goal_state = [self.xt,self.yt,0]
+        self.goal_state = [self.xt,self.yt,self.thetat]
 
         kwargs = {
             'first_node': old_goal_state,

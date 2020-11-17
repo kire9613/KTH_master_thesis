@@ -1,9 +1,9 @@
 # Common parameters
-wheelbase: 0.5 # Car wheelbase (in m)
-width: 0.3 # Car width (in m)
-length: 0.7 # Car length (in m)
+wheelbase: 0.324 # 0.5 Car wheelbase (in m)
+width: 0.195 #0.3 # Car width (in m)
+length: 0.524 #0.7 # Car length (in m)
 distance_tolerance: 0.5 # Minimum distance error to consider that the planner has reached the goal (in meters)
-angle_tolerance: deg(15) # Minimum angle error to consider that the planner has reached the goal (in radians)
+angle_tolerance: deg(30) # Minimum angle error to consider that the planner has reached the goal (in radians)
 
 speed_min: -0.6 # Minimum speed (in meters/seconds)
 speed_max: 0.6 # Maximum speed (in meters/seconds)
@@ -14,7 +14,7 @@ publish_frequency: 10 # ROS path publish frequency (in Hz)
 path_frame: 'map' # ROS frame where to publish the path
 
 # MPC parameters
-N: 20 # Prediction horizon (in steps)
+N: 10 #20 # Prediction horizon (in steps)
 R_speed: 1. # Weight on the speed (input)
 R_steering_angle: 1. # Weight on the steering_angle (input)
 kappa: 1. # Weight on the total time
