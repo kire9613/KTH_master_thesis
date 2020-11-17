@@ -1,11 +1,10 @@
 #!/usr/bin/env python2
 
-from rrt_node import RRTNode, raytrace
+from team4_project.planner.rrt_node import RRTNode, raytrace
 #from sensor import Sensor
 from rtree import index
 import random
 import numpy as np
-from sklearn import preprocessing
 from math import log
 
 
@@ -172,8 +171,7 @@ class RRT:
         direction = node.get_position() - origin
 
         if np.linalg.norm(direction) > self._extension_range:
-            direction = self._extension_range * \
-                preprocessing.normalize(direction, norm="l2")
+            direction = self._extension_range * direction / np.linalg.norm(direction)
             node.set_position(origin + direction)
 
         return node
