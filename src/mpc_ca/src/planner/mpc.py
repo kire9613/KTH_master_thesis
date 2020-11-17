@@ -175,9 +175,9 @@ class NonLinearMPC(object):
             <= self.distance_tolerance
         )
 
-        self.solver.subject_to(
-            casadi.fabs(self.goal_state[2] - self.X[2, -1]) <= self.angle_tolerance
-        )
+        #self.solver.subject_to(
+        #    casadi.fabs(self.goal_state[2] - self.X[2, -1]) <= self.angle_tolerance
+        #)
 
         self.solver.subject_to(self.T >= 0)
 
@@ -201,7 +201,7 @@ class NonLinearMPC(object):
                     casadi.mtimes(-self.g.T, self.mus[ind][:, k])
                     + casadi.mtimes(
                         (casadi.mtimes(self.as_[ind], translation) - self.bs[ind]).T,
-                        self.lambdas[ind][:, k]) > 0
+                        self.lambdas[ind][:, k]) > 0.3
                 )
 
         for ind in range(len(self.lambdas)):

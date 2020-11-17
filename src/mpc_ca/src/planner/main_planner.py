@@ -46,6 +46,8 @@ class Planner(object):
         ys = [-15.3,  -7.09, 11.4, 15.0]#, -4.2]#, -7.6]
         ds = [1.12, 1.12, 3*np.pi/4, np.pi]
         #initial_guess = [[xs[0],ys[0],1.12],[xs[1],ys[1],1.12],[xs[2],ys[2],3*np.pi/4],[xs[3],ys[3],np.pi]]#,[xs[4],ys[4],2.685,[xs[5],ys[5],2.685]]
+        initial_guess = []
+        '''
         traj_x = []
         traj_y = []
         traj_d = []
@@ -56,7 +58,7 @@ class Planner(object):
             traj_d += np.linspace(ds[i], ds[i+1],5).tolist()
             for j in range(0,len(traj_d)-1):
                 initial_guess.append([traj_x[j],traj_y[j],traj_d[j]])
-        print(initial_guess)
+        print(initial_guess)'''
         planner_kwargs = {
             'initial_state': initial_state,
             'goal_state': goal_state,

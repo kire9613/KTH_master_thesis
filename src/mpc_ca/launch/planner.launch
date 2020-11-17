@@ -5,11 +5,13 @@
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
 
     <!-- Occupancy grid parameters -->
-    <arg name="og_width" default="100" />
-    <arg name="og_height" default="100" />
+    <arg name="og_width" default="180" />
+    <arg name="og_height" default="220" />
     <arg name="og_resolution" default="0.2" />    
     <arg name="og_origin_x" default="-17.581444" />
+    <!--arg name="og_origin_x" default="0" /-->
     <arg name="og_origin_y" default="-22.876441" />
+    <!--arg name="og_origin_y" default="0" /-->
 
     <arg name="planner_algorithm" default="mpc" />
     <arg name="use_rviz" default="true"/>

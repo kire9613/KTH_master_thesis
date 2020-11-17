@@ -25,7 +25,8 @@ class ROSInterface(object):
         self._obstacles = None
 
         self.x0, self.y0, self.theta0 =  -7.4,-15.3, 1.12
-        self.xt, self.yt, self.thetat = 6.1, 15.8, np.pi #-4.44, -5.4 #10.2, 11.3
+        #self.xt, self.yt, self.thetat = 10.1 , 11.5, 1.12 
+        self.xt, self.yt, self.thetat = -5.21, -11.4, 1.12 #go round small obstacle 
 
         #rospy.Subscriber('~initial_state', PoseWithCovarianceStamped, self._cb_initial_state)  # noqa
         #rospy.Subscriber('~goal_state', PoseStamped, self._cb_goal_state)
