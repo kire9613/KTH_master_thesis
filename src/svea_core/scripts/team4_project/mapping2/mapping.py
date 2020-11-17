@@ -78,7 +78,7 @@ class Mapping:
 
         return traversed
 
-    def add_to_map(self, grid_map, x, y, value, map_info):
+    def add_to_map(self, grid_map, x, y, value, map_info, inflate=False):
         """Adds value to index (x, y) in grid_map if index is in bounds.
         Returns weather (x, y) is inside grid_map or not.
         """
@@ -91,6 +91,15 @@ class Mapping:
         if self.is_in_bounds(grid_map, x, y, map_info):
             if not grid_map[y,x] == self.polygon_space:
                 grid_map[y,x] = value
+                if inflate:
+                    for xp in range(-self.radius,self.radius+1):
+                        for yp in range(-self.radius,self.radius+1):
+                            if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
+                                if not grid_map[y+yp,x+xp] == self.occupied_space:
+                                    if sqrt(xp**2+yp**2) <= self.radius:
+                                        #print("inflate")
+                                        grid_map[y+yp,x+xp] = self.c_space
+
                 return True
         return False
 
@@ -114,6 +123,7 @@ class Mapping:
         """
 
         #print("update_map")
+        imap = deepcopy(grid_map)
 
         origin_x = map_info[2]
         origin_y = map_info[3]
@@ -178,6 +188,7 @@ class Mapping:
         for obs in obs_ind_list:
             if self.is_in_bounds(grid_map, obs[0],obs[1], map_info):
                 self.add_to_map(grid_map, obs[0], obs[1], self.occupied_space, map_info)
+                self.add_to_map(imap, obs[0], obs[1], self.occupied_space, map_info,inflate=True)
                 x_index_list.append(obs[0])
                 y_index_list.append(obs[1])
 
@@ -206,7 +217,11 @@ class Mapping:
         slice = grid_map[min_y:(max_y+1), min_x:(max_x+1)]
         update.data = slice.reshape((update.width*update.height,)).tolist()
 
-        return grid_map, update
+        i_update = deepcopy(update)
+        slice = imap[min_y:(max_y+1), min_x:(max_x+1)]
+        i_update.data = slice.reshape((i_update.width*i_update.height,)).tolist()
+
+        return grid_map, update, i_update
 
     # def inflate_map(self, map):
     #     """
