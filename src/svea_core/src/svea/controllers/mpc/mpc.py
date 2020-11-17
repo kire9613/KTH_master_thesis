@@ -20,10 +20,15 @@ import scipy.linalg
 
 from svea.controllers.mpc.model import SVEAcar
 
+import rospy
+from geometry_msgs.msg import Point
+from std_msgs.msg import ColorRGBA
+from visualization_msgs.msg import Marker
+
 import math
 
 class MPC(object):
-    N_IND_SEARCH = 5  # Search index number
+    N_IND_SEARCH = 10  # Search index number
     TAU = 0.1 # TODO: Hardcoded
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -32,15 +37,18 @@ class MPC(object):
         self.sp = []
         self.target = None
         # initialize with 0 velocity
-        self.target_velocity = 0.0
+        self.target_velocity = 0.6
         self.last_index = 0
         self.is_finished = False
 
         self.target_ind = None
         self.u0 = None
 
+        self.pred_pub = rospy.Publisher("pred",Marker,queue_size=1)
+        self.ref_pub = rospy.Publisher("ref",Marker,queue_size=1)
+
     def build_solver(self, dt, model=None, dynamics=None,
-                 horizon=10, Q=None, P=None, R=None,
+                 horizon=4, Q=None, P=None, R=None,
                  ulb=None, uub=None, xlb=None, xub=None, terminal_constraint=None,
                  solver_opts=None,
                  x_d=[0]*4,
@@ -71,6 +79,7 @@ class MPC(object):
         model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
         # dynamics = model.discrete_time_dynamics
         dynamics = model.continuous_time_nonlinear_dynamics
+        # dynamics = model.svea_nonlinear_dynamics
 
         self.horizon = horizon*dt
         # self.set_reference(x_d)
@@ -355,7 +364,25 @@ class MPC(object):
                 xref[2, i] = cyaw[ncourse - 1]
                 xref[3, i] = sp[ncourse - 1]
                 # dref[0, i] = 0.0
-        self.ref_target = (xref[0,:],xref[1,:])
+        # print(xref[0,:],xref[1,:])
+
+        marker_msg = Marker()
+        marker_msg.header.stamp = rospy.Time.now()
+        marker_msg.header.frame_id = "map"
+        marker_msg.points = [Point(x=xref[0,i],y=xref[1,i],z=0.22) for i in range(self.Nt+1)]
+
+        marker_msg.type = Marker.POINTS
+        marker_msg.action = Marker.ADD
+
+        marker_msg.id = 0
+        marker_msg.scale.x = 0.2
+        marker_msg.scale.y = 0.2
+        marker_msg.color = ColorRGBA(r=1, g=0, b=0, a=1)
+        marker_msg.pose.orientation.w = 1.0
+
+        self.ref_pub.publish(marker_msg)
+
+        # self.ref_target = (xref[0,:],xref[1,:])
         self.x_sp = xref.flatten(order='F')
 
         return ind, dref
@@ -400,11 +427,26 @@ class MPC(object):
         if self.u0 is None:
             self.u0 = np.zeros(self.Nu)
 
-        if self.target_ind == None:
-            self.target_ind, _ = self.calc_nearest_index(x0, 0)
+        self.target_ind, _ = self.calc_nearest_index(x0, 0)
         self.calc_ref_trajectory(x0, self.target_ind)
 
         x_pred, u_pred = self.solve_mpc(x0,self.u0)
+
+        marker_msg = Marker()
+        marker_msg.header.stamp = rospy.Time.now()
+        marker_msg.header.frame_id = "map"
+        marker_msg.points = [Point(x=i[0],y=i[1],z=0.22) for i in x_pred]
+
+        marker_msg.type = Marker.POINTS
+        marker_msg.action = Marker.ADD
+
+        marker_msg.id = 0
+        marker_msg.scale.x = 0.2
+        marker_msg.scale.y = 0.2
+        marker_msg.color = ColorRGBA(r=0, g=0, b=1, a=1)
+        marker_msg.pose.orientation.w = 1.0
+
+        self.pred_pub.publish(marker_msg)
 
         self.u0 = u_pred[0]
 
@@ -413,13 +455,11 @@ class MPC(object):
         # t0 =  [ [i[0] for i in x_pred] , self.ref_target[0][:] ][:]
         # t1 =  [ [i[1] for i in x_pred] , self.ref_target[1][:] ][:]
         # self.target = (t0,t1)
-        self.target =  (self.ref_target[0][0], self.ref_target[1][0]) # FOR RVIZ
+        # self.target =  (self.ref_target[0][0], self.ref_target[1][0]) # FOR RVIZ
 
         vd = self.TAU*u_pred[0][0] + state.v
 
         return float(u_pred[0][1]), float(vd)
-        # return float(u_pred[0][1]), float(x_pred[1][3])
-
 
 
 def main():

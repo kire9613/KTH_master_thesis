@@ -4,15 +4,15 @@
 Class for capturing and holding the current lidar scan
 """
 import rospy
-from sensor_msgs.msg import LaserScan
+from svea_msgs.msg import VehicleState
 
-class SyncScan:
+class SyncState:
     def __init__(self):
-        self.scan = LaserScan()
-        self.subs = rospy.Subscriber("/scan", LaserScan, self.callback)
+        self.state = VehicleState()
+        self.subs = rospy.Subscriber("/SVEA/state", VehicleState, self.callback)
 
     def callback(self, data):
         """
         Type :sensor_msgs.msg LaserScan:
         """
-        self.scan = data
+        self.state = data

@@ -14,10 +14,8 @@ from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 
-import sync_lidar
-import explored_map
-import tf
-
+from trajectory_node_2 import TrajectoryMap
+from explored_map_node import ExploredMap
 """
 __team__ = "Team 1"
 __maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin, Aravind Sadashiv, Sarthak Manocha”
@@ -29,12 +27,12 @@ vehicle_name = ""
 target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
-xs = [-2.33, 10.48]
-ys = [-7.09, 11.71]
+xs = [-2.33, 2]
+ys = [-7.09, -1.3]
 traj_x = np.linspace(xs[0], xs[1]).tolist()
 traj_y = np.linspace(ys[0], ys[1]).tolist()
-xs = [10.48,6.03]
-ys = [11.71,14.8]
+xs = [2,6.03]
+ys = [-1.3,14.8]
 traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:])
 traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:])
 xs = [6.03,-6.78]
@@ -76,25 +74,9 @@ def param_init():
 
     return start_pt, is_sim, use_rviz, use_matplotlib, run_lidar
 
-def callback_scan(scan):
-    """ Callback for lidarscan """
-    ranges = scan.ranges
-    min_dist = np.nanmin(ranges) # TODO: Make available as self.min_dist etc.?
-
-#def publish_map_base_link_tf(br,state):
-#    t = geometry_msgs.msg.TransformStamped()
-#    t.header.stamp = rospy.Time.now()
-#    t.header.frame_id = state.frame_id
-#    t.child_frame_id = state.child_frame
-#    t.transform = state._pose_msg
-#    br.sendTransform(t)
-
 def main():
     rospy.init_node('floor2_team1')
     start_pt, is_sim, use_rviz, use_matplotlib, _run_lidar = param_init()
-
-    scanner = sync_lidar.LidarScan()
-    obs_map = explored_map.ObstacleMap()
 
     # select data handler based on the ros params
     if use_rviz:
@@ -110,8 +92,6 @@ def main():
         simulator = SimSVEA(vehicle_name, model_for_sim,
                             dt=dt, start_paused=True, run_lidar=_run_lidar).start()
 
-    #lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
-
     # start pure pursuit SVEA manager
     svea = SVEAPurePursuit(vehicle_name,
                            LocalizationInterface,
@@ -125,17 +105,27 @@ def main():
         simulator.toggle_pause_simulation()
 
     # simualtion loop
+<<<<<<< HEAD
+    
+    #trajectory_map = TrajectoryMap()
+    #trajectory_map.update(traj_x, traj_y)
 
+    #explored_map = ExploredMap()
+=======
+
+>>>>>>> 9f61ba1ad6034577c88a7f94b08a515d0e258b69
     # TODO:planner = LocalPlanner(traj_x, traj_y)
 
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
-        scan = scanner.scan
+        #obs_map.update_map(state,scan)
 
-        obs_map.update_map(state,scan)
-
+<<<<<<< HEAD
+        #print(obs_map.map_matrix)
+=======
         # print(obs_map.map_matrix)
+>>>>>>> 9f61ba1ad6034577c88a7f94b08a515d0e258b69
         # TODO: ind = svea.controller.last_index
         # TODO: upd_traj_x, upd_traj_y = planner.plan(state,ind)
         # TODO: svea.update_traj(self, upd_traj_x, upd_traj_y)
