@@ -28,7 +28,7 @@ from visualization_msgs.msg import Marker
 import math
 
 class MPC(object):
-    N_IND_SEARCH = 10  # Search index number
+    N_IND_SEARCH = 5  # Search index number
     TAU = 0.1 # TODO: Hardcoded
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -87,7 +87,7 @@ class MPC(object):
 
         build_solver_time = -time.time()
         self.dt = model.dt
-        self.Nx, self.Nu = 4, 2 # TODO
+        self.Nx, self.Nu = 4, 2
         Nopt = self.Nu + self.Nx
         self.Nt = int(self.horizon/self.dt)
         self.dynamics = dynamics
@@ -317,7 +317,7 @@ class MPC(object):
         # print(status)
 
         solve_time+=time.time()
-        # print('MPC took %f seconds to solve.\r' %(solve_time))
+        print('MPC took %f seconds to solve.\r' %(solve_time))
         # print('MPC cost: ', sol['f'])
 
         return optvar['x'], optvar['u']
@@ -388,6 +388,10 @@ class MPC(object):
         return ind, dref
 
     def calc_nearest_index(self,state, pind):
+        if state[0]==0.0 and state[1]==0.0:
+            #  TODO: Find way to wait until state properly initalized <17-11-20, rob> #
+            rospy.loginfo("mpc.py: No state loaded")
+            return 0, 0
         cx = self.traj_x
         cy = self.traj_y
         cyaw = self.traj_yaw
@@ -427,7 +431,14 @@ class MPC(object):
         if self.u0 is None:
             self.u0 = np.zeros(self.Nu)
 
-        self.target_ind, _ = self.calc_nearest_index(x0, 0)
+        if self.target_ind is None:
+            self.target_ind, _ = self.calc_nearest_index(x0, 0)
+
+        print(self.target_ind)
+        self.target_ind, _ = self.calc_nearest_index(x0, self.target_ind)
+
+        # self.target_ind, _ = self.calc_nearest_index(x0, 0)
+
         self.calc_ref_trajectory(x0, self.target_ind)
 
         x_pred, u_pred = self.solve_mpc(x0,self.u0)
