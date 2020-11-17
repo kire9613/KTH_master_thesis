@@ -6,6 +6,7 @@
 from dublins import *
 from Queue import PriorityQueue
 from math import hypot, pi, ceil
+import numpy
 
 DEBUG = False
 
@@ -162,7 +163,7 @@ def updateNeighbors(obs, openSet, closedSet, n):
             for node in nodes:
                 openSet.put(node)
 
-def run_astar(objective):
+def run_astar(objective, smooth=False):
     global GRID_SIZE_X, GRID_SIZE_Y, N_STEPS, OBJECTIVE, DELTA_T, plotter, counter
 
     openSet = PriorityQueue() # Set holding active nodes to search more path from
@@ -228,4 +229,66 @@ def run_astar(objective):
     if DEBUG:
         dbg.wait()
 
+    if smooth:
+        nodes_in_path = smooth_path(objective._environment,nodes_in_path)
+
     return nodes_in_path #controls, times
+
+def smooth_path(environment, path):
+    new_path = []
+
+    ok_i = [1]
+    new_path_exists = False
+
+    for i in range(1,len(path)):
+        path_ok = True
+        dx = abs(path[0][0]-path[i][0])
+        dy = abs(path[0][1]-path[i][1])
+        if dx > dy:
+            xv = numpy.linspace(path[0][0], path[i][0], num=ceil(dx/0.05))
+            yv = numpy.linspace(path[0][1], path[i][1], num=len(xv))
+        else:
+            yv = numpy.linspace(path[0][1], path[i][1], num=ceil(dy/0.05))
+            xv = numpy.linspace(path[0][0], path[i][0], num=len(yv))
+        if 1 < len(xv):
+            for k in range(len(xv)):
+                if not environment.safe(xv[k],yv[k]):
+                    path_ok = False
+
+        if path_ok:
+            new_path_exists = True
+            ok_i.append(i)
+
+
+    if ok_i[-1] == len(path)-1:
+        # insert first node
+        p = (path[0][0],path[0][1])
+        new_path.append(p)
+
+        # insert next node
+        p = (path[ok_i[-1]][0],path[ok_i[-1]][1])
+        new_path.append(p)
+
+        return new_path
+    elif ok_i[-1]+1 == len(path)-1:
+        # insert first node
+        p = (path[0][0],path[0][1])
+        new_path.append(p)
+
+        # insert next node
+        p = (path[ok_i[-1]][0],path[ok_i[-1]][1])
+        new_path.append(p)
+
+        # add last node
+        p = (path[-1][0],path[-1][1])
+        new_path.append(p)
+
+        return new_path
+    else:
+        # insert first node
+        p = (path[0][0],path[0][1])
+        new_path.append(p)
+
+        new_path += smooth_path(environment,path[ok_i[-1]:-1])
+
+    return new_path

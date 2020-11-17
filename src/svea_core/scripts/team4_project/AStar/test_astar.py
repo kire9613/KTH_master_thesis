@@ -12,8 +12,7 @@ def main():
     #map_service = UpdateMap()
     #map = map_service.get_map()
     #map_info = map_service.get_map_info()
-    #map_info = None
-    #map = None
+
     rospy.init_node('AStar')
     oc_map = rospy.wait_for_message('/map', OccupancyGrid)
     map = np.array(oc_map.data).reshape(oc_map.info.height,oc_map.info.width)
@@ -21,12 +20,12 @@ def main():
 
     # (x0,y0) = (-4,-9.2)
     # (xt,yt) = (-4.3,-6.85)
-    #
-    # (x0,y0) = (-2,-6.7)
-    # (xt,yt) = (-4,-2.47)
 
-    (x0,y0) = (-6.64,-14.1)
-    (xt,yt) = (10.5,11.8)
+    (x0,y0) = (-2,-6.7)
+    (xt,yt) = (-4,-2.47)
+
+    # (x0,y0) = (-6.64,-14.1)
+    # (xt,yt) = (10.5,11.8)
 
 
     env = Environment(map, map_info)
@@ -34,8 +33,7 @@ def main():
 
     print("Setup done, start path-planning...")
 
-    path = run_astar(car)
-    #path = solution(car)
+    path = run_astar(car,smooth=True)
 
     print("Plot path...")
 
