@@ -133,7 +133,7 @@ def main():
     # start track handler
     track = Track(vehicle_name, publish_track=True)
     track.start()
-    
+
     # Listen for updates in the path to follow
     rospy.Subscriber('/targets', Path, target_path_setter(svea))
     # Listen for updates in the target velocity
@@ -147,7 +147,7 @@ def main():
     svea.controller.target_velocity = target_velocity
     t = Thread(target=visualize, args=(svea, use_matplotlib or use_rviz))
     t.start()
-    while not svea.is_finished and not rospy.is_shutdown():
+    while not rospy.is_shutdown():
         state = svea.wait_for_state()
 
         # compute control input via pure pursuit

@@ -3,7 +3,7 @@ import rospy
 import actionlib
 from nav_msgs.msg import OccupancyGrid, Path
 from visualization_msgs.msg import Marker, MarkerArray
-from rrt import RRT
+from team4_project.planner.rrt import RRT
 import numpy as np
 import tf2_ros
 from math import pi, atan2, sqrt
@@ -152,6 +152,10 @@ def map_to_print_format(grid_map):
     #return xv_n,yv_n,xv_0,yv_0,xv_100,yv_100
     return map_list
 
+def get_path(grid, start, goal):
+    global grid_map
+    grid_map = grid
+    return get_next_goal(start, goal)
 
 def map_callback(msg):
     global grid_map
