@@ -31,7 +31,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
             RSequence('Initialize', children=[
                 pf.next_waypoint_exists(),
                 pf.interpolate_to_next_waypoint(),
-                pf.set_speed(1.0),
+                pf.set_speed(0.6),
                 pf.set_initialized()
             ])
         ])
