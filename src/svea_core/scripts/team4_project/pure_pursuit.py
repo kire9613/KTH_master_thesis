@@ -65,7 +65,7 @@ class PurePursuitController(object):
             saturated_prev_u = self.prev_u
             if not (self.MIN_U <= self.prev_u <= self.MAX_U):
                 saturated_prev_u = min([self.MAX_U, max([self.MIN_U, self.prev_u])])
-            
+
             u = self.K_p*e + (self.K_i-self.K_p)*self.prev_e + self.T*saturated_prev_u + (1-self.T)*self.prev_u
             self.prev_e = e
             self.prev_u = u
@@ -102,7 +102,7 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
-        if math.sqrt((state.x-self.traj_x[-1]) ** 2 + (state.y-self.traj_y[-1]) ** 2) < 0.05:
+        if math.sqrt((state.x-self.traj_x[-1]) ** 2 + (state.y-self.traj_y[-1]) ** 2) < 0.08:
             self.is_finished = True
         else:
             self.is_finished = False
