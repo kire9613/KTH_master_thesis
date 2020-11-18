@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from engine_ros import EngineROS
 import rospy
 
