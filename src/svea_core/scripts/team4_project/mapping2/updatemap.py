@@ -21,7 +21,7 @@ class UpdateMap:
         self.resolution = map.info.resolution
         self.origin_x = map.info.origin.position.x
         self.origin_y = map.info.origin.position.y
-        self.map_info = [self.width, self.height, self.resolution, self.origin_x, self.origin_y]
+        self.map_info = map.info
         self.gridmap = np.array(map.data).reshape(self.height,self.width)
         self.infl_gridmap = np.array(map.data).reshape(self.height,self.width)
 
