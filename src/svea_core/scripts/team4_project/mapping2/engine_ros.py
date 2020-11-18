@@ -255,7 +255,7 @@ class EngineROS:
 
         d = np.array(self.__map.data).reshape(self.height, self.width)
 
-        radius = 2
+        radius = 6
         # Add polygons to map
         x = min_x
         y = min_y
