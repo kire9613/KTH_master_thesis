@@ -6,6 +6,7 @@ from nav_msgs.msg import OccupancyGrid
 from svea_msgs.msg import VehicleState
 from team4_msgs.msg import Collision
 from team4_project.mapping2.updatemap import UpdateMap
+from geometry_msgs.msg import PointStamped
 
 import numpy as np
 import math
@@ -62,6 +63,7 @@ def main():
 
     map_update = UpdateMap()
     collision_pub = rospy.Publisher('/collision', Collision, queue_size=1)
+    vis_pub = rospy.Publisher('/vis_collision', PointStamped, queue_size=1)
 
     # Run check continuously
     rate = rospy.Rate(1)
@@ -80,6 +82,10 @@ def main():
             tgt1 = world_to_grid(map_update.get_map_info(), ([path_msg.poses[i].pose.position.x, path_msg.poses[i].pose.position.y]))
             tgt2 = world_to_grid(map_update.get_map_info(), ([path_msg.poses[i+1].pose.position.x, path_msg.poses[i+1].pose.position.y]))
 
+            vis = PointStamped()
+            vis.header.frame_id = 'map'
+            vis.point.x = -999
+            vis.point.y = -999
             for point in raytrace(tgt1, tgt2):
                 # Grid is stored as (row, col) whereas point
                 # is stored as (x, y)
@@ -89,7 +95,12 @@ def main():
                     collision_msg.collision = True
                     collision_msg.distance = math.hypot(collision_point[0]-state.x, collision_point[1]-state.y)
                     collision = True
+
+                    vis.point.x = collision_point[0]
+                    vis.point.y = collision_point[1]
+
                     break
+            vis_pub.publish(vis)
 
             if collision:
                 break
