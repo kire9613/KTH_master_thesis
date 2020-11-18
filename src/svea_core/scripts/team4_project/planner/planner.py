@@ -152,9 +152,11 @@ def map_to_print_format(grid_map):
     #return xv_n,yv_n,xv_0,yv_0,xv_100,yv_100
     return map_list
 
-def get_path(grid, start, goal):
+def get_path(map_updater, start, goal):
     global grid_map
-    grid_map = grid
+    grid_map = OccupancyGrid()
+    grid_map.info = map_updater.get_map_info()
+    grid_map.data = np.reshape(map_updater.get_inflated_map(), (grid_map.info.width*grid_map.info.height,))
     return get_next_goal(start, goal)
 
 def map_callback(msg):
