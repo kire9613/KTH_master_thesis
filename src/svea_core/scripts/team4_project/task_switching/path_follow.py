@@ -37,8 +37,8 @@ class is_at_waypoint(pt.behaviour.Behaviour):
         super(is_at_waypoint, self).__init__("Is at waypoint?")
 
     def update(self):
-        # The car has reached the waypoint if it is within 4dm
-        if np.linalg.norm(self.position - waypoints[current_waypoint]) < 0.4:
+        # The car has reached the waypoint if it is within 5dm
+        if np.linalg.norm(self.position - waypoints[current_waypoint]) < 0.5:
             return pt.common.Status.SUCCESS
         else:
             return pt.common.Status.FAILURE
