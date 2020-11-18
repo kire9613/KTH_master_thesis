@@ -180,8 +180,17 @@ class RRTNode:
             path.append(pose)
             current_node = current_node.get_parent()
 
-        path = self.smooth_path(path, grid_map)
+        position = current_node.get_position()
+        pose = PoseStamped()
+        pose.header.frame_id = frame_id
+        pose.pose.orientation.w = 1
+        pose.pose.position.x = position[0][0]
+        pose.pose.position.y = position[0][1]
+        path.append(pose)
 
+        last = path[-1]
+        path = self.smooth_path(path, grid_map)
+        path.append(last)
         return path
 
     def smooth_path(self, path, grid_map):
@@ -201,7 +210,7 @@ class RRTNode:
             path_ok = True
             if 1 < len(t):
                 for (t_x, t_y) in t[1:]:
-                    if 80 < grid_map.data[t_y * grid_map.info.width + t_x]: # C-space = 90 , occupied = 100, polygons = 120 
+                    if 80 < grid_map.data[t_y * grid_map.info.width + t_x]: # C-space = 90 , occupied = 100, polygons = 120
                         path_ok = False
 
             # Check last node

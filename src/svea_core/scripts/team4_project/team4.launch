@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="start_pt" default= '-7.43, -15.3, 0.8978652, 0'/>
+    <arg name="start_pt" default= '-6.16, -13.5, 0.8978652, 0'/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="True"/>
     <arg name="use_rviz" default="true"/>

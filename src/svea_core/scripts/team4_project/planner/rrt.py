@@ -30,9 +30,10 @@ class RRT:
         position = np.array([[0, 0]], dtype=np.float)
         for i in range(0, len(position[0])):
             position[0][i] = random.uniform(self._bbx_min[i], self._bbx_max[i])
-        # Introduce bias towards a square centered in the target position 
+        # Introduce bias towards a square centered in the target position
         if self._sample_nr % 5 == 0:
-            dist = 2.0
+            #dist = 2.0
+            dist = 1.0
             position[0][0] = random.uniform(self._target[0][0] -dist, self._target[0][0] + dist)
             position[0][1] = random.uniform(self._target[0][1] -dist, self._target[0][1] + dist)
         if self._sample_nr % 10 == 0:
