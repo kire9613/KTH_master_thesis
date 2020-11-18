@@ -37,7 +37,7 @@ class MPC(object):
         self.sp = []
         self.target = None
         # initialize with 0 velocity
-        self.target_velocity = 0.6
+        self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
 
@@ -315,7 +315,7 @@ class MPC(object):
         optvar          = self.opt_var(sol['x'])
 
         print(status)
-        
+
 
         solve_time+=time.time()
         print('MPC took %f seconds to solve.\r' %(solve_time))
@@ -472,9 +472,9 @@ class MPC(object):
 
         vd = self.TAU*u_pred[0][0] + state.v
         #vd = 0.6
-        #vd = x_pred[1][3] 
+        #vd = x_pred[1][3]
         print("vd = ", vd)
-      
+
         return float(u_pred[0][1]), float(vd)
 
 
