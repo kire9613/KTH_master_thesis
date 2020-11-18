@@ -25,8 +25,11 @@
         <param name="use_rviz" value="$(arg use_rviz)"/>
         <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
         <param name="is_sim" value="$(arg is_sim)"/>
-	<param name="use_lidar" value="$(arg use_lidar)"/>
+	      <param name="use_lidar" value="$(arg use_lidar)"/>
     </node>
+
+    <node pkg="svea_core" type="test_mapping.py" name="mapping" output="screen"/>
+    <node pkg="svea_core" type="obstacle_detection.py" name="obstacle_detection" output="screen"/>
 
     <group unless="$(eval is_sim == true)">
 	<node pkg="rosserial_python" type="serial_node.py" name="serial_node">
