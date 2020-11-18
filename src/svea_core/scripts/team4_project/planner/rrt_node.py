@@ -201,7 +201,7 @@ class RRTNode:
             path_ok = True
             if 1 < len(t):
                 for (t_x, t_y) in t[1:]:
-                    if 100 == grid_map.data[t_y * grid_map.info.width + t_x]:
+                    if 80 > grid_map.data[t_y * grid_map.info.width + t_x]: # C-space = 90 , occupied = 100, polygons = 120 
                         path_ok = False
 
             # Check last node
