@@ -67,7 +67,7 @@ def main():
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
         state = rospy.wait_for_message('/state', VehicleState)
-        grid = rospy.wait_for_message('/map', OccupancyGrid)
+        grid = map_update.get_inflated_map()
         path_msg = rospy.wait_for_message('/targets', Path)
 
         collision_msg = Collision()
