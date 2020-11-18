@@ -61,8 +61,6 @@ def main():
 
     show_tree_param = rospy.search_param('show_tree')
     show_tree = rospy.get_param('show_tree', True)
-    print(show_tree)
-    rospy.sleep(5)
 
     map_updater = UpdateMap()
 
