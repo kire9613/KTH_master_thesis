@@ -87,6 +87,7 @@ def main():
 
     behaviour_tree = BehaviourTree()
     behaviour_tree.setup(timeout=10000)
+    rospy.loginfo('Launching Behaviour Tree')
     rospy.sleep(1)
     while not rospy.is_shutdown():
         if show_tree:
