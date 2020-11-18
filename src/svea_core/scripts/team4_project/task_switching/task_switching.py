@@ -31,7 +31,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
             RSequence('Initialize', children=[
                 pf.next_waypoint_exists(),
                 pf.interpolate_to_next_waypoint(),
-                pf.set_speed(1.0),
+                pf.set_speed(0.6),
                 pf.set_initialized()
             ])
         ])
@@ -60,7 +60,7 @@ def main():
     rospy.init_node('task_switching')
 
     show_tree_param = rospy.search_param('show_tree')
-    show_tree = rospy.get_param('show_tree', True)
+    show_tree = rospy.get_param(show_tree_param, True)
 
     map_updater = UpdateMap()
 

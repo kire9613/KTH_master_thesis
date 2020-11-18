@@ -7,6 +7,7 @@
     <arg name="use_rviz" default="true"/>
     <arg name="use_lidar" default="true"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
+    <arg name="show_tree" default="false"/>
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
 
     <group if="$(eval is_sim == true)">
@@ -30,6 +31,9 @@
 
     <node pkg="svea_core" type="test_mapping.py" name="mapping" output="screen"/>
     <node pkg="svea_core" type="obstacle_detection.py" name="obstacle_detection" output="screen"/>
+    <node pkg="svea_core" type="task_switching.py" name="task_switching" output="screen">
+        <param name="show_tree" value="$(arg show_tree)"/>
+    </node>
 
     <group unless="$(eval is_sim == true)">
 	<node pkg="rosserial_python" type="serial_node.py" name="serial_node">
