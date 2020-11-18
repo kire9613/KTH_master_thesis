@@ -25,7 +25,6 @@
     </node>
 
     <node pkg="svea_core" type="explored_map_node.py" name="explore_node" output="screen" />
-    <node pkg="svea_core" type="trajectory_node_2.py" name="trajectory_node" output="screen" />
     <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
 
 </launch>

@@ -14,8 +14,7 @@ from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 
-from trajectory_node_2 import TrajectoryMap
-from explored_map_node import ExploredMap
+from explored_map_node import MapExplore
 """
 __team__ = "Team 1"
 __maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin, Aravind Sadashiv, Sarthak Manocha”
@@ -105,15 +104,12 @@ def main():
         simulator.toggle_pause_simulation()
 
     # simualtion loop
-<<<<<<< HEAD
     
     #trajectory_map = TrajectoryMap()
     #trajectory_map.update(traj_x, traj_y)
 
     #explored_map = ExploredMap()
-=======
 
->>>>>>> 9f61ba1ad6034577c88a7f94b08a515d0e258b69
     # TODO:planner = LocalPlanner(traj_x, traj_y)
 
     svea.controller.target_velocity = target_velocity
@@ -121,11 +117,7 @@ def main():
         state = svea.wait_for_state()
         #obs_map.update_map(state,scan)
 
-<<<<<<< HEAD
-        #print(obs_map.map_matrix)
-=======
         # print(obs_map.map_matrix)
->>>>>>> 9f61ba1ad6034577c88a7f94b08a515d0e258b69
         # TODO: ind = svea.controller.last_index
         # TODO: upd_traj_x, upd_traj_y = planner.plan(state,ind)
         # TODO: svea.update_traj(self, upd_traj_x, upd_traj_y)
