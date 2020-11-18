@@ -44,7 +44,6 @@ class UpdateMap:
         rospy.Subscriber(topic, type, callback)
 
     def update_infl_map(self, iupdate):
-        print("upd infl map")
         min_x = iupdate.x
         min_y = iupdate.y
         max_x = min_x + iupdate.width - 1
@@ -52,7 +51,6 @@ class UpdateMap:
         self.infl_gridmap[min_y:(max_y+1), min_x:(max_x+1)] = np.array(iupdate.data).reshape(iupdate.height,iupdate.width)
 
     def update_map(self, update):
-        print("upd map")
         min_x = update.x
         min_y = update.y
         max_x = min_x + update.width - 1
