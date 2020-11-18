@@ -14,7 +14,6 @@ class UpdateMap:
     def __init__(self):
 
         rospy.loginfo("Init UpdateMap")
-        rospy.init_node('update_map')
 
         map = rospy.wait_for_message('/map', OccupancyGrid)
         self.height = map.info.height
@@ -95,6 +94,7 @@ class UpdateMap:
         return deepcopy(self.infl_gridmap)
 
 def main():
+    rospy.init_node('update_map')
     map_updater = UpdateMap()
     #while True:
     while True:
