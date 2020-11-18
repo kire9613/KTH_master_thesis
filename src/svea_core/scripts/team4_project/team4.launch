@@ -3,7 +3,7 @@
 
     <arg name="start_pt" default= '-7.43, -15.3, 0.8978652, 0'/>
     <arg name="use_matplotlib" default="false"/>
-    <arg name="is_sim" default="false"/>
+    <arg name="is_sim" default="True"/>
     <arg name="use_rviz" default="true"/>
     <arg name="use_lidar" default="true"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />

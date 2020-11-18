@@ -6,6 +6,7 @@ import numpy as np
 import os.path
 import re
 from copy import deepcopy
+from math import sqrt
 
 # ROS
 import rospy
@@ -54,6 +55,9 @@ class EngineROS:
         self.__map_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=1,
                                          latch=True)
 
+        self.__map_upd_pub = rospy.Publisher('/map_upd_map', OccupancyGrid, queue_size=1,
+                                         latch=True)
+
 
         self.__map_updates_pub = rospy.Publisher("map_updates",
                                                  OccupancyGridUpdate,
@@ -91,11 +95,11 @@ class EngineROS:
             while not self.added_polygons:
                 rospy.sleep(1)
             self.__map_pub.publish(self.__map)
+            self.__map_upd_pub.publish(self.__map)
             rospy.sleep(5)
             self.write_map_to_file()
 
         self.__map = np.array(self.__map.data).reshape(self.height,self.width)
-        
         started_pub = rospy.Publisher('/node_started/mapping', Bool, latch=True, queue_size=5)
         started_pub.publish(True)
         rospy.loginfo("Start mapping main loop")
@@ -146,6 +150,7 @@ class EngineROS:
         self.__map = map
 
         self.__map_pub.publish(self.__map)
+        self.__map_upd_pub.publish(self.__map)
         rospy.sleep(5)
         self.setup_ok = True
         rospy.loginfo("Read map from file done.")
@@ -250,6 +255,7 @@ class EngineROS:
 
         d = np.array(self.__map.data).reshape(self.height, self.width)
 
+        radius = 2
         # Add polygons to map
         x = min_x
         y = min_y
@@ -257,6 +263,11 @@ class EngineROS:
             while x <= max_x:
                 if (x,y) in obs_l:
                     d[y][x] = self.polygon_space
+                    for xp in range(-radius,radius+1):
+                        for yp in range(-radius,radius+1):
+                            if not d[y+yp,x+xp] == 100:
+                                if sqrt(xp**2+yp**2) <= radius:
+                                    d[y+yp,x+xp] = self.polygon_space
                 else:
                     pass
                 x += 1

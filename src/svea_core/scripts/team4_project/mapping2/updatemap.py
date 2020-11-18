@@ -15,7 +15,7 @@ class UpdateMap:
 
         rospy.loginfo("Init UpdateMap")
 
-        map = rospy.wait_for_message('/map', OccupancyGrid)
+        map = rospy.wait_for_message('/map_upd_map', OccupancyGrid)
         self.height = map.info.height
         self.width = map.info.width
         self.resolution = map.info.resolution
@@ -91,20 +91,18 @@ class UpdateMap:
         """ Inflate only update and add to inflated global map """
         return deepcopy(self.infl_gridmap)
 
+    def show_map(self):
+        plt.imshow(self.gridmap)
+        plt.show()
+
+    def show_inf_map(self):
+        plt.imshow(self.infl_gridmap)
+        plt.show()
+
 def main():
     rospy.init_node('update_map')
     map_updater = UpdateMap()
-    #while True:
-    while True:
-        print("plot map")
-        gm = map_updater.get_map()
-        gmi = map_updater.get_inflated_map()
-        #upd = map_updater.get_map_update()
-        #plt.imshow(np.array(upd.data).reshape(upd.height,upd.width))
-        plt.imshow(gm)
-        plt.show()
-        plt.imshow(gmi)
-        plt.show()
+    rospy.spin()
 
 if __name__ == '__main__':
     print(__file__ + " start!!")
