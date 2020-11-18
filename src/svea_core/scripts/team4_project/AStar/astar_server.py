@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospy
 from dublins import *
 from a_star import *

@@ -10,7 +10,7 @@
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
 
     <group if="$(eval is_sim == true)">
-        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/scripts/team4_project/rviz.rviz" />
     </group>
 
     <group if="$(eval is_sim == true)">
@@ -25,8 +25,11 @@
         <param name="use_rviz" value="$(arg use_rviz)"/>
         <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
         <param name="is_sim" value="$(arg is_sim)"/>
-	<param name="use_lidar" value="$(arg use_lidar)"/>
+	      <param name="use_lidar" value="$(arg use_lidar)"/>
     </node>
+
+    <node pkg="svea_core" type="test_mapping.py" name="mapping" output="screen"/>
+    <node pkg="svea_core" type="obstacle_detection.py" name="obstacle_detection" output="screen"/>
 
     <group unless="$(eval is_sim == true)">
 	<node pkg="rosserial_python" type="serial_node.py" name="serial_node">

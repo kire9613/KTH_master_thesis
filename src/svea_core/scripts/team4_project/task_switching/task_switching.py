@@ -15,6 +15,7 @@ import py_trees as pt
 #import py_trees_ros as ptr
 from team4_project.task_switching.reactive_sequence import RSequence
 import team4_project.task_switching.path_follow as pf
+from team4_project.mapping2.updatemap import UpdateMap
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 
@@ -58,6 +59,11 @@ class BehaviourTree(pt.trees.BehaviourTree):
 def main():
     rospy.init_node('task_switching')
 
+    show_tree_param = rospy.search_param('show_tree')
+    show_tree = rospy.get_param('show_tree', True)
+
+    map_updater = UpdateMap()
+
     rospy.loginfo('Waiting for initial position...')
     rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
 
@@ -72,16 +78,22 @@ def main():
     rospy.sleep(1)
     start_state = rospy.wait_for_message('/state', VehicleState)
     rospy.loginfo('Planning path...')
-    path = get_path(rospy.wait_for_message('/map', OccupancyGrid), [start_state.x, start_state.y], [5.88, 14.8])
+    path = get_path(map_updater, [start_state.x, start_state.y], [5.88, 14.8])
     path = list(reversed(path))
     for p in path:
         pf.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+    # map_updater no longer needed. Delete to save computational resources
+    del map_updater
 
     behaviour_tree = BehaviourTree()
     behaviour_tree.setup(timeout=10000)
+    rospy.loginfo('Launching Behaviour Tree')
     rospy.sleep(1)
     while not rospy.is_shutdown():
-        behaviour_tree.tick_tock(1, post_tick_handler=lambda t: print_tree(behaviour_tree.tree))
+        if show_tree:
+            behaviour_tree.tick_tock(100, post_tick_handler=lambda t: print_tree(behaviour_tree.tree))
+        else:
+            behaviour_tree.tick_tock(100)
 
     rospy.spin()
 
