@@ -81,7 +81,7 @@ class SVEAManager(object):
         # load emergency brake reachable set
         self._emergency_checker_init = False
         self._init_emergency_check()
-        self.calling_emergency = True # more convenient at startup
+        self.calling_emergency = False # more convenient at startup
 
     def _init_emergency_check(self):
         self._TTR_set = load_TTR_from_mat('TTR_and_grad.mat')
@@ -267,10 +267,9 @@ class SVEAManager(object):
         :type velocity: float
         """
         # check if requested control is safe
-        #is_safe, reason = self._safety_check(steering, velocity)
-        is_safe = True 
-        reason = " NO"
-        self.calling_emergency = False
+        # is_safe, reason = self._safety_check(steering, velocity)
+        is_safe = True
+        reason = "Emergency brake currently disabled"
         if is_safe:
             if self.calling_emergency: # if emergency WAS called
                 is_start = False # log the end of emergency
