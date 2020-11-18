@@ -5,6 +5,7 @@ from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from svea_msgs.msg import VehicleState
 from team4_msgs.msg import Collision
+from team4_project.mapping2.updatemap import UpdateMap
 
 import numpy as np
 import math
@@ -43,10 +44,10 @@ def raytrace(start, end):
     error = dx - dy
     dx *= 2
     dy *= 2
-    
+
     for i in range(0, int(n)):
         yield (int(x), int(y))
-    
+
         if error > 0:
             x += x_inc
             error -= dy
@@ -59,20 +60,19 @@ def raytrace(start, end):
 def main():
     rospy.init_node('obstacle_detection')
 
+    map_update = UpdateMap()
     collision_pub = rospy.Publisher('/collision', Collision, queue_size=1)
 
     # Run check continuously
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
         state = rospy.wait_for_message('/state', VehicleState)
-        grid_msg = rospy.wait_for_message('/map', OccupancyGrid)
+        grid = rospy.wait_for_message('/map', OccupancyGrid)
         path_msg = rospy.wait_for_message('/targets', Path)
 
         collision_msg = Collision()
         collision_msg.collision = False
         collision_msg.distance = -1
-
-        grid = np.reshape(grid_msg.data, (grid_msg.info.height, grid_msg.info.width))
 
         collision = False
         for i in range(len(path_msg.poses)-1):
