@@ -14,7 +14,6 @@ class UpdateMap:
     def __init__(self):
 
         rospy.loginfo("Init UpdateMap")
-        rospy.init_node('update_map')
 
         map = rospy.wait_for_message('/map', OccupancyGrid)
         self.height = map.info.height
@@ -22,7 +21,7 @@ class UpdateMap:
         self.resolution = map.info.resolution
         self.origin_x = map.info.origin.position.x
         self.origin_y = map.info.origin.position.y
-        self.map_info = [self.width, self.height, self.resolution, self.origin_x, self.origin_y]
+        self.map_info = map.info
         self.gridmap = np.array(map.data).reshape(self.height,self.width)
         self.infl_gridmap = np.array(map.data).reshape(self.height,self.width)
 
@@ -45,7 +44,6 @@ class UpdateMap:
         rospy.Subscriber(topic, type, callback)
 
     def update_infl_map(self, iupdate):
-        print("upd infl map")
         min_x = iupdate.x
         min_y = iupdate.y
         max_x = min_x + iupdate.width - 1
@@ -53,7 +51,6 @@ class UpdateMap:
         self.infl_gridmap[min_y:(max_y+1), min_x:(max_x+1)] = np.array(iupdate.data).reshape(iupdate.height,iupdate.width)
 
     def update_map(self, update):
-        print("upd map")
         min_x = update.x
         min_y = update.y
         max_x = min_x + update.width - 1
@@ -95,6 +92,7 @@ class UpdateMap:
         return deepcopy(self.infl_gridmap)
 
 def main():
+    rospy.init_node('update_map')
     map_updater = UpdateMap()
     #while True:
     while True:

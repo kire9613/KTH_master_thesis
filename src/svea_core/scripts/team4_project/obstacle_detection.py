@@ -10,16 +10,16 @@ from team4_project.mapping2.updatemap import UpdateMap
 import numpy as np
 import math
 
-def world_to_grid(grid, pos):
+def world_to_grid(info, pos):
     """Convert world coordinate to grid coordinate"""
-    x_grid = int((pos[0] - grid.info.origin.position.x)/grid.info.resolution)
-    y_grid = int((pos[1] - grid.info.origin.position.y)/grid.info.resolution)
+    x_grid = int((pos[0] - info.origin.position.x)/info.resolution)
+    y_grid = int((pos[1] - info.origin.position.y)/info.resolution)
     return x_grid, y_grid
 
-def grid_to_world(grid, pos):
+def grid_to_world(info, pos):
     """Convert grid coordinate to world coordinate"""
-    x_world = pos[0]*grid.info.resolution + grid.info.origin.position.x
-    y_world = pos[1]*grid.info.resolution + grid.info.origin.position.y
+    x_world = pos[0]*info.resolution + info.origin.position.x
+    y_world = pos[1]*info.resolution + info.origin.position.y
     return x_world, y_world
 
 # Function from code provided by course DD2410
@@ -67,7 +67,7 @@ def main():
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
         state = rospy.wait_for_message('/state', VehicleState)
-        grid = rospy.wait_for_message('/map', OccupancyGrid)
+        grid = map_update.get_inflated_map()
         path_msg = rospy.wait_for_message('/targets', Path)
 
         collision_msg = Collision()
@@ -77,8 +77,8 @@ def main():
         collision = False
         for i in range(len(path_msg.poses)-1):
             # Raytrace between each pair of targets
-            tgt1 = world_to_grid(grid_msg, ([path_msg.poses[i].pose.position.x, path_msg.poses[i].pose.position.y]))
-            tgt2 = world_to_grid(grid_msg, ([path_msg.poses[i+1].pose.position.x, path_msg.poses[i+1].pose.position.y]))
+            tgt1 = world_to_grid(map_update.get_map_info(), ([path_msg.poses[i].pose.position.x, path_msg.poses[i].pose.position.y]))
+            tgt2 = world_to_grid(map_update.get_map_info(), ([path_msg.poses[i+1].pose.position.x, path_msg.poses[i+1].pose.position.y]))
 
             for point in raytrace(tgt1, tgt2):
                 # Grid is stored as (row, col) whereas point
