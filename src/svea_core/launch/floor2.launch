@@ -24,4 +24,7 @@
         <param name="run_lidar" value="$(arg run_lidar)"/>
     </node>
 
+    <node pkg="svea_core" type="explored_map_node.py" name="explore_node" output="screen" />
+    <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
+
 </launch>

@@ -266,16 +266,10 @@ class SVEAManager(object):
         :param velocity: Velocity request in [m/s]
         :type velocity: float
         """
-        # # check if requested control is safe
-        # self.actuation.send_control(steering, velocity)
-        # # log control as soon as it's actually sent
-        # self.data_handler.log_ctrl(steering, velocity, rospy.get_time())
-        # pass
-
+        # check if requested control is safe
         # is_safe, reason = self._safety_check(steering, velocity)
         is_safe = True
-        reason = "Because I said so."
-        self.calling_emergency = False
+        reason = "Emergency brake currently disabled"
         if is_safe:
             if self.calling_emergency: # if emergency WAS called
                 is_start = False # log the end of emergency

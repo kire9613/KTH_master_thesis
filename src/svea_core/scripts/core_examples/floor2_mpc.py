@@ -23,7 +23,7 @@ __status__ = "Development"
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = ""
 target_velocity = 1.0 # [m/s]
-dt = 0.01 # frequency of the model updates
+dt = 0.05 # frequency of the model updates
 
 xs = [-2.33, 10.48]
 ys = [-7.09, 11.71]
@@ -98,36 +98,40 @@ def main():
     lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
 
     # start pure pursuit SVEA manager
+    mpc = MPC
+    mpc.target_velocity = target_velocity
+    mpc.dl = 0.05
     svea = SVEAMPC(vehicle_name,
                    LocalizationInterface,
-                   MPC,
+                   mpc,
                    traj_x, traj_y,
                    data_handler = DataHandler)
     Q = np.diag([
-        1, # x
-        1, # y
-        1, # ψ
+        1000, # x
+        1000, # y
+        100, # ψ
         1, # v
     ])
     R = np.diag([
-        0.01, # a
-        0.1, # δ
+        1, # a
+        10, # δ
     ])
     # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
-    P_LQR = np.eye(4)*10
+    P_LQR = Q*100
 
-    ulb = [-1e1,-np.deg2rad(40)]
-    uub = [ 1e1, np.deg2rad(40)]
-    xlb = [-np.inf]*3+[ 1.5]
-    xub = [ np.inf]*3+[-1.5]
+    ulb = [-1e2,-np.deg2rad(40)]
+    uub = [ 1e2, np.deg2rad(40)]
+    xlb = [-np.inf]*3+[ 3.6]
+    xub = [ np.inf]*3+[-3.6]
     svea.controller.build_solver(dt,
                                  Q=Q,
                                  R=R,
-                                 P=Q,
+                                 P=P_LQR,
                                  ulb=ulb,
                                  uub=uub,
                                  xlb=xlb,
                                  xub=xub,
+                                 max_cpu_time=100*dt,
                                  )
     svea.start(wait=True)
 
