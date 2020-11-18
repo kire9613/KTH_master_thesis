@@ -60,7 +60,7 @@ def main():
     rospy.init_node('task_switching')
 
     show_tree_param = rospy.search_param('show_tree')
-    show_tree = rospy.get_param('show_tree', True)
+    show_tree = rospy.get_param(show_tree_param, True)
 
     map_updater = UpdateMap()
 
