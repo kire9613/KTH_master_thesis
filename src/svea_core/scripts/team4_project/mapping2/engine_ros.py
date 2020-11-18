@@ -302,4 +302,4 @@ class EngineROS:
         map_info = [self.width, self.height, self.xo, self.yo, self.res]
         _, update, iupdate = self.__mapping.update_map(self.__map, pose, scan, map_info)
         self.__map_updates_pub.publish(update)
-        #self.__map_inflated_pub.publish(iupdate)
+        self.__map_inflated_pub.publish(iupdate)
