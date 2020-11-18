@@ -19,15 +19,10 @@ import rospy
 from geometry_msgs.msg import Point, Pose, Quaternion
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
+from nav_msgs.msg import Path
 
 # SVEA
 from svea_msgs.msg import VehicleState
-
-# PIL
-try:
-    from PIL import Image, ImageDraw
-except ImportError:
-    print("You do not have PIL/Pillow installed")
 
 ## MAP EXPLORER PARAMS #######################################################
 update_rate = 5 # [Hz]
@@ -43,20 +38,18 @@ yaw_org= radians(0)
 x_org_cal = 22
 y_org_cal = 19
 yaw_cal = radians(-12)
+
 default_value=-1
 unknown_space = np.int8(-1)
 free_space = np.int8(0)
 c_space = np.int8(128)
+intersected_obs = -np.int8(64)
 occupied_space = np.int8(254)
-
-img_file_name = os.path.dirname(os.path.abspath(__file__)) + os.sep + "explored_map.png"
-unknown_space_rgb = (128, 128, 128)  # Grey
-free_space_rgb = (255, 255, 255)     # White
-c_space_rgb = (255, 0, 0)            # Red
-occupied_space_rgb = (255, 255, 0)   # Yellow
-wrong_rgb = (0, 0, 255)              # Blue
-
+start_spot = -np.int8(150)
+goal_spot = -np.int8(170)
 ###############################################################################
+
+path_lookup = np.zeros((height,width))
 
 class Node:
 	"""
@@ -67,10 +60,12 @@ class Node:
 		rospy.init_node('explore_node')
 		
 		self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
-		
-		self.state_sub = rospy.Subscriber('/SVEA/state', VehicleState, self.callback_state)
-		self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.callback_scan)
+		self.problem_pub = rospy.Publisher('problems', OccupancyGrid, queue_size=1, latch=True)
 
+		self.state_sub = rospy.Subscriber('/state', VehicleState, self.callback_state)
+		self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.callback_scan)
+		self.path_sub = rospy.Subscriber('/path_plan', Path, self.callback_path)
+		
 		self.scan = LaserScan()
 		self.state = VehicleState()
 
@@ -82,22 +77,38 @@ class Node:
 	def callback_scan(self, scan):
 		self.scan = scan
 	
+	def callback_path(self, path):
+		for i in range(len(path.poses) - 2):
+			start = (path.poses[i].pose.position.x,path.poses[i].pose.position.y)
+			end = (path.poses[i+1].pose.position.x,path.poses[i+1].pose.position.y)
+			start_cell = get_closest_cell(start)
+			end_cell = get_closest_cell(end)
+			path_lookup[end_cell] = 1
+			ray = raytrace(start_cell, end_cell)
+			for cell in ray:
+				path_lookup[cell] = 1
+				for r in range(1, radius + 2):
+					t = 0
+					while t <= 2*np.pi:                        
+						a = cell[0] + r*cos(t)
+						b = cell[1] + r*sin(t)
+						a = int(a)
+						b = int(b)
+						if is_in_bounds(a,b):
+							path_lookup[(a,b)] = 1
+						t = t + np.pi/32
+			
 	def run(self):
-
 		rate = rospy.Rate(update_rate)
 
 		while not rospy.is_shutdown():
-
 			self.mapper.update_map(self.state, self.scan)
 			self.mapper.inflate_map()
-			#map = copy.deepcopy(self.__map)
-			#self.__inflated_map = self.__mapping.inflate_map(map)
-			#self.publish_inflated_map()
-
-			self.map_pub.publish(self.mapper.map)	
+			self.map_pub.publish(self.mapper.map)
+			if self.mapper.detection == True:
+				print("Hej")
+				self.problem_pub.publish(self.mapper.map)
 			rate.sleep()
-		
-		self.mapper.save()
 		
 		rospy.spin()
 
@@ -136,9 +147,8 @@ class MapExplore:
 		# Fill in the map data
 		self.map_matrix = np.full((height, width), default_value, dtype=np.int8)
 		self.map.data = self.map_matrix.reshape(-1) # (self.__map.size)
-		
-		self.map_image = Image.new('RGB', (width, height))
-		self.draw_obj = ImageDraw.Draw(self.map_image)
+
+		self.detection = False
 
 	def add_to_map_reflected(self, x, y, value):
 		"""
@@ -149,9 +159,8 @@ class MapExplore:
 		norm = sqrt(880**2 +  720**2)
 		x_ref = x + 2*((x*880**2 + y*720*880)/norm**2 - x)
 		y_ref = y + 2*((x*880*720 + y*720**2)/norm**2 - y)
-		if self.is_in_bounds(x_ref, y_ref):
+		if is_in_bounds(x_ref, y_ref):
 			self.map_matrix[int(floor(x_ref)), int(floor(y_ref))] = value
-			draw(self.draw_obj, x, height - y, value)
 			return True
 		else:
 			return False
@@ -162,18 +171,9 @@ class MapExplore:
 		and 
 		returns weather (x, y) is inside map or not.
 		"""
-		if self.is_in_bounds(x, y):
+		if is_in_bounds(x, y):
 			self.map_matrix[int(x), int(y)] = value
-			draw(self.draw_obj, x, height - y, value)
 			return True
-		else:
-			return False
-
-	def is_in_bounds(self, x, y):
-		"""Returns weather (x, y) is inside grid_map or not."""
-		if x >= 0 and x < height:
-			if y >= 0 and y < width:
-				return True
 		else:
 			return False
 
@@ -182,6 +182,8 @@ class MapExplore:
 		Updates the grid_map with the data from the laser scan and the pose.
 		:type scan: LaserScan
 		"""
+		self.detection = False
+
 		yaw = state.yaw + yaw_cal
 		x = cos(yaw_cal)*state.x - sin(yaw_cal)*state.y
 		y = sin(yaw_cal)*state.x + cos(yaw_cal)*state.y
@@ -215,7 +217,7 @@ class MapExplore:
 			else:
 				i = i + 1
 				continue
-			ray = self.raytrace(start, obs)
+			ray = raytrace(start, obs)
 			for d in ray:
 				self.add_to_map_reflected(d[0], d[1], free_space) 
 				if d[0] < min_x:     
@@ -228,8 +230,43 @@ class MapExplore:
 					max_y = d[1]
 			i = i + 1
 
+		count = 0
 		for c in obstacles:
+			if path_lookup[c] == 1 and count > 4:
+				lst = []
+				self.add_to_map_reflected(c[0], c[1], intersected_obs)
+				t = 0
+				while t <= 2*np.pi:                        
+					a = c[0] + 60*cos(t)
+					b = c[1] + 60*sin(t)
+					a = int(a)
+					b = int(b)
+					if is_in_bounds(a,b):
+						if path_lookup[(a,b)] == 1:
+							lst.append((a,b))
+						self.add_to_map_reflected(a, b, intersected_obs)
+					t = t + np.pi/64
+				
+				#furthest = None
+				srt = np.squeeze(np.zeros((1,len(lst))))
+				for i, entry in enumerate(lst):
+					srt[i] = np.sqrt((start[0] - entry[0])^2 + (start[1] - entry[1])^2)
+				indices = np.argsort(srt)
+				closest = lst[int(indices[0])]
+				if len(lst) > 3:
+					furthest = lst[int(indices[2])]
+					self.add_to_map_reflected(closest[0], closest[1], start_spot)
+					self.add_to_map_reflected(furthest[0], furthest[1], goal_spot)
+					self.detection = True
+
+			count = count + 1
+
 			self.add_to_map_reflected(c[0], c[1], occupied_space)
+
+#		for i in range(height):
+#			for j in range(width):
+#				if path_lookup[(i,j)] == 1:
+#					self.add_to_map_reflected(i, j, intersected_obs)
 
 		self.map.data = self.map_matrix.reshape(-1)
 
@@ -249,85 +286,75 @@ class MapExplore:
 							b = j + r*sin(t)
 							a = int(a)
 							b = int(b)
-							if self.is_in_bounds(a,b) and self.map_matrix[a,b] != occupied_space:
+							if is_in_bounds(a,b) and self.map_matrix[a,b] != occupied_space:
 								self.add_to_map(a, b, c_space)
 							t = t + np.pi/32
 
 		self.map.data = self.map_matrix.reshape(-1)
 
-	def raytrace(self, start, end):
-		"""Returns all cells in the grid map that has been traversed
-		from start to end, including start and excluding end.
-		start = (x, y) grid map index
-		end = (x, y) grid map index
-		"""
-		(start_x, start_y) = start
-		(end_x, end_y) = end
-		x = start_x
-		y = start_y
-		(dx, dy) = (fabs(end_x - start_x), fabs(end_y - start_y))
-		n = dx + dy
-		x_inc = 1
-		if end_x <= start_x:
-			x_inc = -1
-		y_inc = 1
-		if end_y <= start_y:
-			y_inc = -1
-		error = dx - dy
-		dx *= 2
-		dy *= 2
-		traversed = []
-		i = 0
-		while i < int(n):
-			traversed.append((int(x), int(y)))
-			if error > 0:
-				x += x_inc
-				error -= dy
-			else:
-				if error == 0:
-					traversed.append((int(x + x_inc), int(y)))
-				y += y_inc
-				error += dx
-			i += 1
-		return traversed
-
-	def save(self):
-		map_data_rgb = map_to_rgb(self.map.data)
-		self.map_image.putdata(map_data_rgb)
-		self.map_image.save(img_file_name)
-
-def draw(draw_obj, x, y, value):
-	if value == unknown_space:
-		draw_obj.point((x,y), unknown_space_rgb)
-	elif value == free_space:
-		draw_obj.point((x,y), free_space_rgb)
-	elif value == c_space:
-		draw_obj.point((x,y), c_space_rgb)
-	elif value == occupied_space:
-		draw_obj.point((x,y), occupied_space_rgb)
+def is_in_bounds(x, y):
+	"""Returns weather (x, y) is inside grid_map or not."""
+	if x >= 0 and x < height:
+		if y >= 0 and y < width:
+			return True
 	else:
-		# If there is something blue in the image
-		# then it is wrong
-		draw_obj.point((x,y), wrong_rgb)
+		return False
 
-def map_to_rgb(map_data):
-	map_data_rgb = [wrong_rgb] * len(map_data)
-	# Convert to RGB
-	for i in range(0, len(map_data)):
-		if map_data[i] == unknown_space:
-			map_data_rgb[i] = unknown_space_rgb
-		elif map_data[i] == free_space:
-			map_data_rgb[i] = free_space_rgb
-		elif map_data[i] == c_space:
-			map_data_rgb[i] = c_space_rgb
-		elif map_data[i] == occupied_space:
-			map_data_rgb[i] = occupied_space_rgb
+def get_closest_cell(place):
+	x_org_cal = 17.5/resolution #23.876441
+	y_org_cal = 23.876441/resolution #16.581444 #17.5
+	yaw_cal = radians(-11.3)
+
+	x = place[0]
+	y = place[1]
+
+	# Shift origin
+	x = x/resolution + x_org_cal
+	y = y/resolution + y_org_cal
+
+	# Compensate for map twist
+	x = cos(yaw_cal)*x - sin(yaw_cal)*y
+	y = sin(yaw_cal)*x + cos(yaw_cal)*y
+
+	x = int(x)
+	y = int(y)
+	return (x, y)
+
+def raytrace(start, end):
+	"""Returns all cells in the grid map that has been traversed
+	from start to end, including start and excluding end.
+	start = (x, y) grid map index
+	end = (x, y) grid map index
+	"""
+	(start_x, start_y) = start
+	(end_x, end_y) = end
+	x = start_x
+	y = start_y
+	(dx, dy) = (fabs(end_x - start_x), fabs(end_y - start_y))
+	n = dx + dy
+	x_inc = 1
+	if end_x <= start_x:
+		x_inc = -1
+	y_inc = 1
+	if end_y <= start_y:
+		y_inc = -1
+	error = dx - dy
+	dx *= 2
+	dy *= 2
+	traversed = []
+	i = 0
+	while i < int(n):
+		traversed.append((int(x), int(y)))
+		if error > 0:
+			x += x_inc
+			error -= dy
 		else:
-			# If there is something blue in the image
-			# then it is wrong
-			map_data_rgb[i] = wrong_rgb
-			
-	return map_data_rgb
+			if error == 0:
+				traversed.append((int(x + x_inc), int(y)))
+			y += y_inc
+			error += dx
+		i += 1
+	return traversed
 
 def quaternion_from_euler(roll, pitch, yaw):
 	q = [0]*4
@@ -353,26 +380,9 @@ def get_yaw(q):
 	q = q
 	return atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
 
-def write_yaml():
-	# open file for writing 
-	filename = os.path.dirname(os.path.abspath(__file__)) + os.sep + "explored_map.yaml"
-	file_out = open(filename, 'wb')
-
-	# define PGM Header
-	string = 'image: ' + filename + '\n' + 'resolution: ' \
-			+ str(resolution) + '\n' \
-			'origin: ' + '[' + str(-x_org) + ', ' \
-			+ str(-y_org) + ', ' + str(0) + ']' + '\n' + 'negate: '\
-			+ str(0) + '\n' + 'occupied_thresh: ' \
-			+ str(0.65) + '\n' + 'free_thresh: ' \
-			+ str(0.196) + '\n' + '\n'
-
-	file_out.write(string)
-
 if __name__ == '__main__':
 	try:
 		node = Node()
-		#write_yaml()
 		node.run()
 	except rospy.ROSInterruptException:
 		pass

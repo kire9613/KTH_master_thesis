@@ -81,7 +81,7 @@ class SVEAManager(object):
         # load emergency brake reachable set
         self._emergency_checker_init = False
         self._init_emergency_check()
-        self.calling_emergency = True # more convenient at startup
+        self.calling_emergency = False # more convenient at startup
 
     def _init_emergency_check(self):
         self._TTR_set = load_TTR_from_mat('TTR_and_grad.mat')

@@ -94,19 +94,9 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: true
-      Enabled: False
-      Name: Map
-      Topic: /explored_map
-      Unreliable: false
-      Use Timestamp: false
-      Value: true
-    - Alpha: 0.75
-      Class: rviz/Map
-      Color Scheme: map
-      Draw Behind: false
       Enabled: false
       Name: Map
-      Topic: /trajectory_on_map
+      Topic: /explored_map
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -116,7 +106,7 @@ Visualization Manager:
       Draw Behind: true
       Enabled: True
       Name: Map
-      Topic: /collision_problem
+      Topic: /problems
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -180,7 +170,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 0; 0; 255
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
