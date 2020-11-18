@@ -109,23 +109,28 @@ def main():
                    traj_x, traj_y,
                    data_handler = DataHandler)
     Q = np.diag([
-        1500, # x
-        1500, # y
-        100, # ψ
-        500, # v
+        1, # x
+        1, # y
+        1, # ψ
+        100, # v
     ])
     R = np.diag([
         10, # a
         1, # δ
     ])
     # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
-    P_LQR = Q*200
+    P_LQR = np.diag([
+            100,
+            100,
+            1,
+            1
+    ])
 
     ulb = [-1e2,-np.deg2rad(40)]
     uub = [ 1e2, np.deg2rad(40)]
-    xlb = [-np.inf]*3+[-3.6]
+    xlb = [-np.inf]*3+[-1]
     #xlb = [-np.inf,-np.inf, -np.deg2rad(40), 3.6]
-    xub = [ np.inf]*3+[3.6]
+    xub = [ np.inf]*3+[3]
     #xub = [np.inf,np.inf, np.deg2rad(40), -3.6]
     svea.controller.build_solver(dt,
                                  Q=Q,

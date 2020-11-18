@@ -28,7 +28,7 @@ from visualization_msgs.msg import Marker
 import math
 
 class MPC(object):
-    N_IND_SEARCH = 5  # Search index number
+    N_IND_SEARCH = 10  # Search index number
     TAU = 0.1 # TODO: Hardcoded
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -48,7 +48,7 @@ class MPC(object):
         self.ref_pub = rospy.Publisher("ref",Marker,queue_size=1)
 
     def build_solver(self, dt, model=None, dynamics=None,
-                 horizon=5, Q=None, P=None, R=None,
+                 horizon=7, Q=None, P=None, R=None,
                  ulb=None, uub=None, xlb=None, xub=None, terminal_constraint=None,
                  solver_opts=None,
                  x_d=[0]*4,
