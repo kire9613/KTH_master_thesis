@@ -85,7 +85,7 @@ def main():
                 # is stored as (x, y)
                 value = grid[point[1], point[0]]
                 if not (value == 0 or value == -1):
-                    collision_point = grid_to_world(grid_msg, point)
+                    collision_point = grid_to_world(map_update.get_map_info(), point)
                     collision_msg.collision = True
                     collision_msg.distance = math.hypot(collision_point[0]-state.x, collision_point[1]-state.y)
                     collision = True
