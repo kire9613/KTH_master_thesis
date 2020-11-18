@@ -1,6 +1,0 @@
-#!/bin/bash
-
-sleep 20
-
-python -c 'import rospy; rospy.init_node("serial_starting"); rospy.loginfo("STARTING ROSSERIAL"); rospy.sleep(0.5)'
-rosrun rosserial_python serial_node.py _port:=$(ls /dev/ttyACM*) _baud:=250000

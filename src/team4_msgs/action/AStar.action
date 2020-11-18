@@ -1,0 +1,13 @@
+#goal definition
+string frame_id
+float32 x0
+float32 y0
+float32 xt
+float32 yt
+bool smooth
+---
+#result definition
+nav_msgs/Path path
+---
+#feedback
+float32 distance_to_goal

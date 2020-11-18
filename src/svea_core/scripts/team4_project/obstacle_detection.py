@@ -5,21 +5,26 @@ from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from svea_msgs.msg import VehicleState
 from team4_msgs.msg import Collision
+from team4_project.mapping2.updatemap import UpdateMap
+from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import Point
 
 import numpy as np
 import math
 
-def world_to_grid(grid, pos):
-    """Convert world coordinate to grid coordinate"""
-    x_grid = int((pos[0] - grid.info.origin.position.x)/grid.info.resolution)
-    y_grid = int((pos[1] - grid.info.origin.position.y)/grid.info.resolution)
-    return x_grid, y_grid
+REPLAN_DISTANCE = 1
 
-def grid_to_world(grid, pos):
+def world_to_grid(info, pos):
+    """Convert world coordinate to grid coordinate"""
+    x_grid = int((pos[0] - info.origin.position.x)/info.resolution)
+    y_grid = int((pos[1] - info.origin.position.y)/info.resolution)
+    return np.array([x_grid, y_grid])
+
+def grid_to_world(info, pos):
     """Convert grid coordinate to world coordinate"""
-    x_world = pos[0]*grid.info.resolution + grid.info.origin.position.x
-    y_world = pos[1]*grid.info.resolution + grid.info.origin.position.y
-    return x_world, y_world
+    x_world = pos[0]*info.resolution + info.origin.position.x
+    y_world = pos[1]*info.resolution + info.origin.position.y
+    return np.array([x_world, y_world])
 
 # Function from code provided by course DD2410
 def raytrace(start, end):
@@ -43,10 +48,10 @@ def raytrace(start, end):
     error = dx - dy
     dx *= 2
     dy *= 2
-    
+
     for i in range(0, int(n)):
         yield (int(x), int(y))
-    
+
         if error > 0:
             x += x_inc
             error -= dy
@@ -59,37 +64,58 @@ def raytrace(start, end):
 def main():
     rospy.init_node('obstacle_detection')
 
+    map_update = UpdateMap()
     collision_pub = rospy.Publisher('/collision', Collision, queue_size=1)
+    vis_pub = rospy.Publisher('/vis_collision', PointStamped, queue_size=1)
 
     # Run check continuously
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
         state = rospy.wait_for_message('/state', VehicleState)
-        grid_msg = rospy.wait_for_message('/map', OccupancyGrid)
+        grid = map_update.get_inflated_map()
         path_msg = rospy.wait_for_message('/targets', Path)
 
         collision_msg = Collision()
         collision_msg.collision = False
-        collision_msg.distance = -1
-
-        grid = np.reshape(grid_msg.data, (grid_msg.info.height, grid_msg.info.width))
 
         collision = False
         for i in range(len(path_msg.poses)-1):
             # Raytrace between each pair of targets
-            tgt1 = world_to_grid(grid_msg, ([path_msg.poses[i].pose.position.x, path_msg.poses[i].pose.position.y]))
-            tgt2 = world_to_grid(grid_msg, ([path_msg.poses[i+1].pose.position.x, path_msg.poses[i+1].pose.position.y]))
+            tgt1 = world_to_grid(map_update.get_map_info(), [path_msg.poses[i].pose.position.x, path_msg.poses[i].pose.position.y])
+            tgt2 = world_to_grid(map_update.get_map_info(), [path_msg.poses[i+1].pose.position.x, path_msg.poses[i+1].pose.position.y])
 
+            vis = PointStamped()
+            vis.header.frame_id = 'map'
+            vis.point.x = -999
+            vis.point.y = -999
             for point in raytrace(tgt1, tgt2):
                 # Grid is stored as (row, col) whereas point
                 # is stored as (x, y)
                 value = grid[point[1], point[0]]
                 if not (value == 0 or value == -1):
-                    collision_point = grid_to_world(grid_msg, point)
+                    collision_point = grid_to_world(map_update.get_map_info(), point)
+
+                    replan_index = i
+                    distance = np.linalg.norm(collision_point - grid_to_world(map_update.get_map_info(), tgt1))
+                    for j in range(i-1, -1, -1):
+                        if distance >= REPLAN_DISTANCE:
+                            break
+
+                        p_last = np.array([path_msg.poses[j+1].pose.position.x, path_msg.poses[j+1].pose.position.y])
+                        p = np.array([path_msg.poses[j].pose.position.x, path_msg.poses[j].pose.position.y])
+
+                        distance += np.linalg.norm(p_last-p)
+                        replan_index = j
+
                     collision_msg.collision = True
-                    collision_msg.distance = math.hypot(collision_point[0]-state.x, collision_point[1]-state.y)
+                    collision_msg.replan_point = path_msg.poses[replan_index].pose.position
                     collision = True
+
+                    vis.point.x = collision_point[0]
+                    vis.point.y = collision_point[1]
+
                     break
+            vis_pub.publish(vis)
 
             if collision:
                 break
