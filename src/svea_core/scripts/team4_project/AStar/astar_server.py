@@ -15,14 +15,16 @@ from team4_project.mapping2.updatemap import UpdateMap
 
 N_GRID_X = 40
 N_GRID_Y = N_GRID_X//2
-GOAL_RADIUS = 1.5
+DELTA_T = 0.040     # time step, dt_max = 0.05 given max_vel = 1 m/s
+GOAL_RADIUS = 0.1   # Accepted deviation from goal position
+GOAL_ANGLE = pi/6   # Accepted deviation from goal theta
 SAMPLE_TIME = 0.01
 ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4]#[-pi/4, 0, pi/4]
 N_HEADINGS = 6
-N_STEPS = None    # initialized in solution
-GRID_SIZE_X = 0   # initialized in solution
-GRID_SIZE_Y = 0   # initialized in solution
-OBJECTIVE = [] # initialized in solution
+N_STEPS = 10        # number of steps with same control signal
+GRID_SIZE_X = 0     # initialized in solution
+GRID_SIZE_Y = 0     # initialized in solution
+OBJECTIVE = []      # initialized in solution
 
 DEBUG = False
 
@@ -266,7 +268,7 @@ class AStarAction(object):
         rospy.loginfo('%s: Executing, searching for path from (%f,%f) to (%f,%f)' % (self._action_name, goal.x0, goal.y0, goal.xt, goal.yt))
 
         env = Environment(self._map, self._mapinfo)
-        car = Objective(goal.xt, goal.yt, goal.x0, goal.y0, env)
+        car = Objective(goal.xt, goal.yt, goal.thetat, goal.x0, goal.y0, goal.theta0, env)
 
         path = self.run_astar(car,goal.smooth)
 
@@ -293,14 +295,10 @@ class AStarAction(object):
             dbg.plotMap(objective, N_GRID_X, N_GRID_Y, OBJECTIVE)
             dbg.show(objective)
 
-        N_STEPS = 10
-        DELTA_T = 0.040 #dt_max = 0.05 given max_vel = 1 m/s
-        GOAL_RADIUS = 0.1
-
         if DEBUG:
             plotter = dbg.TreePlot(objective._environment, N_STEPS)
 
-        openSet.put((heur(objective.x0, objective.y0, objective.xt, objective.yt), Node(45, objective.x0, objective.y0, 0, None, 0)))
+        openSet.put((heur(objective.x0, objective.y0, objective.xt, objective.yt), Node(objective.theta0, objective.x0, objective.y0, 0, None, 0)))
 
         while not openSet.empty():
 
@@ -317,7 +315,7 @@ class AStarAction(object):
                     plotter.closeNode(n)
 
             # We have reached the goal
-            if hypot(n.x-objective.xt, n.y-objective.yt) < GOAL_RADIUS:
+            if hypot(n.x-objective.xt, n.y-objective.yt) < GOAL_RADIUS and numpy.fabs(n.theta - objective.thetat) < GOAL_ANGLE: 
                 if DEBUG:
                     plotter.markBestPath(n)
                 # Reconstruct control signals
