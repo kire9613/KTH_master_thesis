@@ -4,6 +4,8 @@ import rospy
 from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Point32
+from sensor_msgs.msg import PointCloud
 from team4_project.planner.planner import get_path
 from nav_msgs.msg import OccupancyGrid
 from svea_msgs.msg import VehicleState
@@ -64,6 +66,8 @@ def main():
 
     map_updater = UpdateMap()
 
+    waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
+
     rospy.loginfo('Waiting for initial position...')
     rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
 
@@ -80,8 +84,18 @@ def main():
     rospy.loginfo('Planning path...')
     path = get_path(map_updater, [start_state.x, start_state.y], [5.88, 14.8])
     path = list(reversed(path))
+
+    vis_waypoint_msg = PointCloud()
+    vis_waypoint_msg.header.frame_id = 'map'
+
     for p in path:
         pf.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+        vis_point = Point32()
+        vis_point.x = p.pose.position.x
+        vis_point.y = p.pose.position.y
+        vis_waypoint_msg.points.append(vis_point)
+
+    waypoint_vis.publish(vis_waypoint_msg)
     # map_updater no longer needed. Delete to save computational resources
     del map_updater
 
