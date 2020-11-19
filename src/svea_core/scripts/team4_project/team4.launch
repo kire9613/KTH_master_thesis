@@ -34,6 +34,7 @@
     <node pkg="svea_core" type="task_switching.py" name="task_switching" output="screen">
         <param name="show_tree" value="$(arg show_tree)"/>
     </node>
+    <node pkg="svea_core" type="astar_server.py" name="astar_planning" output="screen"/>
 
     <group unless="$(eval is_sim == true)">
 	<node pkg="rosserial_python" type="serial_node.py" name="serial_node">

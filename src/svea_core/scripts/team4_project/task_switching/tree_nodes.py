@@ -4,12 +4,15 @@ from svea_msgs.msg import VehicleState
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Float32
-from team4_msgs.msg import Collision
+from team4_msgs.msg import Collision, AStarAction, AStarGoal
 import rospy
+import actionlib
+from copy import deepcopy
 
 waypoints = []
 current_waypoint = 0
 initialized = False
+replan_point = np.zeros((2,))
 
 class has_initialized(pt.behaviour.Behaviour):
     def __init__(self):
@@ -103,7 +106,10 @@ class obstacle_detected(pt.behaviour.Behaviour):
             return pt.Status.FAILURE
 
     def cache_collision(self, msg):
+        global replan_point
         self.collision = msg.collision
+        replan_point[0] = msg.replan_point.x
+        replan_point[1] = msg.replan_point.y
 
 class set_speed(pt.behaviour.Behaviour):
     def __init__(self, speed, return_val=pt.common.Status.SUCCESS):
@@ -116,3 +122,70 @@ class set_speed(pt.behaviour.Behaviour):
     def update(self):
         self.speed_pub.publish(self.speed)
         return self.return_val
+
+class replan_path(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
+        self.planning_client = actionlib.SimpleActionClient('/astar_planning', AStarAction)
+        self.planning_client.wait_for_server()
+        self.last_planning_pont = np.zeros((2,))
+
+        self.is_planning = False
+
+        super(replan_path, self).__init__("Replan path")
+
+    def update(self):
+        if not self.is_planning and (self.last_planning_pont != replan_point).any():
+            rospy.loginfo("Replanning path...")
+            self.is_planning = True
+            self.last_planning_pont = deepcopy(replan_point)
+
+            action_msg = AStarGoal()
+            action_msg.x0 = replan_point[0]
+            action_msg.y0 = replan_point[1]
+            action_msg.xt = waypoints[current_waypoint][0]
+            action_msg.yt = waypoints[current_waypoint][1]
+            action_msg.smooth = False
+
+            self.planning_client.send_goal(action_msg, done_cb=self.done_planning)
+
+        if self.is_planning:
+            return pt.common.Status.RUNNING
+        else:
+            return pt.common.Status.SUCCESS
+
+    def terminate(self, new_status):
+        if new_status == pt.common.Status.INVALID:
+            # Obstacle no longer detected. Cancel replanning.
+            self.planning_client.cancel_all_goals()
+            self.is_planning = False
+
+    def done_planning(self, state, msg):
+        if state != actionlib.TerminalState.SUCCEEDED:
+            rospy.logerr("Replanning failed!")
+            return
+
+        self.targets_pub.publish(msg.path)
+        self.is_planning = False
+
+class adjust_replan_speed(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.position = np.zeros((2,))
+        self.speed_pub = rospy.Publisher('/target_vel', Float32, queue_size=1)
+        self.state_sub = rospy.Subscriber('/state', VehicleState, self.cache_state)
+
+        # Maximum speed when approaching a collision
+        self.MAX_SPEED = 0.5
+        # Gain for speed regulation
+        self.K = 0.7
+
+        super(adjust_replan_speed, self).__init__("Adjust speed while replanning")
+
+    def update(self):
+        distance = np.linalg.norm(self.position - replan_point)
+        speed = min(self.MAX_SPEED, self.K*distance)
+        self.speed_pub.publish(0)
+        return pt.common.Status.SUCCESS
+
+    def cache_state(self, msg):
+        self.position = np.array([msg.x, msg.y])
