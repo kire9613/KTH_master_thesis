@@ -243,9 +243,9 @@ class AStarAction(object):
     def __init__(self, name):
         self._action_name = name
 
-        #self._map_srv = UpdateMap()
-        #self._map = self._map_srv.get_map()
-        #self._mapinfo = map_service.get_map_info()
+        self._map_srv = UpdateMap()
+        self._map = self._map_srv.get_inflated_map()
+        self._mapinfo = self._map_srv.get_map_info()
 
         oc_map = rospy.wait_for_message('/map', OccupancyGrid)
         self._map = np.array(oc_map.data).reshape(oc_map.info.height,oc_map.info.width)
@@ -265,6 +265,7 @@ class AStarAction(object):
         # publish info to the console for the user
         rospy.loginfo('%s: Executing, searching for path from (%f,%f) to (%f,%f)' % (self._action_name, goal.x0, goal.y0, goal.xt, goal.yt))
 
+        self._map = self._map_srv.get_inflated_map()
         env = Environment(self._map, self._mapinfo)
         car = Objective(goal.xt, goal.yt, goal.x0, goal.y0, env)
 
