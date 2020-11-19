@@ -41,11 +41,11 @@ class BehaviourTree(pt.trees.BehaviourTree):
         collision = RSequence("Collision", children=[
             tn.obstacle_detected(),
             tn.adjust_replan_speed(),
-            tn.replan_path(),
-            tn.set_speed(0.6)
+            tn.replan_path()
         ])
 
         following = RSequence("Waypoint", children=[
+            tn.set_speed(0.6),
             tn.is_at_waypoint(),
             pt.composites.Selector("Stopping condition", children=[
                 tn.next_waypoint_exists(),
