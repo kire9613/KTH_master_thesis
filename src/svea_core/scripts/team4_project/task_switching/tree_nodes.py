@@ -2,9 +2,10 @@ import py_trees as pt
 import numpy as np
 from svea_msgs.msg import VehicleState
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point32
 from std_msgs.msg import Float32
 from team4_msgs.msg import Collision, AStarAction, AStarGoal
+from sensor_msgs.msg import PointCloud
 import rospy
 import actionlib
 from copy import deepcopy
@@ -13,6 +14,15 @@ waypoints = []
 current_waypoint = 0
 initialized = False
 replan_point = np.zeros((2,))
+
+def interpolate(start, end, distance):
+    # Create n_steps points that are evenly distributed
+    # along a line with distance TARGET_DISTANCE between them
+    n_steps = int(round(np.linalg.norm(start-end)/distance))
+    ts = np.linspace(0, 1, n_steps+1)
+    for t in ts:
+        target = start + t*(end-start)
+        yield target
 
 class has_initialized(pt.behaviour.Behaviour):
     def __init__(self):
@@ -77,16 +87,19 @@ class interpolate_to_next_waypoint(pt.behaviour.Behaviour):
         end = waypoints[current_waypoint]
 
         path_msg = Path()
-        # Create n_steps points that are evenly distributed
-        # along a line with distance TARGET_DISTANCE between them
-        n_steps = int(round(np.linalg.norm(start-end)/self.TARGET_DISTANCE))
-        ts = np.linspace(0, 1, n_steps+1)
-        for t in ts:
-            target = start + t*(end-start)
+        for tgt in interpolate(start, end, self.TARGET_DISTANCE):
             p = PoseStamped()
-            p.pose.position.x = target[0]
-            p.pose.position.y = target[1]
+            p.pose.position.x = tgt[0]
+            p.pose.position.y = tgt[1]
             path_msg.poses.append(p)
+
+        if current_waypoint+1 < len(waypoints):
+            # Interpolate one waypoint further
+            for tgt in interpolate(end, waypoints[current_waypoint+1], self.TARGET_DISTANCE):
+                p = PoseStamped()
+                p.pose.position.x = tgt[0]
+                p.pose.position.y = tgt[1]
+                path_msg.poses.append(p)
 
         self.targets_pub.publish(path_msg)
 
@@ -126,6 +139,7 @@ class set_speed(pt.behaviour.Behaviour):
 class replan_path(pt.behaviour.Behaviour):
     def __init__(self):
         self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
+        self.waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
         self.planning_client = actionlib.SimpleActionClient('/astar_planning', AStarAction)
         self.planning_client.wait_for_server()
         self.last_planning_pont = np.zeros((2,))
@@ -135,16 +149,25 @@ class replan_path(pt.behaviour.Behaviour):
         super(replan_path, self).__init__("Replan path")
 
     def update(self):
+        global waypoints
         if not self.is_planning and (self.last_planning_pont != replan_point).any():
             rospy.loginfo("Replanning path...")
             self.is_planning = True
             self.last_planning_pont = deepcopy(replan_point)
 
+            if current_waypoint+1 < len(waypoints):
+                target = waypoints[current_waypoint+1]
+            else:
+                target = waypoints[current_waypoint]
+
+            state_msg = rospy.wait_for_message('/state', VehicleState)
+
             action_msg = AStarGoal()
-            action_msg.x0 = replan_point[0]
-            action_msg.y0 = replan_point[1]
-            action_msg.xt = waypoints[current_waypoint][0]
-            action_msg.yt = waypoints[current_waypoint][1]
+            action_msg.x0 = state_msg.x
+            action_msg.y0 = state_msg.y
+            action_msg.theta0 = state_msg.yaw
+            action_msg.xt = target[0]
+            action_msg.yt = target[1]
             action_msg.smooth = False
 
             self.planning_client.send_goal(action_msg, done_cb=self.done_planning)
@@ -167,6 +190,17 @@ class replan_path(pt.behaviour.Behaviour):
 
         self.targets_pub.publish(msg.path)
         self.is_planning = False
+
+        if current_waypoint < len(waypoints)-1:
+            del waypoints[current_waypoint]
+            vis_waypoint_msg = PointCloud()
+            vis_waypoint_msg.header.frame_id = 'map'
+            for wp in waypoints:
+                p = Point32()
+                p.x = wp[0]
+                p.y = wp[1]
+                vis_waypoint_msg.points.append(p)
+            self.waypoint_vis.publish(vis_waypoint_msg)
 
 class adjust_replan_speed(pt.behaviour.Behaviour):
     def __init__(self):
