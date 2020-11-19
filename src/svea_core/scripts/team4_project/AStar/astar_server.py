@@ -17,7 +17,7 @@ N_GRID_X = 40
 N_GRID_Y = N_GRID_X//2
 DELTA_T = 0.040     # time step, dt_max = 0.05 given max_vel = 1 m/s
 GOAL_RADIUS = 0.1   # Accepted deviation from goal position
-GOAL_ANGLE = pi/6   # Accepted deviation from goal theta
+GOAL_ANGLE = pi   # Accepted deviation from goal theta
 SAMPLE_TIME = 0.01
 ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4]#[-pi/4, 0, pi/4]
 N_HEADINGS = 6
@@ -316,7 +316,7 @@ class AStarAction(object):
                     plotter.closeNode(n)
 
             # We have reached the goal
-            if hypot(n.x-objective.xt, n.y-objective.yt) < GOAL_RADIUS and numpy.fabs(n.theta - objective.thetat) < GOAL_ANGLE: 
+            if hypot(n.x-objective.xt, n.y-objective.yt) < GOAL_RADIUS and numpy.fabs(n.theta - objective.thetat) < GOAL_ANGLE:
                 if DEBUG:
                     plotter.markBestPath(n)
                 # Reconstruct control signals
