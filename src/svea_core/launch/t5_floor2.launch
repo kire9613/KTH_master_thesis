@@ -5,7 +5,19 @@
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
     <arg name="use_astar" default="false"/>
+    <arg name="use_mpc" default="false"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
+    <arg name="obstacles_list" default="$(find svea_core)/src/svea/path_planners/mpc_obstacles.yaml" />
+
+    <!-- Occupancy grid parameters -->
+    <arg name="og_width" default="180" />
+    <arg name="og_height" default="220" />
+    <arg name="og_resolution" default="0.2" />    
+    <arg name="og_origin_x" default="-17.581444" />
+    <arg name="og_origin_y" default="-22.876441" />
+
+    <arg name="planner_algorithm" default="mpc" />
+
     <group if="$(eval is_sim == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />
     </group>
@@ -21,21 +33,29 @@
         <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
         <param name="is_sim" value="$(arg is_sim)"/>
         <param name="use_astar" value="$(arg use_astar)"/>
+        <param name="use_mpc" value="$(arg use_mpc)"/>
 
 
     </node>
 
-    <group if="$(eval is_sim == false)">
-      <!--open serial connection for controlling SVEA-->
-        <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
-            <param name="port" value="/dev/ttyACM0"/>
-            <param name="baud" value="250000"/>
+    <group if="$(eval use_mpc == true)">
+      <!--Start MPC path planner-->
+        <node name="planner" pkg="svea_core" type="run_mpc_planner.py" output="screen">
+            <rosparam file="$(find svea_core)/src/svea/path_planners/mpc_planner.yaml" command="load" />
+            <rosparam file="$(arg obstacles_list)" command="load" />
+
+            <!-- Occupancy grid parameters -->
+            <param name="og_width" value="$(arg og_width)"/>
+            <param name="og_height" value="$(arg og_height)"/>
+            <param name="og_resolution" value="$(arg og_resolution)"/>
+            <param name="og_origin_x" value="$(arg og_origin_x)"/>
+            <param name="og_origin_y" value="$(arg og_origin_y)"/>
+
+            <param name="planner_algorithm" value="$(arg planner_algorithm)"/>
+
+            <remap from="~initial_state" to="/initialpose" />
+            <remap from="~goal_state" to="/move_base_simple/goal" />
         </node>
-      <!--Running localization on the real SVEA-->
-        <include file="$(find svea_sensors)/launch/localize.launch">
-            <arg name="use_rs" value="true"/>
-            <arg name="file_name" value="$(arg map_file)"/>
-        </include>
     </group>
 
 
