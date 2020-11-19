@@ -106,12 +106,13 @@ class obstacle_detected(pt.behaviour.Behaviour):
         self.collision = msg.collision
 
 class set_speed(pt.behaviour.Behaviour):
-    def __init__(self, speed):
+    def __init__(self, speed, return_val=pt.common.Status.SUCCESS):
         self.speed_pub = rospy.Publisher('/target_vel', Float32, queue_size=1)
         self.speed = speed
+        self.return_val = return_val
 
         super(set_speed, self).__init__("Set speed %.1f" % self.speed)
 
     def update(self):
         self.speed_pub.publish(self.speed)
-        return pt.common.Status.SUCCESS
+        return self.return_val

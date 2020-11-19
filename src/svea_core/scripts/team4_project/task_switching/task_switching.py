@@ -46,7 +46,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
             tn.is_at_waypoint(),
             pt.composites.Selector("Stopping condition", children=[
                 tn.next_waypoint_exists(),
-                tn.set_speed(0)
+                tn.set_speed(0, pt.common.Status.FAILURE)
             ]),
             tn.interpolate_to_next_waypoint()
         ])
