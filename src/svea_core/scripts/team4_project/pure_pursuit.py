@@ -53,30 +53,28 @@ class PurePursuitController(object):
         return delta
 
     def compute_velocity(self, state):
-        if self.is_finished or self.target_velocity == 0:
-            # stop moning if trajectory done
-            return 0.0
+        # speed control
+
+        e = self.target_velocity - state.v
+
+        saturated_prev_u = self.prev_u
+        if not (self.MIN_U <= self.prev_u <= self.MAX_U):
+            saturated_prev_u = min([self.MAX_U, max([self.MIN_U, self.prev_u])])
+
+        u = self.K_p*e + (self.K_i-self.K_p)*self.prev_e + self.T*saturated_prev_u + (1-self.T)*self.prev_u
+        self.prev_e = e
+        self.prev_u = u
+
+        # Manually saturate control signal to make sure that
+        # the control limits are the ones used for the anti
+        # reset windup
+        if not (self.MIN_U <= u <= self.MAX_U):
+            u = min([self.MAX_U, max([self.MIN_U, u])])
+
+        if self.target_velocity == 0:
+            return 0
         else:
-            # speed control
-            #TODO
-
-            e = self.target_velocity - state.v
-
-            saturated_prev_u = self.prev_u
-            if not (self.MIN_U <= self.prev_u <= self.MAX_U):
-                saturated_prev_u = min([self.MAX_U, max([self.MIN_U, self.prev_u])])
-
-            u = self.K_p*e + (self.K_i-self.K_p)*self.prev_e + self.T*saturated_prev_u + (1-self.T)*self.prev_u
-            self.prev_e = e
-            self.prev_u = u
-
-            # Manually saturate control signal to make sure that
-            # the control limits are the ones used for the anti
-            # reset windup
-            if not (self.MIN_U <= u <= self.MAX_U):
-                u = min([self.MAX_U, max([self.MIN_U, u])])
-
-            return u #self.target_velocity
+            return u
 
     def find_target(self, state):
         ind = self._calc_target_index(state)
@@ -99,12 +97,5 @@ class PurePursuitController(object):
             dy = self.traj_y[ind + 1] - self.traj_y[ind]
             dist += math.sqrt(dx ** 2 + dy ** 2)
             ind += 1
-
-        # terminating condition
-        #TODO
-        if math.sqrt((state.x-self.traj_x[-1]) ** 2 + (state.y-self.traj_y[-1]) ** 2) < 0.08:
-            self.is_finished = True
-        else:
-            self.is_finished = False
 
         return ind

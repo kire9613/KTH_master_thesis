@@ -44,7 +44,10 @@ class BehaviourTree(pt.trees.BehaviourTree):
 
         following = RSequence("Waypoint", children=[
             pf.is_at_waypoint(),
-            pf.next_waypoint_exists(),
+            pt.composites.Selector("Stopping condition", children=[
+                pf.next_waypoint_exists(),
+                pf.set_speed(0)
+            ]),
             pf.interpolate_to_next_waypoint()
         ])
 
