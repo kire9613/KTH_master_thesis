@@ -34,6 +34,10 @@ class EngineROS:
         rospy.loginfo("Init EngineROS")
         rospy.init_node('Mapper')
 
+        rospy.loginfo('Mapping is waiting for initial position...')
+        rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
+        rospy.sleep(1)
+
         # Map properties
         self.width = map_width
         self.height = map_height
