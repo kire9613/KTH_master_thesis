@@ -16,7 +16,7 @@ import numpy as np
 import py_trees as pt
 #import py_trees_ros as ptr
 from team4_project.task_switching.reactive_sequence import RSequence
-import team4_project.task_switching.path_follow as pf
+import team4_project.task_switching.tree_nodes as tn
 from team4_project.mapping2.updatemap import UpdateMap
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
@@ -29,26 +29,26 @@ class BehaviourTree(pt.trees.BehaviourTree):
 
     def __init__(self):
         initialization = pt.composites.Selector('Initialization', children=[
-            pf.has_initialized(),
+            tn.has_initialized(),
             RSequence('Initialize', children=[
-                pf.next_waypoint_exists(),
-                pf.interpolate_to_next_waypoint(),
-                pf.set_speed(0.6),
-                pf.set_initialized()
+                tn.next_waypoint_exists(),
+                tn.interpolate_to_next_waypoint(),
+                tn.set_speed(0.6),
+                tn.set_initialized()
             ])
         ])
 
         collision = RSequence("Collision", children=[
-            pf.obstacle_detected()
+            tn.obstacle_detected()
         ])
 
         following = RSequence("Waypoint", children=[
-            pf.is_at_waypoint(),
+            tn.is_at_waypoint(),
             pt.composites.Selector("Stopping condition", children=[
-                pf.next_waypoint_exists(),
-                pf.set_speed(0)
+                tn.next_waypoint_exists(),
+                tn.set_speed(0)
             ]),
-            pf.interpolate_to_next_waypoint()
+            tn.interpolate_to_next_waypoint()
         ])
 
         self.tree = RSequence("Behaviour Tree", children=[
@@ -92,7 +92,7 @@ def main():
     vis_waypoint_msg.header.frame_id = 'map'
 
     for p in path:
-        pf.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+        tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
         vis_point = Point32()
         vis_point.x = p.pose.position.x
         vis_point.y = p.pose.position.y
