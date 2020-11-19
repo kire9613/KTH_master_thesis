@@ -5,6 +5,7 @@ from a_star import *
 from test import *
 import actionlib
 import matplotlib.pyplot as plt
+from math import pi
 import rospy
 import team4_msgs.msg
 #echo 'export PYTHONPATH=$PYTHONPATH:"$(rospack find svea_core)/scripts"' >> ~/.bashrc
@@ -24,22 +25,24 @@ def main2():
     # (xt,yt) = (-4.3,-6.85)
 
     (x0,y0) = (-2,-6.7)
+    theta0 = pi/4
     (xt,yt) = (-4,-2.47)
+    thetat = pi/4
 
     # (x0,y0) = (-6.64,-14.1)
     # (xt,yt) = (10.5,11.8)
 
 
     env = Environment(map, map_info)
-    car = Objective(xt, yt, x0, y0, env)
+    car = Objective(xt, yt, thetat, x0, y0, theta0, env)
 
     print("Setup done, start path-planning...")
 
-    path = run_astar(car,smooth=True)
+    path = run_astar(car,smooth=False)
 
     print("Plot path...")
 
-    plot_path(path,env)
+    plot_path(path)
 
 def plot_path(path):#env
 
@@ -127,13 +130,15 @@ def get_path():
     global astar_client
     astar_client.wait_for_server()
     objective = team4_msgs.msg.AStarGoal()
-    #(x0,y0) = (-6.64,-14.1)
-    # (xt,yt) = (10.5,11.8)
+    # initial position and heading
     objective.x0 = -6.64
     objective.y0 = -14.1
-    objective.xt = 10.5
-    objective.yt = 11.8
-    objective.smooth = True
+    objective.theta0 = pi/4
+    # goal position and heading
+    objective.xt = -3.28
+    objective.yt = -6.55
+    objective.thetat = pi
+    objective.smooth = False
     astar_client.send_goal(objective, done_cb=goal_result)
 
 if __name__ == "__main__":
@@ -143,7 +148,7 @@ if __name__ == "__main__":
     """ Init exploration action service client name: get_next_goal (node: /explore), msg type: irob_assignment_1/GetNextGoalAction """
     astar_client = actionlib.SimpleActionClient('AStar_server', team4_msgs.msg.AStarAction) # client = actionlib.SimpleActionClient('ActionName', Topic)
     astar_client.wait_for_server()
-
+    
     get_path()
 
     rospy.spin()
