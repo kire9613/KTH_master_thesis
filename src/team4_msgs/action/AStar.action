@@ -2,8 +2,10 @@
 string frame_id
 float32 x0
 float32 y0
+float32 theta0
 float32 xt
 float32 yt
+float32 thetat
 bool smooth
 ---
 #result definition
