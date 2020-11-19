@@ -4,6 +4,8 @@ import rospy
 from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Point32
+from sensor_msgs.msg import PointCloud
 from team4_project.planner.planner import get_path
 from nav_msgs.msg import OccupancyGrid
 from svea_msgs.msg import VehicleState
@@ -14,7 +16,7 @@ import numpy as np
 import py_trees as pt
 #import py_trees_ros as ptr
 from team4_project.task_switching.reactive_sequence import RSequence
-import team4_project.task_switching.path_follow as pf
+import team4_project.task_switching.tree_nodes as tn
 from team4_project.mapping2.updatemap import UpdateMap
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
@@ -27,23 +29,26 @@ class BehaviourTree(pt.trees.BehaviourTree):
 
     def __init__(self):
         initialization = pt.composites.Selector('Initialization', children=[
-            pf.has_initialized(),
+            tn.has_initialized(),
             RSequence('Initialize', children=[
-                pf.next_waypoint_exists(),
-                pf.interpolate_to_next_waypoint(),
-                pf.set_speed(0.6),
-                pf.set_initialized()
+                tn.next_waypoint_exists(),
+                tn.interpolate_to_next_waypoint(),
+                tn.set_speed(0.6),
+                tn.set_initialized()
             ])
         ])
 
         collision = RSequence("Collision", children=[
-            pf.obstacle_detected()
+            tn.obstacle_detected()
         ])
 
         following = RSequence("Waypoint", children=[
-            pf.is_at_waypoint(),
-            pf.next_waypoint_exists(),
-            pf.interpolate_to_next_waypoint()
+            tn.is_at_waypoint(),
+            pt.composites.Selector("Stopping condition", children=[
+                tn.next_waypoint_exists(),
+                tn.set_speed(0, pt.common.Status.FAILURE)
+            ]),
+            tn.interpolate_to_next_waypoint()
         ])
 
         self.tree = RSequence("Behaviour Tree", children=[
@@ -64,6 +69,8 @@ def main():
 
     map_updater = UpdateMap()
 
+    waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
+
     rospy.loginfo('Waiting for initial position...')
     rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
 
@@ -80,8 +87,18 @@ def main():
     rospy.loginfo('Planning path...')
     path = get_path(map_updater, [start_state.x, start_state.y], [5.88, 14.8])
     path = list(reversed(path))
+
+    vis_waypoint_msg = PointCloud()
+    vis_waypoint_msg.header.frame_id = 'map'
+
     for p in path:
-        pf.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+        tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+        vis_point = Point32()
+        vis_point.x = p.pose.position.x
+        vis_point.y = p.pose.position.y
+        vis_waypoint_msg.points.append(vis_point)
+
+    waypoint_vis.publish(vis_waypoint_msg)
     # map_updater no longer needed. Delete to save computational resources
     del map_updater
 
