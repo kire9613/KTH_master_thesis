@@ -21,6 +21,9 @@ if __name__ == '__main__':
         for parameter_name in parameter_names
     }
     mpc_obs = parameters['obstacles']
+
+    #Publish obstacles
+    MapROSInterface.publish(mpc_obs)
     
     planner_name = ros_interface.planner_algorithm
     planner_parameters = ros_interface.get_planner_parameters()

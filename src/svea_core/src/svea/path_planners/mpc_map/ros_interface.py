@@ -44,8 +44,9 @@ class ROSInterface(object):
         :param occupancy_grid: ocuppancy grid representation of the map
         :type occupancy_grid: OccupancyGrid object
         """
-        ROSInterface._publish_occupancy_grid(occupancy_grid)
-        ROSInterface._publish_obstacles(occupancy_grid.obstacles)
+        #ROSInterface._publish_occupancy_grid(occupancy_grid)
+        #ROSInterface._publish_obstacles(occupancy_grid.obstacles)
+        ROSInterface._publish_obstacles(occupancy_grid)
 
     @staticmethod
     def _publish_occupancy_grid(occupancy_grid):
