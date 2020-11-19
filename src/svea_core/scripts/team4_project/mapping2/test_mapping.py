@@ -2,6 +2,7 @@
 
 from engine_ros import EngineROS
 import rospy
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 def main():
 
@@ -25,6 +26,9 @@ def main():
     c_space = 90
     occupied_space = 100
 
+    rospy.loginfo('Mapping is waiting for initial position...')
+    rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
+    rospy.sleep(1)
     mapping_engine = EngineROS(map_frame_id, map_resolution, map_width, map_height,
                  map_origin_x, map_origin_y, map_origin_yaw, inflate_radius,
                  unknown_space, free_space, c_space, occupied_space)
