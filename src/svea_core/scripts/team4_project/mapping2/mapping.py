@@ -1,5 +1,5 @@
 # Python standard library
-from math import cos, sin, atan2, fabs, sqrt
+from math import cos, sin, atan2, fabs, sqrt, pi
 
 # Numpy
 import numpy as np
@@ -153,7 +153,7 @@ class Mapping:
         while scan_index < num_measures:
             # angle
             range = scan.ranges[scan_index]
-            if range > scan.range_min and range < scan.range_max:
+            if range > scan.range_min and range < scan.range_max and angle < pi/2 and angle > -pi/2:
                 # coordinates in scan frame
                 x_scan_p = range * cos(angle)
                 y_scan_p = range * sin(angle)
