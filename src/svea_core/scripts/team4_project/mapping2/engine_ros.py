@@ -13,7 +13,7 @@ import rospy
 import message_filters
 
 # ROS messages
-from geometry_msgs.msg import PoseStamped, PolygonStamped
+from geometry_msgs.msg import PoseStamped, PolygonStamped, PoseWithCovarianceStamped
 from sensor_msgs.msg import LaserScan, PointCloud
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import Odometry

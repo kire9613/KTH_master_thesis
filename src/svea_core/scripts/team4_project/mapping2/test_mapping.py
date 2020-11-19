@@ -2,7 +2,6 @@
 
 from engine_ros import EngineROS
 import rospy
-from geometry_msgs.msg import PoseWithCovarianceStamped
 
 def main():
 
