@@ -187,6 +187,9 @@ class replan_path(pt.behaviour.Behaviour):
         if state != actionlib.TerminalState.SUCCEEDED:
             rospy.logerr("Replanning failed!")
             return
+        if len(msg.path.poses) == 0:
+            rospy.logerr("Replanning failed! Empty path")
+            return
 
         self.targets_pub.publish(msg.path)
         self.is_planning = False
