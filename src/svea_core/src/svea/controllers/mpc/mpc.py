@@ -28,7 +28,7 @@ from visualization_msgs.msg import Marker
 import math
 
 class MPC(object):
-    N_IND_SEARCH = 5  # Search index number
+    N_IND_SEARCH = 10  # Search index number
     TAU = 0.1 # TODO: Hardcoded
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -37,7 +37,7 @@ class MPC(object):
         self.sp = []
         self.target = None
         # initialize with 0 velocity
-        self.target_velocity = 0.6
+        self.target_velocity = 0.0
         self.last_index = 0
         self.is_finished = False
 
@@ -48,7 +48,7 @@ class MPC(object):
         self.ref_pub = rospy.Publisher("ref",Marker,queue_size=1)
 
     def build_solver(self, dt, model=None, dynamics=None,
-                 horizon=4, Q=None, P=None, R=None,
+                 horizon=7, Q=None, P=None, R=None,
                  ulb=None, uub=None, xlb=None, xub=None, terminal_constraint=None,
                  solver_opts=None,
                  x_d=[0]*4,
@@ -77,9 +77,9 @@ class MPC(object):
                           solver_opts['ipopt.tol'] = 1e-8
         """
         model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
-        # dynamics = model.discrete_time_dynamics
+        #dynamics = model.discrete_time_dynamics
         dynamics = model.continuous_time_nonlinear_dynamics
-        # dynamics = model.svea_nonlinear_dynamics
+        #dynamics = model.svea_nonlinear_dynamics
 
         self.horizon = horizon*dt
         # self.set_reference(x_d)
@@ -314,12 +314,13 @@ class MPC(object):
         status          = self.solver.stats()['return_status']
         optvar          = self.opt_var(sol['x'])
 
-        # print(status)
+        print(status)
+
 
         solve_time+=time.time()
         print('MPC took %f seconds to solve.\r' %(solve_time))
-        # print('MPC cost: ', sol['f'])
-
+        print('MPC cost: ', sol['f'])
+        #print("optvar[x] = ", optvar['x'], "optvar['u'] = ", optvar['u'])
         return optvar['x'], optvar['u']
 
     def set_reference(self, x_sp):
@@ -442,6 +443,7 @@ class MPC(object):
         self.calc_ref_trajectory(x0, self.target_ind)
 
         x_pred, u_pred = self.solve_mpc(x0,self.u0)
+        print("u_pred", u_pred[0][1])
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
@@ -458,8 +460,8 @@ class MPC(object):
         marker_msg.pose.orientation.w = 1.0
 
         self.pred_pub.publish(marker_msg)
-
-        self.u0 = u_pred[0]
+        #print("u_pred[0]", u_pred[1])
+        #self.u0 = u_pred[1]
 
         # self.target =  ([i[0] for i in x_pred], [i[1] for i in x_pred])
         # self.target =  (self.ref_target[0], self.ref_target[1])
@@ -469,6 +471,9 @@ class MPC(object):
         # self.target =  (self.ref_target[0][0], self.ref_target[1][0]) # FOR RVIZ
 
         vd = self.TAU*u_pred[0][0] + state.v
+        #vd = 0.6
+        #vd = x_pred[1][3]
+        print("vd = ", vd)
 
         return float(u_pred[0][1]), float(vd)
 

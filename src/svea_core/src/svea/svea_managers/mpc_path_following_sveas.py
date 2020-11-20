@@ -69,7 +69,7 @@ class SVEAMPC(SVEAPurePursuit):
                 speed_profile[i] = - target_speed
             else:
                 speed_profile[i] = target_speed
-
+        #print("speed profile=",speed_profile)
         speed_profile[-1] = 0.0
 
         return speed_profile

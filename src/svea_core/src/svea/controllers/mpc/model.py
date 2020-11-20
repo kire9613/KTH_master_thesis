@@ -31,7 +31,7 @@ class SVEAcar(object):
                      0, # yaw
                      0, # velocity
                      ]
-        self.u_eq = [0, # acceleration or velocity?
+        self.u_eq = [0, # acceleration
                      0, # δ: steering
                      ]
 
