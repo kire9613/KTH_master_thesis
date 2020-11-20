@@ -267,7 +267,7 @@ class SVEAManager(object):
         :type velocity: float
         """
         # check if requested control is safe
-        # is_safe, reason = self._safety_check(steering, velocity)
+        #is_safe, reason = self._safety_check(steering, velocity)
         is_safe = True
         reason = "Emergency brake currently disabled"
         if is_safe:
