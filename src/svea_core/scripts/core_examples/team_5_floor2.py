@@ -13,6 +13,7 @@ from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
 from svea.path_planners.astar import *
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from svea.track import Track
 
 
 __team__ = "Team 5"
@@ -97,6 +98,10 @@ def main():
                            traj_x, traj_y,
                            data_handler = DataHandler)
     svea.start(wait=True)
+
+    # start track handler
+    track = Track(vehicle_name, publish_track=True)
+    track.start()
 
     if is_sim:
         # start simulation

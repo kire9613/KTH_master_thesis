@@ -21,8 +21,8 @@ def generateTrajectory(x0,y0,theta0, xt,yt,plotBool,file = None):
 
     # find path to obstacles
     astarPath = os.path.dirname(os.path.abspath(__file__))
-    file = open(astarPath + '/aStarPlannerObstacles.yaml') # track with the corridor as obstacles
-    #file = open(astarPath + '/aStarTrack.yaml') # the geofenced track provided by the TAs
+    #file = open(astarPath + '/aStarPlannerObstacles.yaml') # track with the corridor as obstacles
+    file = open(astarPath + '/aStarTrack.yaml') # the geofenced track provided by the TAs
     obstacles = yaml.safe_load(file)
 
 

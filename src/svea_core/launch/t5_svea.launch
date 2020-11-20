@@ -15,6 +15,7 @@
 
     <!--rosparam command="load" file="$(find svea_core)/resources/params/crazyObstacle.yaml" /-->
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
+    <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
 
     <node pkg="svea_core" type="team_5_floor2.py" name="team_5_floor2" output="screen">
         <param name="start_pt" value="$(arg start_pt)"/>
