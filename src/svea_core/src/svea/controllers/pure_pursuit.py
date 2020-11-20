@@ -8,8 +8,8 @@ class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.1 #TODO speed control propotional gain
-    K_i = 1.0  #TODO speed control integral gain
+    K_p = 1 #TODO speed control propotional gain
+    K_i = 2  #TODO speed control integral gain
     K_d = 0.0  #TODO speed control derivitive gain
     P = 0 # initilize P value (PID)
     I = 0 # intialize I value (PID)
@@ -59,15 +59,17 @@ class PurePursuitController(object):
         else:
             # speed control
             e = self.target_velocity - state.v
+            if state.v < 0.1 or abs(e) < 0.05: # reset integral gain if current velocity is low or if we are close to target velocity
+                self.I = 0 
             dt =  state.time_stamp.to_sec() - self.last_time
             self.last_time = state.time_stamp.to_sec()
             self.P = self.K_p*e
             self.I = self.I + self.K_i*e*dt
-            actuated_velocity = self.target_velocity + self.P + self.I
-            if actuated_velocity > self.max_velocity:
-                self.I = 0
-                return self.max_velocity
-        return  actuated_velocity
+            velocity_output = self.P + self.I
+            if velocity_output > self.max_velocity:
+                self.I = 0 
+                velocity_output = self.max_velocity
+        return  velocity_output/1.1
 
 
     def find_target(self, state):
