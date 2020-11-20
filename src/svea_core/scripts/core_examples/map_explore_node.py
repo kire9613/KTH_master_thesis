@@ -26,7 +26,7 @@ from nav_msgs.msg import Path
 # SVEA
 from svea_msgs.msg import VehicleState
 
-## MAP EXPLORER PARAMS #######################################################
+## MAP EXPLORER PARAMS ########################################################
 update_rate = 5 # [Hz]
 
 frame_id="map" 
@@ -166,6 +166,8 @@ class MapExplore:
 		self.map.data = self.map_matrix.reshape(-1) # (self.__map.size)
 
 		self.detection = False
+		
+		self.listener = tf.TransformListener()
 
 	def add_to_map_reflected(self, x, y, value):
 		"""
@@ -202,6 +204,8 @@ class MapExplore:
 		"""
 		self.detection = False
 		
+		(trans, rot) = self.listener.lookupTransform('/scan','map',rospy.Time(0))
+
 		x_pose, y_pose, yaw = state_to_grid(state.x, state.y, state.yaw)
 
 		min_x = 299
@@ -312,8 +316,8 @@ def is_in_bounds(x, y):
 		return False
 
 def path_to_grid(x,y):
-	x_org_cal = 17.5 #23.876441
-	y_org_cal = 23.876441 #16.581444 #17.5
+	x_org_cal = 17.581444#17.5 #23.876441
+	y_org_cal = 22.876441#23.876441 #16.581444 #17.5
 	yaw_cal = radians(-11.3)
 
 	# Shift origin
