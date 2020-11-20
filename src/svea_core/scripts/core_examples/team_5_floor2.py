@@ -12,6 +12,8 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
 from svea.path_planners.astar import *
+from geometry_msgs.msg import PoseWithCovarianceStamped
+
 
 __team__ = "Team 5"
 __maintainers__ ="Bianca Otake, Holmfridur Elvarsdottir, Johanna Andersson, Marcus Norgren"
@@ -99,6 +101,16 @@ def main():
     if is_sim:
         # start simulation
         simulator.toggle_pause_simulation()
+    else:
+        initialStatePublisher = rospy.Publisher('/initialstate', PoseWithCovarianceStamped, queue_size=1)
+        initialStateMsg = PoseWithCovarianceStamped()
+        initialStateMsg.header.frame_id = "map"
+        initialStateMsg.pose.pose.position.x = -7.4
+        initialStateMsg.pose.pose.position.x = -15.3
+        initialStateMsg.pose.pose.orientation.z = 0.478559974486
+        initialStateMsg.pose.pose.orientation.w = 0.878054867773
+        initialStateMsg.pose.covariance =  [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853892326654787]
+        initialStatePublisher.publish(initialStateMsg)
 
     # simualtion loop
     svea.controller.target_velocity = target_velocity
