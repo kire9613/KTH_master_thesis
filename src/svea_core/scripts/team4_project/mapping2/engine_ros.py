@@ -104,6 +104,7 @@ class EngineROS:
             self.write_map_to_file()
 
         self.__map = np.array(self.__map.data).reshape(self.height,self.width)
+        self.__imap = deepcopy(self.__map)
         started_pub = rospy.Publisher('/node_started/mapping', Bool, latch=True, queue_size=5)
         started_pub.publish(True)
         rospy.loginfo("Start mapping main loop")
@@ -259,7 +260,7 @@ class EngineROS:
 
         d = np.array(self.__map.data).reshape(self.height, self.width)
 
-        radius = 6
+        radius = 3
         # Add polygons to map
         x = min_x
         y = min_y
@@ -315,6 +316,6 @@ class EngineROS:
         #print("check for updates")
 
         map_info = [self.width, self.height, self.xo, self.yo, self.res]
-        _, update, iupdate = self.__mapping.update_map(self.__map, pose, scan, map_info)
+        _, _, update, iupdate = self.__mapping.update_map(self.__map, self.__imap, pose, scan, map_info)
         self.__map_updates_pub.publish(update)
         self.__map_inflated_pub.publish(iupdate)

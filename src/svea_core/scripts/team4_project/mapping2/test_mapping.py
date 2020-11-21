@@ -19,10 +19,10 @@ def main():
     map_origin_x = -17.581444
     map_origin_y = -22.876441
     map_origin_yaw = 0
-    inflate_radius = 2
+    inflate_radius = 3
     unknown_space = -1
     free_space = 0
-    c_space = 90
+    c_space = 110
     occupied_space = 100
 
     mapping_engine = EngineROS(map_frame_id, map_resolution, map_width, map_height,

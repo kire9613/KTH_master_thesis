@@ -89,7 +89,7 @@ class Mapping:
                             "Which can be found in the '__init__' function.")
 
         if self.is_in_bounds(grid_map, x, y, map_info):
-            if not grid_map[y,x] == self.polygon_space:
+            if not grid_map[y,x] == self.polygon_space or grid_map[y,x] == self.c_space:
                 grid_map[y,x] = value
                 if inflate:
                     for xp in range(-self.radius,self.radius+1):
@@ -97,7 +97,6 @@ class Mapping:
                             if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
                                 if not grid_map[y+yp,x+xp] == self.occupied_space:
                                     if sqrt(xp**2+yp**2) <= self.radius:
-                                        #print("inflate")
                                         grid_map[y+yp,x+xp] = self.c_space
 
                 return True
@@ -113,7 +112,7 @@ class Mapping:
                 return True
         return False
 
-    def update_map(self, grid_map, pose, scan, map_info):
+    def update_map(self, grid_map, i_grid_map, pose, scan, map_info):
         """
         Create OccupancyGridUpdate from lidar scan info
         Pose in map coordinates, type geometry_msgs.msg PoseStamped
@@ -123,7 +122,6 @@ class Mapping:
         """
 
         #print("update_map")
-        imap = deepcopy(grid_map)
 
         origin_x = map_info[2]
         origin_y = map_info[3]
@@ -153,7 +151,7 @@ class Mapping:
         while scan_index < num_measures:
             # angle
             range = scan.ranges[scan_index]
-            if range > scan.range_min and range < scan.range_max and angle < pi/2 and angle > -pi/2:
+            if range > scan.range_min and range < scan.range_max/2 and angle < pi/4 and angle > -pi/4:
                 # coordinates in scan frame
                 x_scan_p = range * cos(angle)
                 y_scan_p = range * sin(angle)
@@ -176,6 +174,7 @@ class Mapping:
                 for cell in free_cells:
                     if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
                          self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
+                         self.add_to_map(i_grid_map, cell[0], cell[1], self.free_space, map_info)
                          x_index_list.append(cell[0])
                          y_index_list.append(cell[1])
 
@@ -188,7 +187,7 @@ class Mapping:
         for obs in obs_ind_list:
             if self.is_in_bounds(grid_map, obs[0],obs[1], map_info):
                 self.add_to_map(grid_map, obs[0], obs[1], self.occupied_space, map_info)
-                self.add_to_map(imap, obs[0], obs[1], self.occupied_space, map_info,inflate=True)
+                self.add_to_map(i_grid_map, obs[0], obs[1], self.occupied_space, map_info,inflate=True)
                 x_index_list.append(obs[0])
                 y_index_list.append(obs[1])
 
@@ -218,30 +217,7 @@ class Mapping:
         update.data = slice.reshape((update.width*update.height,)).tolist()
 
         i_update = deepcopy(update)
-        slice = imap[min_y:(max_y+1), min_x:(max_x+1)]
+        slice = i_grid_map[min_y:(max_y+1), min_x:(max_x+1)]
         i_update.data = slice.reshape((i_update.width*i_update.height,)).tolist()
 
-        return grid_map, update, i_update
-
-    # def inflate_map(self, map):
-    #     """
-    #     Inflates map
-    #     """
-    #
-    #     grid_map = np.array(map.data).reshape(880, 721)
-    #
-    #     x,y = 0,0
-    #     while y < len(grid_map[:,0]):
-    #         while x < len(grid_map[0,:]):
-    #             if grid_map[x,y] == self.occupied_space:
-    #              for xp in range(-self.radius,self.radius+1):
-    #                  for yp in range(-self.radius,self.radius+1):
-    #                      if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
-    #                          if not grid_map[x+xp,y+yp] == self.occupied_space:
-    #                              if sqrt(xp**2+yp**2) <= self.radius:
-    #                                  self.add_to_map(grid_map, x+xp, y+yp, self.c_space, map_info)
-    #                                  x += 1
-    #         x = 1
-    #         y +=1
-    #
-    #     return grid_map
+        return grid_map, i_grid_map, update, i_update
