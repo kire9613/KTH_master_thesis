@@ -153,7 +153,6 @@ class obstacle_detected(pt.behaviour.Behaviour):
 
     def update(self):
         if self.collision:
-            rospy.loginfo("Collision detected!")
             return pt.Status.SUCCESS
         else:
             return pt.Status.FAILURE
