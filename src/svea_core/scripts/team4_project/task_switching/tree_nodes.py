@@ -2,14 +2,27 @@ import py_trees as pt
 import numpy as np
 from svea_msgs.msg import VehicleState
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point32
 from std_msgs.msg import Float32
-from team4_msgs.msg import Collision
+from team4_msgs.msg import Collision, AStarAction, AStarGoal
+from sensor_msgs.msg import PointCloud
 import rospy
+import actionlib
+from copy import deepcopy
 
 waypoints = []
 current_waypoint = 0
 initialized = False
+replan_point = np.zeros((2,))
+
+def interpolate(start, end, distance):
+    # Create n_steps points that are evenly distributed
+    # along a line with distance TARGET_DISTANCE between them
+    n_steps = int(round(np.linalg.norm(start-end)/distance))
+    ts = np.linspace(0, 1, n_steps+1)
+    for t in ts:
+        target = start + t*(end-start)
+        yield target
 
 class has_initialized(pt.behaviour.Behaviour):
     def __init__(self):
@@ -74,16 +87,19 @@ class interpolate_to_next_waypoint(pt.behaviour.Behaviour):
         end = waypoints[current_waypoint]
 
         path_msg = Path()
-        # Create n_steps points that are evenly distributed
-        # along a line with distance TARGET_DISTANCE between them
-        n_steps = int(round(np.linalg.norm(start-end)/self.TARGET_DISTANCE))
-        ts = np.linspace(0, 1, n_steps+1)
-        for t in ts:
-            target = start + t*(end-start)
+        for tgt in interpolate(start, end, self.TARGET_DISTANCE):
             p = PoseStamped()
-            p.pose.position.x = target[0]
-            p.pose.position.y = target[1]
+            p.pose.position.x = tgt[0]
+            p.pose.position.y = tgt[1]
             path_msg.poses.append(p)
+
+        if current_waypoint+1 < len(waypoints):
+            # Interpolate one waypoint further
+            for tgt in interpolate(end, waypoints[current_waypoint+1], self.TARGET_DISTANCE):
+                p = PoseStamped()
+                p.pose.position.x = tgt[0]
+                p.pose.position.y = tgt[1]
+                path_msg.poses.append(p)
 
         self.targets_pub.publish(path_msg)
 
@@ -103,7 +119,10 @@ class obstacle_detected(pt.behaviour.Behaviour):
             return pt.Status.FAILURE
 
     def cache_collision(self, msg):
+        global replan_point
         self.collision = msg.collision
+        replan_point[0] = msg.replan_point.x
+        replan_point[1] = msg.replan_point.y
 
 class set_speed(pt.behaviour.Behaviour):
     def __init__(self, speed, return_val=pt.common.Status.SUCCESS):
@@ -116,3 +135,94 @@ class set_speed(pt.behaviour.Behaviour):
     def update(self):
         self.speed_pub.publish(self.speed)
         return self.return_val
+
+class replan_path(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
+        self.waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
+        self.planning_client = actionlib.SimpleActionClient('/astar_planning', AStarAction)
+        self.planning_client.wait_for_server()
+        self.last_planning_pont = np.zeros((2,))
+
+        self.is_planning = False
+
+        super(replan_path, self).__init__("Replan path")
+
+    def update(self):
+        global waypoints
+        if not self.is_planning and (self.last_planning_pont != replan_point).any():
+            rospy.loginfo("Replanning path...")
+            self.is_planning = True
+            self.last_planning_pont = deepcopy(replan_point)
+
+            if current_waypoint+1 < len(waypoints):
+                target = waypoints[current_waypoint+1]
+            else:
+                target = waypoints[current_waypoint]
+
+            state_msg = rospy.wait_for_message('/state', VehicleState)
+
+            action_msg = AStarGoal()
+            action_msg.x0 = state_msg.x
+            action_msg.y0 = state_msg.y
+            action_msg.theta0 = state_msg.yaw
+            action_msg.xt = target[0]
+            action_msg.yt = target[1]
+            action_msg.smooth = False
+
+            self.planning_client.send_goal(action_msg, done_cb=self.done_planning)
+
+        if self.is_planning:
+            return pt.common.Status.RUNNING
+        else:
+            return pt.common.Status.SUCCESS
+
+    def terminate(self, new_status):
+        if new_status == pt.common.Status.INVALID:
+            # Obstacle no longer detected. Cancel replanning.
+            self.planning_client.cancel_all_goals()
+            self.is_planning = False
+
+    def done_planning(self, state, msg):
+        if state != actionlib.TerminalState.SUCCEEDED:
+            rospy.logerr("Replanning failed!")
+            return
+        if len(msg.path.poses) == 0:
+            rospy.logerr("Replanning failed! Empty path")
+            return
+
+        self.targets_pub.publish(msg.path)
+        self.is_planning = False
+
+        if current_waypoint < len(waypoints)-1:
+            del waypoints[current_waypoint]
+            vis_waypoint_msg = PointCloud()
+            vis_waypoint_msg.header.frame_id = 'map'
+            for wp in waypoints:
+                p = Point32()
+                p.x = wp[0]
+                p.y = wp[1]
+                vis_waypoint_msg.points.append(p)
+            self.waypoint_vis.publish(vis_waypoint_msg)
+
+class adjust_replan_speed(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.position = np.zeros((2,))
+        self.speed_pub = rospy.Publisher('/target_vel', Float32, queue_size=1)
+        self.state_sub = rospy.Subscriber('/state', VehicleState, self.cache_state)
+
+        # Maximum speed when approaching a collision
+        self.MAX_SPEED = 0.5
+        # Gain for speed regulation
+        self.K = 0.7
+
+        super(adjust_replan_speed, self).__init__("Adjust speed while replanning")
+
+    def update(self):
+        distance = np.linalg.norm(self.position - replan_point)
+        speed = min(self.MAX_SPEED, self.K*distance)
+        self.speed_pub.publish(0)
+        return pt.common.Status.SUCCESS
+
+    def cache_state(self, msg):
+        self.position = np.array([msg.x, msg.y])

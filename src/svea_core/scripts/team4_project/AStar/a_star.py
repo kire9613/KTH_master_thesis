@@ -15,7 +15,8 @@ if DEBUG:
 
 N_GRID_X = 40
 N_GRID_Y = N_GRID_X//2
-GOAL_RADIUS = 1.5
+GOAL_RADIUS = 1.5   # re-set in solution
+GOAL_ANGLE = 0      # re-set in solution
 SAMPLE_TIME = 0.01
 ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4]#[-pi/4, 0, pi/4]
 N_HEADINGS = 6
@@ -59,7 +60,7 @@ class Node:
                 self.thetad = i
                 break
         if self.thetad is None:
-            self.thetad = N_HEADINGS-1;
+            self.thetad = N_HEADINGS-1
 
     def __lt__(self, other):
         return False
@@ -183,12 +184,13 @@ def run_astar(objective, smooth=False):
 
     N_STEPS = 10
     DELTA_T = 0.040 #dt_max = 0.05 given max_vel = 1 m/s
-    GOAL_RADIUS = 0.1
+    GOAL_RADIUS = 0.1   # Accepted deviation from goal position
+    GOAL_ANGLE = pi/6   # Accepted deviation from goal theta
 
     if DEBUG:
         plotter = dbg.TreePlot(objective._environment, N_STEPS)
 
-    openSet.put((heur(objective.x0, objective.y0, objective.xt, objective.yt), Node(45, objective.x0, objective.y0, 0, None, 0)))
+    openSet.put((heur(objective.x0, objective.y0, objective.xt, objective.yt), Node(objective.theta0, objective.x0, objective.y0, 0, None, 0)))
 
     print("Searching for path...")
     while not openSet.empty():
@@ -199,7 +201,7 @@ def run_astar(objective, smooth=False):
                 plotter.closeNode(n)
 
         # We have reached the goal
-        if hypot(n.x-objective.xt, n.y-objective.yt) < GOAL_RADIUS:
+        if hypot(n.x-objective.xt, n.y-objective.yt) < GOAL_RADIUS and numpy.fabs(n.theta - objective.thetat) < GOAL_ANGLE:
             if DEBUG:
                 plotter.markBestPath(n)
             # Reconstruct control signals

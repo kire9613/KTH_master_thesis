@@ -39,10 +39,13 @@ class BehaviourTree(pt.trees.BehaviourTree):
         ])
 
         collision = RSequence("Collision", children=[
-            tn.obstacle_detected()
+            tn.obstacle_detected(),
+            tn.adjust_replan_speed(),
+            tn.replan_path()
         ])
 
         following = RSequence("Waypoint", children=[
+            tn.set_speed(0.6),
             tn.is_at_waypoint(),
             pt.composites.Selector("Stopping condition", children=[
                 tn.next_waypoint_exists(),
@@ -67,12 +70,12 @@ def main():
     show_tree_param = rospy.search_param('show_tree')
     show_tree = rospy.get_param(show_tree_param, True)
 
+    rospy.loginfo('Waiting for initial position...')
+    rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
+
     map_updater = UpdateMap()
 
     waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
-
-    rospy.loginfo('Waiting for initial position...')
-    rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
 
     # Nodes to wait for before startup
     nodes_wait = ['mapping']
@@ -85,7 +88,7 @@ def main():
     rospy.sleep(1)
     start_state = rospy.wait_for_message('/state', VehicleState)
     rospy.loginfo('Planning path...')
-    path = get_path(map_updater, [start_state.x, start_state.y], [5.88, 14.8])
+    path = get_path(map_updater, [start_state.x, start_state.y], [-5.36, -1.66])
     path = list(reversed(path))
 
     vis_waypoint_msg = PointCloud()

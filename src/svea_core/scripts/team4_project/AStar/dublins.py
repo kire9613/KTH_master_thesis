@@ -12,7 +12,7 @@ class Objective(object):
     Find solution in environment (map)
     '''
 
-    def __init__(self, xt, yt, x0, y0, env):
+    def __init__(self, xt, yt, thetat, x0, y0, theta0, env):
 
         # set environment
         # env = Environment(map, map_info)
@@ -21,8 +21,10 @@ class Objective(object):
         # target and start pos.
         self.x0 = x0
         self.y0 = y0
+        self.theta0 = theta0
         self.xt = xt
         self.yt = yt
+        self.thetat = thetat
 
 def step(car, x, y, theta, phi, dt=0.01):
     '''
