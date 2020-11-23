@@ -3,7 +3,7 @@ import numpy as np
 from svea_msgs.msg import VehicleState
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, Point32
-from std_msgs.msg import Float32
+from std_msgs.msg import Float32, Bool
 from team4_msgs.msg import Collision, AStarAction, AStarGoal
 from sensor_msgs.msg import PointCloud
 import rospy
@@ -26,6 +26,22 @@ def interpolate(start, end, distance):
     for t in ts:
         target = start + t*(end-start)
         yield target
+
+class status_pause(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.status_pause_sub = rospy.Subscriber('/pause', Bool, self.cache_pause)
+        self.pause = True
+
+        super(status_pause, self).__init__('Status pause')
+
+    def cache_pause(self, msg):
+        self.pause = msg.data
+
+    def update(self):
+        if self.pause:
+            return  pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
 
 class has_initialized(pt.behaviour.Behaviour):
     def __init__(self):
@@ -56,7 +72,7 @@ class is_at_waypoint(pt.behaviour.Behaviour):
         if np.all(waypoints[current_waypoint] == waypoints[-1]):
             margin = 0.5
         else:
-            margin = 2.0
+            margin = 2
 
         if np.linalg.norm(self.position - waypoints[current_waypoint]) < margin:
             return pt.common.Status.SUCCESS
@@ -168,12 +184,13 @@ class replan_path(pt.behaviour.Behaviour):
         self.planning_client.wait_for_server()
 
         self.is_planning = False
+        self.has_planned = False
 
         super(replan_path, self).__init__("Replan path")
 
     def update(self):
         global waypoints
-        if not self.is_planning:
+        if not self.is_planning and not self.has_planned:
             rospy.loginfo("Replanning path...")
             self.is_planning = True
 
@@ -197,6 +214,7 @@ class replan_path(pt.behaviour.Behaviour):
         if self.is_planning:
             return pt.common.Status.RUNNING
         else:
+            self.has_planned = False
             return pt.common.Status.SUCCESS
 
     def terminate(self, new_status):
@@ -208,6 +226,7 @@ class replan_path(pt.behaviour.Behaviour):
     def done_planning(self, state, msg):
         global current_path
         self.is_planning = False
+        self.has_planned = True
         if state == actionlib.TerminalState.PREEMPTED:
             rospy.logerr("Planning stopped!")
             return
@@ -306,7 +325,7 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
         # Maximum speed when approaching a collision
         self.MAX_SPEED = 0.5
         # Minimum distance to collision
-        self.MIN_DISTANCE = 1.5
+        self.MIN_DISTANCE = 2#1.5
         # Gain for speed regulation
         self.K = 0.7
 

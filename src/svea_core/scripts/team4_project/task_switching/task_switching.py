@@ -32,9 +32,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
             tn.has_initialized(),
             RSequence('Initialize', children=[
                 tn.next_waypoint_exists(),
-                tn.init_path(),
-                #tn.interpolate_to_next_waypoint(),
-                tn.set_speed(1.0),
+                tn.replan_path(),
                 tn.set_initialized()
             ])
         ])
@@ -66,6 +64,10 @@ class BehaviourTree(pt.trees.BehaviourTree):
         self.tree = RSequence("Behaviour Tree", children=[
             initialization,
             pt.composites.Selector('Behaviour', children=[
+                RSequence("Pause?", children=[
+                    tn.status_pause(),
+                    tn.set_speed(0)
+                ]),
                 check_at_goal,
                 collision,
                 following
@@ -99,7 +101,7 @@ def main():
     rospy.sleep(1)
     start_state = rospy.wait_for_message('/state', VehicleState)
     rospy.loginfo('Planning path...')
-    path = get_path(map_updater, [start_state.x, start_state.y], [-5.36, -1.66])
+    path = get_path(map_updater, [start_state.x, start_state.y], [5.94, 14.5]) #[-5.36, -1.66]
     path = list(reversed(path))
 
     vis_waypoint_msg = PointCloud()
