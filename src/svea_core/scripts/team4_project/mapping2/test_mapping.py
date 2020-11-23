@@ -19,7 +19,7 @@ def main():
     map_origin_x = -17.581444
     map_origin_y = -22.876441
     map_origin_yaw = 0
-    inflate_radius = 3
+    inflate_radius = 5
     unknown_space = -1
     free_space = 0
     c_space = 110
