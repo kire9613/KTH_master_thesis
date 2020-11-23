@@ -46,6 +46,7 @@ class EngineROS:
         self.yo = map_origin_y
 
         self.polygon_space = 120
+        self.radius = inflate_radius
 
         self.__mapping = Mapping(self.polygon_space, unknown_space, free_space, c_space,
                                  occupied_space, inflate_radius, optional)
@@ -260,7 +261,7 @@ class EngineROS:
 
         d = np.array(self.__map.data).reshape(self.height, self.width)
 
-        radius = 3
+        radius = self.radius
         # Add polygons to map
         x = min_x
         y = min_y

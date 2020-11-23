@@ -101,7 +101,7 @@ def main():
     rospy.sleep(1)
     start_state = rospy.wait_for_message('/state', VehicleState)
     rospy.loginfo('Planning path...')
-    path = get_path(map_updater, [start_state.x, start_state.y], [5.94, 14.5]) #[-5.36, -1.66]
+    path = get_path(map_updater, [start_state.x, start_state.y], [-3.89, -6.19]) #[-5.36, -1.66] [5.94, 14.5]
     path = list(reversed(path))
 
     vis_waypoint_msg = PointCloud()

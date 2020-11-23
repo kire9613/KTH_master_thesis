@@ -122,6 +122,7 @@ class Mapping:
         """
 
         #print("update_map")
+        imap = deepcopy(grid_map)
 
         origin_x = map_info[2]
         origin_y = map_info[3]
@@ -174,7 +175,7 @@ class Mapping:
                 for cell in free_cells:
                     if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
                          self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
-                         self.add_to_map(i_grid_map, cell[0], cell[1], self.free_space, map_info)
+                         self.add_to_map(imap, cell[0], cell[1], self.free_space, map_info)
                          x_index_list.append(cell[0])
                          y_index_list.append(cell[1])
 
@@ -187,7 +188,7 @@ class Mapping:
         for obs in obs_ind_list:
             if self.is_in_bounds(grid_map, obs[0],obs[1], map_info):
                 self.add_to_map(grid_map, obs[0], obs[1], self.occupied_space, map_info)
-                self.add_to_map(i_grid_map, obs[0], obs[1], self.occupied_space, map_info,inflate=True)
+                self.add_to_map(imap, obs[0], obs[1], self.occupied_space, map_info,inflate=True)
                 x_index_list.append(obs[0])
                 y_index_list.append(obs[1])
 
@@ -217,7 +218,7 @@ class Mapping:
         update.data = slice.reshape((update.width*update.height,)).tolist()
 
         i_update = deepcopy(update)
-        slice = i_grid_map[min_y:(max_y+1), min_x:(max_x+1)]
+        slice = imap[min_y:(max_y+1), min_x:(max_x+1)]
         i_update.data = slice.reshape((i_update.width*i_update.height,)).tolist()
 
         return grid_map, i_grid_map, update, i_update
