@@ -1,13 +1,13 @@
 header: 
-  seq: 2
+  seq: 1
   stamp: 
-    secs: 1605969821
-    nsecs: 174146077
+    secs: 1606136289
+    nsecs:  12261337
   frame_id: "map"
 info: 
   map_load_time: 
-    secs: 1605969821
-    nsecs: 174145318
+    secs: 1606136289
+    nsecs:  12260305
   resolution: 0.0500000007451
   width: 721
   height: 880
