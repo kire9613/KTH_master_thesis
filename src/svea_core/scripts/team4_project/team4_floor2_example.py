@@ -13,12 +13,11 @@ __status__ = "Development"
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
 from svea.localizers import LocalizationInterface
-from pure_pursuit import PurePursuitController
+from pure_pursuit import PurePursuitController, traj_lock
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from svea.track import Track
-
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = ""
@@ -66,14 +65,15 @@ def target_path_setter(svea):
         global traj_x
         global traj_y
 
-        traj_x = []
-        traj_y = []
+        with traj_lock:
+            traj_x = []
+            traj_y = []
 
-        for pose in path_msg.poses:
-            traj_x.append(pose.pose.position.x)
-            traj_y.append(pose.pose.position.y)
+            for pose in path_msg.poses:
+                traj_x.append(pose.pose.position.x)
+                traj_y.append(pose.pose.position.y)
 
-        svea.update_traj(traj_x, traj_y)
+            svea.update_traj(traj_x, traj_y)
 
     return listener
 
