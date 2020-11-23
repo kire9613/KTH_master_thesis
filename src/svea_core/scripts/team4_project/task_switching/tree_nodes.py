@@ -10,6 +10,8 @@ import rospy
 import actionlib
 from copy import deepcopy
 
+TARGET_DISTANCE = 2e-1 # 2dm between targets
+
 waypoints = []
 current_waypoint = 0
 initialized = False
@@ -71,7 +73,6 @@ class next_waypoint_exists(pt.behaviour.Behaviour):
 
 class interpolate_to_next_waypoint(pt.behaviour.Behaviour):
     def __init__(self):
-        self.TARGET_DISTANCE = 2e-1 # 2dm between targets
         self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
         super(interpolate_to_next_waypoint, self).__init__('Interpolate to next waypoint')
 
@@ -87,7 +88,7 @@ class interpolate_to_next_waypoint(pt.behaviour.Behaviour):
         end = waypoints[current_waypoint]
 
         path_msg = Path()
-        for tgt in interpolate(start, end, self.TARGET_DISTANCE):
+        for tgt in interpolate(start, end, TARGET_DISTANCE):
             p = PoseStamped()
             p.pose.position.x = tgt[0]
             p.pose.position.y = tgt[1]
@@ -95,7 +96,7 @@ class interpolate_to_next_waypoint(pt.behaviour.Behaviour):
 
         if current_waypoint+1 < len(waypoints):
             # Interpolate one waypoint further
-            for tgt in interpolate(end, waypoints[current_waypoint+1], self.TARGET_DISTANCE):
+            for tgt in interpolate(end, waypoints[current_waypoint+1], TARGET_DISTANCE):
                 p = PoseStamped()
                 p.pose.position.x = tgt[0]
                 p.pose.position.y = tgt[1]
@@ -191,9 +192,6 @@ class replan_path(pt.behaviour.Behaviour):
             rospy.logerr("Replanning failed! Empty path")
             return
 
-        self.targets_pub.publish(msg.path)
-        self.is_planning = False
-
         if current_waypoint < len(waypoints)-1:
             del waypoints[current_waypoint]
             vis_waypoint_msg = PointCloud()
@@ -204,6 +202,18 @@ class replan_path(pt.behaviour.Behaviour):
                 p.y = wp[1]
                 vis_waypoint_msg.points.append(p)
             self.waypoint_vis.publish(vis_waypoint_msg)
+
+        path_msg = deepcopy(msg.path)
+        if current_waypoint < len(waypoints)-1:
+            for tgt in interpolate(waypoints[current_waypoint], waypoints[current_waypoint+1], TARGET_DISTANCE):
+                p = PoseStamped()
+                p.pose.position.x = tgt[0]
+                p.pose.position.y = tgt[1]
+                path_msg.poses.append(p)
+
+        self.targets_pub.publish(path_msg)
+        self.is_planning = False
+
 
 class adjust_replan_speed(pt.behaviour.Behaviour):
     def __init__(self):
