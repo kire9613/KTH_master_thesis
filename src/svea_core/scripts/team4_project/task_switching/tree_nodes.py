@@ -13,6 +13,7 @@ from copy import deepcopy
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 
 waypoints = []
+current_path = Path()
 current_waypoint = 0
 initialized = False
 collision_point = np.zeros((2,))
@@ -52,8 +53,26 @@ class is_at_waypoint(pt.behaviour.Behaviour):
         super(is_at_waypoint, self).__init__("Is at waypoint?")
 
     def update(self):
+        if np.all(waypoints[current_waypoint] == waypoints[-1]):
+            margin = 0.5
+        else:
+            margin = 2.0
+
+        if np.linalg.norm(self.position - waypoints[current_waypoint]) < margin:
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+
+    def cache_state(self, msg):
+        self.position = np.array([msg.x, msg.y])
+
+class is_last_waypoint(pt.behaviour.Behaviour):
+    def __init__(self):
+        super(is_last_waypoint, self).__init__("Is last waypoint?")
+
+    def update(self):
         # The car has reached the waypoint if it is within 5dm
-        if np.linalg.norm(self.position - waypoints[current_waypoint]) < 0.5:
+        if np.all(waypoints[-1] == waypoints[current_waypoint]):
             return pt.common.Status.SUCCESS
         else:
             return pt.common.Status.FAILURE
@@ -71,38 +90,41 @@ class next_waypoint_exists(pt.behaviour.Behaviour):
         else:
             return pt.common.Status.FAILURE
 
+class update_waypoint(pt.behaviour.Behaviour):
+    def __init__(self):
+        super(update_waypoint, self).__init__('Update waypoint')
+
+    def update(self):
+        rospy.loginfo("Updating waypoint!")
+        global current_waypoint
+        current_waypoint += 1
+
+        if current_waypoint >= len(waypoints):
+            return pt.common.Status.FAILURE
+
+        return pt.common.Status.SUCCESS
+
 class interpolate_to_next_waypoint(pt.behaviour.Behaviour):
     def __init__(self):
         self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
         super(interpolate_to_next_waypoint, self).__init__('Interpolate to next waypoint')
 
     def update(self):
-        global current_waypoint
+        global current_waypoint, current_path
 
-        current_waypoint += 1
+        if current_waypoint+1 >= len(waypoints):
+            return pt.common.Status.SUCCESS
 
-        if current_waypoint >= len(waypoints):
-            return pt.common.Status.FAILURE
+        start = waypoints[current_waypoint]
+        end = waypoints[current_waypoint+1]
 
-        start = waypoints[current_waypoint-1]
-        end = waypoints[current_waypoint]
-
-        path_msg = Path()
         for tgt in interpolate(start, end, TARGET_DISTANCE):
             p = PoseStamped()
             p.pose.position.x = tgt[0]
             p.pose.position.y = tgt[1]
-            path_msg.poses.append(p)
+            current_path.poses.append(p)
 
-        if current_waypoint+1 < len(waypoints):
-            # Interpolate one waypoint further
-            for tgt in interpolate(end, waypoints[current_waypoint+1], TARGET_DISTANCE):
-                p = PoseStamped()
-                p.pose.position.x = tgt[0]
-                p.pose.position.y = tgt[1]
-                path_msg.poses.append(p)
-
-        self.targets_pub.publish(path_msg)
+        self.targets_pub.publish(current_path)
 
         return pt.common.Status.SUCCESS
 
@@ -115,6 +137,7 @@ class obstacle_detected(pt.behaviour.Behaviour):
 
     def update(self):
         if self.collision:
+            rospy.loginfo("Collision detected!")
             return pt.Status.SUCCESS
         else:
             return pt.Status.FAILURE
@@ -143,7 +166,6 @@ class replan_path(pt.behaviour.Behaviour):
         self.waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
         self.planning_client = actionlib.SimpleActionClient('/astar_planning', AStarAction)
         self.planning_client.wait_for_server()
-        self.last_planning_pont = np.zeros((2,))
 
         self.is_planning = False
 
@@ -154,7 +176,68 @@ class replan_path(pt.behaviour.Behaviour):
         if not self.is_planning:
             rospy.loginfo("Replanning path...")
             self.is_planning = True
-            self.last_planning_pont = deepcopy(collision_point)
+
+            if current_waypoint+1 < len(waypoints):
+                target = waypoints[current_waypoint+1]
+            else:
+                target = waypoints[current_waypoint]
+
+            state_msg = rospy.wait_for_message('/state', VehicleState)
+
+            action_msg = AStarGoal()
+            action_msg.x0 = state_msg.x
+            action_msg.y0 = state_msg.y
+            action_msg.theta0 = state_msg.yaw
+            action_msg.xt = target[0]
+            action_msg.yt = target[1]
+            action_msg.smooth = False
+
+            self.planning_client.send_goal(action_msg, done_cb=self.done_planning)
+
+        if self.is_planning:
+            return pt.common.Status.RUNNING
+        else:
+            return pt.common.Status.SUCCESS
+
+    def terminate(self, new_status):
+        if new_status == pt.common.Status.INVALID:
+            # Obstacle no longer detected. Cancel replanning.
+            self.planning_client.cancel_all_goals()
+            self.is_planning = False
+
+    def done_planning(self, state, msg):
+        global current_path
+        self.is_planning = False
+        if state == actionlib.TerminalState.PREEMPTED:
+            rospy.logerr("Planning stopped!")
+            return
+        if state != actionlib.TerminalState.SUCCEEDED:
+            rospy.logerr("Replanning failed!")
+            return
+        if len(msg.path.poses) == 0:
+            rospy.logerr("Replanning failed! Empty path")
+            return
+
+        rospy.loginfo("Planning done!")
+        current_path = deepcopy(msg.path)
+        self.targets_pub.publish(msg.path)
+
+class astar_plan_path(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
+        self.waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
+        self.planning_client = actionlib.SimpleActionClient('/astar_planning', AStarAction)
+        self.planning_client.wait_for_server()
+
+        self.is_planning = False
+
+        super(astar_plan_path, self).__init__("Plan path")
+
+    def update(self):
+        global waypoints
+        if not self.is_planning:
+            rospy.loginfo("Replanning path...")
+            self.is_planning = True
 
             if current_waypoint+1 < len(waypoints):
                 target = waypoints[current_waypoint+1]
@@ -196,27 +279,23 @@ class replan_path(pt.behaviour.Behaviour):
             rospy.logerr("Replanning failed! Empty path")
             return
 
-        if current_waypoint < len(waypoints)-1:
-            del waypoints[current_waypoint]
-            vis_waypoint_msg = PointCloud()
-            vis_waypoint_msg.header.frame_id = 'map'
-            for wp in waypoints:
-                p = Point32()
-                p.x = wp[0]
-                p.y = wp[1]
-                vis_waypoint_msg.points.append(p)
-            self.waypoint_vis.publish(vis_waypoint_msg)
+        self.targets_pub.publish(msg.path)
 
-        path_msg = deepcopy(msg.path)
-        if current_waypoint < len(waypoints)-1:
-            for tgt in interpolate(waypoints[current_waypoint], waypoints[current_waypoint+1], TARGET_DISTANCE):
-                p = PoseStamped()
-                p.pose.position.x = tgt[0]
-                p.pose.position.y = tgt[1]
-                path_msg.poses.append(p)
+class init_path(pt.behaviour.Behaviour):
+    def __init__ (self):
+        self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
+        super(init_path, self).__init__("Init path")
 
+    def update(self):
+        veh_state = rospy.wait_for_message('/state', VehicleState)
+        path_msg = Path()
+        p = PoseStamped()
+        p.pose.position.x = veh_state.x
+        p.pose.position.y = veh_state.y
+        path_msg.poses.append(p)
         self.targets_pub.publish(path_msg)
 
+        return pt.common.Status.SUCCESS
 
 class adjust_replan_speed(pt.behaviour.Behaviour):
     def __init__(self):

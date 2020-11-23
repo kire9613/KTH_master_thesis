@@ -32,8 +32,9 @@ class BehaviourTree(pt.trees.BehaviourTree):
             tn.has_initialized(),
             RSequence('Initialize', children=[
                 tn.next_waypoint_exists(),
-                tn.interpolate_to_next_waypoint(),
-                tn.set_speed(0.6),
+                tn.init_path(),
+                #tn.interpolate_to_next_waypoint(),
+                tn.set_speed(1.0),
                 tn.set_initialized()
             ])
         ])
@@ -44,19 +45,28 @@ class BehaviourTree(pt.trees.BehaviourTree):
             tn.replan_path()
         ])
 
-        following = RSequence("Waypoint", children=[
-            tn.set_speed(0.6),
-            tn.is_at_waypoint(),
-            pt.composites.Selector("Stopping condition", children=[
-                tn.next_waypoint_exists(),
-                tn.set_speed(0, pt.common.Status.FAILURE)
+        following = pt.composites.Selector("Path planning", children=[
+            RSequence("Reached waypoint?", children=[
+                tn.is_at_waypoint(),
+                tn.update_waypoint(),
+                tn.interpolate_to_next_waypoint()
             ]),
-            tn.interpolate_to_next_waypoint()
+            RSequence("Drive", children=[
+                tn.set_speed(1.0),
+                tn.replan_path()
+            ])
+        ])
+
+        check_at_goal = RSequence("Is at goal?", children=[
+            tn.is_at_waypoint(),
+            tn.is_last_waypoint(),
+            tn.set_speed(0)
         ])
 
         self.tree = RSequence("Behaviour Tree", children=[
             initialization,
             pt.composites.Selector('Behaviour', children=[
+                check_at_goal,
                 collision,
                 following
             ])
@@ -65,6 +75,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
         super(BehaviourTree, self).__init__(self.tree)
 
 def main():
+
     rospy.init_node('task_switching')
 
     show_tree_param = rospy.search_param('show_tree')

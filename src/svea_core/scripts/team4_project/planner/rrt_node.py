@@ -199,7 +199,7 @@ class RRTNode:
         ok_i = [1]
         new_path_exists = False
 
-        for i in range(1,len(path)):
+        for i in range(1,min(len(path),5)):
             start_node_map_coord = [(path[0].pose.position.x - grid_map.info.origin.position.x) / grid_map.info.resolution,
                                 (path[0].pose.position.y - grid_map.info.origin.position.y) / grid_map.info.resolution]
             end_node_map_coord = [(path[i].pose.position.x - grid_map.info.origin.position.x) / grid_map.info.resolution,
