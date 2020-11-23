@@ -3,6 +3,10 @@ Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math
 
+from threading import Lock
+
+traj_lock = Lock()
+
 class PurePursuitController(object):
 
     k = 0.6       # look forward gain
@@ -14,9 +18,10 @@ class PurePursuitController(object):
     MAX_U = 1.7   # Maximum control signal
     MIN_U = -0.45 # Minimum control signal
 
-    def __init__(self, vehicle_name=''):
+    def __init__(self, traj_lock, vehicle_name=''):
         self.traj_x = []
         self.traj_y = []
+        self.traj_lock = traj_lock
         self.target = None
         # initialize with 0 velocity
         self.target_velocity = 0.0
@@ -77,10 +82,11 @@ class PurePursuitController(object):
             return u
 
     def find_target(self, state):
-        ind = self._calc_target_index(state)
-        tx = self.traj_x[ind]
-        ty = self.traj_y[ind]
-        self.target = (tx, ty)
+        with traj_lock:
+            ind = self._calc_target_index(state)
+            tx = self.traj_x[ind]
+            ty = self.traj_y[ind]
+            self.target = (tx, ty)
 
     def _calc_target_index(self, state):
         # search nearest point index
