@@ -1,2 +1,2 @@
 bool collision
-geometry_msgs/Point replan_point
+geometry_msgs/Point collision_point

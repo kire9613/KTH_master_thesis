@@ -13,7 +13,7 @@ from copy import deepcopy
 waypoints = []
 current_waypoint = 0
 initialized = False
-replan_point = np.zeros((2,))
+collision_point = np.zeros((2,))
 
 def interpolate(start, end, distance):
     # Create n_steps points that are evenly distributed
@@ -119,10 +119,10 @@ class obstacle_detected(pt.behaviour.Behaviour):
             return pt.Status.FAILURE
 
     def cache_collision(self, msg):
-        global replan_point
+        global collision_point
         self.collision = msg.collision
-        replan_point[0] = msg.replan_point.x
-        replan_point[1] = msg.replan_point.y
+        collision_point[0] = msg.collision_point.x
+        collision_point[1] = msg.collision_point.y
 
 class set_speed(pt.behaviour.Behaviour):
     def __init__(self, speed, return_val=pt.common.Status.SUCCESS):
@@ -150,10 +150,10 @@ class replan_path(pt.behaviour.Behaviour):
 
     def update(self):
         global waypoints
-        if not self.is_planning and (self.last_planning_pont != replan_point).any():
+        if not self.is_planning and (self.last_planning_pont != collision_point).any():
             rospy.loginfo("Replanning path...")
             self.is_planning = True
-            self.last_planning_pont = deepcopy(replan_point)
+            self.last_planning_pont = deepcopy(collision_point)
 
             if current_waypoint+1 < len(waypoints):
                 target = waypoints[current_waypoint+1]
@@ -216,15 +216,17 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
 
         # Maximum speed when approaching a collision
         self.MAX_SPEED = 0.5
+        # Minimum distance to collision
+        self.MIN_DISTANCE = 1.5
         # Gain for speed regulation
         self.K = 0.7
 
         super(adjust_replan_speed, self).__init__("Adjust speed while replanning")
 
     def update(self):
-        distance = np.linalg.norm(self.position - replan_point)
-        speed = min(self.MAX_SPEED, self.K*distance)
-        self.speed_pub.publish(0)
+        distance = np.linalg.norm(self.position - collision_point)
+        speed = max(0, min(self.MAX_SPEED, self.K*(distance-self.MIN_DISTANCE)))
+        self.speed_pub.publish(speed)
         return pt.common.Status.SUCCESS
 
     def cache_state(self, msg):

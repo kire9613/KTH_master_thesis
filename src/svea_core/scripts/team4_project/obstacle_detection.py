@@ -12,8 +12,6 @@ from geometry_msgs.msg import Point
 import numpy as np
 import math
 
-REPLAN_DISTANCE = 1
-
 def world_to_grid(info, pos):
     """Convert world coordinate to grid coordinate"""
     x_grid = int((pos[0] - info.origin.position.x)/info.resolution)
@@ -104,20 +102,9 @@ def main():
                 if not (value == 0 or value == -1):
                     collision_point = grid_to_world(map_update.get_map_info(), point)
 
-                    replan_index = i
-                    distance = np.linalg.norm(collision_point - grid_to_world(map_update.get_map_info(), tgt1))
-                    for j in range(i-1, -1, -1):
-                        if distance >= REPLAN_DISTANCE:
-                            break
-
-                        p_last = np.array([path_msg.poses[j+1].pose.position.x, path_msg.poses[j+1].pose.position.y])
-                        p = np.array([path_msg.poses[j].pose.position.x, path_msg.poses[j].pose.position.y])
-
-                        distance += np.linalg.norm(p_last-p)
-                        replan_index = j
-
                     collision_msg.collision = True
-                    collision_msg.replan_point = path_msg.poses[replan_index].pose.position
+                    collision_msg.collision_point.x = collision_point[0]
+                    collision_msg.collision_point.y = collision_point[1]
                     collision = True
 
                     vis.point.x = collision_point[0]
