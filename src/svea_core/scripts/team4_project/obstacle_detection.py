@@ -72,12 +72,21 @@ def main():
         state = rospy.wait_for_message('/state', VehicleState)
         grid = map_update.get_inflated_map()
         path_msg = rospy.wait_for_message('/targets', Path)
+	
+	# Check closest point in path
+        dx = []
+        dy = []
+        for poseStamped in path_msg.poses:
+            dx.append(state.x-poseStamped.pose.position.x)
+            dy.append(state.y-poseStamped.pose.position.y)
+        d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]
+        start_index = d.index(min(d))
 
         collision_msg = Collision()
         collision_msg.collision = False
 
         collision = False
-        for i in range(len(path_msg.poses)-1):
+        for i in range(start_index, len(path_msg.poses)-1):
             # Raytrace between each pair of targets
             tgt1 = world_to_grid(map_update.get_map_info(), [path_msg.poses[i].pose.position.x, path_msg.poses[i].pose.position.y])
             tgt2 = world_to_grid(map_update.get_map_info(), [path_msg.poses[i+1].pose.position.x, path_msg.poses[i+1].pose.position.y])
