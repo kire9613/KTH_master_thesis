@@ -151,7 +151,7 @@ class replan_path(pt.behaviour.Behaviour):
 
     def update(self):
         global waypoints
-        if not self.is_planning and (self.last_planning_pont != collision_point).any():
+        if not self.is_planning:
             rospy.loginfo("Replanning path...")
             self.is_planning = True
             self.last_planning_pont = deepcopy(collision_point)
@@ -185,6 +185,7 @@ class replan_path(pt.behaviour.Behaviour):
             self.is_planning = False
 
     def done_planning(self, state, msg):
+        self.is_planning = False
         if state == actionlib.TerminalState.PREEMPTED:
             rospy.logerr("Planning stopped!")
             return
@@ -215,7 +216,6 @@ class replan_path(pt.behaviour.Behaviour):
                 path_msg.poses.append(p)
 
         self.targets_pub.publish(path_msg)
-        self.is_planning = False
 
 
 class adjust_replan_speed(pt.behaviour.Behaviour):
