@@ -63,6 +63,9 @@ def visualize(svea, viz):
 # is pulished
 def target_path_setter(svea):
     def listener(path_msg):
+        global traj_x
+        global traj_y
+
         traj_x = []
         traj_y = []
 
