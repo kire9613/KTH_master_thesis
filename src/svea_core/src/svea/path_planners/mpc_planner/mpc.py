@@ -2,8 +2,8 @@ import casadi
 import numpy as np
 from scipy.spatial import ConvexHull
 
-from mpc_planner.ros_interface import Logger as logging
-from mpc_planner.utils import interpolate_path
+from ros_interface import Logger as logging
+from utils import interpolate_path
 
 
 class NonLinearMPC(object):
@@ -143,7 +143,7 @@ class NonLinearMPC(object):
             [casadi.cos(d_yaw), casadi.sin(d_yaw),
              -casadi.sin(d_yaw), casadi.cos(d_yaw)]
         )
-
+        # Model
         for k in range(self.N + 1):
             self.solver.subject_to(
                 [self.X[0, k + 1] == self.X[0, k] + dt * self.U
@@ -178,14 +178,11 @@ class NonLinearMPC(object):
         #self.solver.subject_to(
         #    casadi.fabs(self.goal_state[2] - self.X[2, -1]) <= self.angle_tolerance
         #)
-
         self.solver.subject_to(self.T >= 0)
-
-        self.solver.subject_to(self.speed_min <= self.U[0, :])
-        self.solver.subject_to(self.U[0, :] <= self.speed_max)
-
-        self.solver.subject_to(self.steering_angle_min <= self.U[1, :])
-        self.solver.subject_to(self.U[1, :] <= self.steering_angle_max)
+        #self.solver.subject_to(self.speed_min <= self.U[0, :])
+        #self.solver.subject_to(self.U[0, :] <= self.speed_max)
+        #self.solver.subject_to(self.steering_angle_min <= self.U[1, :])
+        #self.solver.subject_to(self.U[1, :] <= self.steering_angle_max)
 
         dx = casadi.MX.sym('dx')
         dy = casadi.MX.sym('dy')
@@ -201,7 +198,7 @@ class NonLinearMPC(object):
                     casadi.mtimes(-self.g.T, self.mus[ind][:, k])
                     + casadi.mtimes(
                         (casadi.mtimes(self.as_[ind], translation) - self.bs[ind]).T,
-                        self.lambdas[ind][:, k]) > 0.3
+                        self.lambdas[ind][:, k]) > 0.0
                 )
 
         for ind in range(len(self.lambdas)):
@@ -218,7 +215,7 @@ class NonLinearMPC(object):
             input_cost = casadi.mtimes(input_cost, self.U[:, k])
             sum_input_costs += input_cost
 
-        self.solver.minimize(self.kappa * self.T + sum_input_costs)
+        self.solver.minimize(self.kappa*self.T + sum_input_costs)
 
     def compute_path(self, initial_state, goal_state, initial_guess=None):
         """Given a initial state and a goal state, it uses the previously

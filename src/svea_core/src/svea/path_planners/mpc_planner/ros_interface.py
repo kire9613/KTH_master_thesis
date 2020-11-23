@@ -1,18 +1,19 @@
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from svea_msgs.msg import VehicleState as VehicleStateMsg
 from nav_msgs.msg import Path
 import rospy
 import numpy as np
 from tf.transformations import euler_from_quaternion
 
-from mpc_planner.utils import are_nodes_close_enough
+from svea.path_planners.mpc_planner.utils import are_nodes_close_enough
 
 
 class ROSInterface(object):
     """ROSInterface used to handle all ROS related functions for the planner
     """
 
-    def __init__(self):
-        rospy.init_node('planner')
+    def __init__(self, x_traj,y_traj):
+        #rospy.init_node('planner')
 
         self.path_frame = rospy.get_param('~path_frame')
         self.rate = rospy.Rate(rospy.get_param('~publish_frequency'))
@@ -23,26 +24,19 @@ class ROSInterface(object):
         self.goal_state = None
         self._has_endpoint_changed = False
         self._obstacles = None
-
-        self.x0, self.y0, self.theta0 =  -7.4,-15.3, 1.12
-        #self.xt, self.yt, self.thetat = 10.1 , 11.5, 1.12 
-        self.xt, self.yt, self.thetat = -5.21, -11.4, 1.12 #go round small obstacle 
-
-        #rospy.Subscriber('~initial_state', PoseWithCovarianceStamped, self._cb_initial_state)  # noqa
-        #rospy.Subscriber('~goal_state', PoseStamped, self._cb_goal_state)
-
-        #At the moment the inital state and goal state are hardcoded
-        self._cb_initial_state()
-        self._cb_goal_state()
-
-        self.path_publisher = rospy.Publisher('~path', Path, queue_size=1)
-
+        self._current_target_state = [0,0] #needs to be not None
+        self.goal_angles = []
+        self.x_traj = x_traj
+        self.y_traj = y_traj
+        #self.path_publisher = rospy.Publisher('~path', Path, queue_size=1)
+        
+    def set_goal_angles(self, angles):
+        self.goal_angles = angles
     @property
     def has_endpoint_changed(self):
         """Checks if either the initial state or goal state are valid and have
         changed. Additionally, after reading the flag once, it resets it to
         False (to avoid more than one computation when the endpoints change)
-
         :return: `True` if any endpoint has changed, `False` otherwise
         :rtype: bool
         """
@@ -62,11 +56,10 @@ class ROSInterface(object):
         self._obstacles = rospy.get_param('~obstacles')
 
         return self._obstacles
-
+    
     def publish_path(self, path, publisher=None):
         """Given the arrays corresponding to the path, it publishes a Path
         ROS message.
-
         :param path: array of poses of the format [x, y, yaw]
         :type path: numpy array
         :param publisher: publisher to use, defaults to None (self.path_publisher)
@@ -83,6 +76,8 @@ class ROSInterface(object):
         path_msg.header.frame_id = self.path_frame
 
         poses = []
+        #added
+        #poses = Path.poses
         for ind in range(len(path)):
             pose = PoseStamped()
             pose.header.frame_id = self.path_frame
@@ -91,6 +86,8 @@ class ROSInterface(object):
 
             poses.append(pose)
 
+
+        print("Poses",poses) # (!) added
         path_msg.poses = poses
         publisher.publish(path_msg)
 
@@ -103,30 +100,79 @@ class ROSInterface(object):
             rospy.loginfo(
                 '[planner] Program terminated. Exception: {}'.format(e))
 
-    def _cb_initial_state(self):
-        #def _cb_initial_state(self, msg):
+    def cb_target_state(self,msg):
         """Callback to get the initial state from a ROS message
+        :param msg: ROS message
+        :type msg: ROS message
+        """
+        x, y = [getattr(msg.point, coord) for coord in ('x', 'y')] 
 
+        self._current_target_state = [x, y]
+
+    def compute_goal(self):
+        old_goal_state = self.goal_state
+        traj_length = len(self.x_traj)
+        print("searching for value", self._current_target_state[0], self._current_target_state[1])
+
+        for i in range(0,traj_length-1):
+            #if (abs(self.x_traj[i] - self._current_target_state[0]) <1e-2) and (abs(self.y_traj[i] - self._current_target_state[1])) :
+            if self.x_traj[i] == self._current_target_state[0]:
+                print("index found")
+                path_index = i
+                break
+            else: #index not found, might need to fix this further (!)
+                path_index = 0
+
+        if path_index == 0:
+            print("index not found")
+            
+        step_ahead = 8 #step ahead but not too far 
+        if step_ahead + path_index > traj_length:
+            goal_index = traj_length - 1 
+            #print("index is last index:",goal_index)
+        else:
+            goal_index = step_ahead + path_index
+            #print("index:",goal_index)
+
+        x, y = self.x_traj[goal_index], self.y_traj[goal_index]
+        
+         # check if index is valid otherwise get final value
+        if len(self.goal_angles) > goal_index:
+            yaw = self.goal_angles[goal_index]
+        else:
+            yaw = self.goal_angles[len(self.goal_angles)-1]
+        self.goal_state = [x, y, yaw]
+        print("The goal state is:",self.goal_state)
+
+        kwargs = {
+            'first_node': old_goal_state,
+            'second_node': self.goal_state,
+            'distance_tolerance': self.distance_tolerance,
+            'angle_tolerance': self.angle_tolerance
+        }
+        if not are_nodes_close_enough(**kwargs):
+            self._has_endpoint_changed = True
+        #else:
+            #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
+
+
+    def cb_initial_state(self, msg):
+        """Callback to get the initial state from a ROS message
         :param msg: ROS message
         :type msg: ROS message
         """
         
         old_initial_state = self.initial_state
         #At the moment the inital state is hardcoded
-        '''
-        x, y = [getattr(msg.pose.pose.position, coord) for coord in ('x', 'y')]
+        # (!) uncommented this to get position from ROS
+        #x, y = [getattr(msg.pose.pose.position, coord) for coord in ('x', 'y')]
+        x, y, yaw = [getattr(msg, coord) for coord in ('x', 'y','yaw')]
 
-        quaternion = [
-            getattr(msg.pose.pose.orientation, coord)
-            for coord in ('x', 'y', 'z', 'w')
-        ]
-
-        yaw = euler_from_quaternion(quaternion)[2]
         self.initial_state = [x, y, yaw]
-        '''
-        self.initial_state = [self.x0,self.y0,self.theta0]
+        
+        # self.initial_state = [self.x0,self.y0,self.theta0] #original 
 
-        self._has_endpoint_changed = True
+        #self._has_endpoint_changed = True
 
         kwargs = {
             'first_node': old_initial_state,
@@ -138,30 +184,47 @@ class ROSInterface(object):
         if not are_nodes_close_enough(**kwargs):
             self._has_endpoint_changed = True
         else:
-            rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
+            self._has_endpoint_changed = False
+            #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
 
-    def _cb_goal_state(self):
-        #def _cb_goal_state(self, msg):
+    #def _cb_goal_state(self): # original
+    def cb_goal_state(self, msg):
         """Callback to get the goal state from a ROS message
-
         :param msg: ROS message
         :type msg: ROS message
         """
         
         old_goal_state = self.goal_state
-        #At the moment the goal state is hardcoded
-        '''
-        x, y = [getattr(msg.pose.position, coord) for coord in ('x', 'y')]
 
-        quaternion = [
-            getattr(msg.pose.orientation, coord)
-            for coord in ('x', 'y', 'z', 'w')
-        ]
+        current_path_poses = msg.poses
 
-        yaw = euler_from_quaternion(quaternion)[2]
+        """if self._current_target_state == None:
+            self._current_target_state = current_path_poses[0]"""
+
+        for x_pose in current_path_poses:
+            if x_pose.pose.position.x == self._current_target_state[0]:
+                path_index = current_path_poses.index(x_pose)
+                break
+            else: #index not found, might need to fix this further (!)
+                path_index = 0
+
+        step_ahead = 10 #step ahead but not too far 
+        if step_ahead + path_index > len(current_path_poses):
+            goal_index = len(current_path_poses) - 1 
+        else:
+            goal_index = step_ahead + path_index
+
+        x, y = [getattr(msg.poses[goal_index].pose.position, coord) for coord in ('x','y')]
+        
+        # check if index is valid otherwise get final value
+        if len(self.goal_angles) > goal_index:
+            yaw = self.goal_angles[goal_index]
+        else:
+            yaw = self.goal_angles[len(self.goal_angles)-1]
         self.goal_state = [x, y, yaw]
-        '''
-        self.goal_state = [self.xt,self.yt,self.thetat]
+        
+        # set goal state from chosen position on map: find neareast feasible point on Astar-path or manually?
+        # self.goal_state = [self.xt,self.yt,self.thetat] # original
 
         kwargs = {
             'first_node': old_goal_state,
@@ -172,13 +235,12 @@ class ROSInterface(object):
 
         if not are_nodes_close_enough(**kwargs):
             self._has_endpoint_changed = True
-        else:
-            rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
+        #else:
+            #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
 
     def get_planner_parameters(self, planner_algorithm=None):
         """Creates a dictionary representation of the parameters that will be
         used for the path planner.
-
         :return: dictionary of ROS parameters
         :rtype: dictionary
         """
@@ -204,7 +266,6 @@ class ROSInterface(object):
     @staticmethod
     def is_shutdown():
         """Wrapper of the rospy.is_shutdown() method in ROS
-
         :return: `True` if the ros node is stopped/being stopped, `False` otherwise
         :rtype: bool
         """

@@ -137,8 +137,8 @@ class ROSInterface(object):
 
         if not are_nodes_close_enough(**kwargs):
             self._has_endpoint_changed = True
-        else:
-            rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
+        #else:
+            #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
 
     def _cb_goal_state(self):
         #def _cb_goal_state(self, msg):

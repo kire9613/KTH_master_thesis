@@ -4,14 +4,14 @@
     <arg name="use_rviz" default="true"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
-    <arg name="use_astar" default="false"/>
+    <arg name="use_astar" default="true"/>
     <arg name="use_mpc" default="false"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
     <arg name="obstacles_list" default="$(find svea_core)/src/svea/path_planners/mpc_obstacles.yaml" />
 
     <!-- Occupancy grid parameters -->
-    <arg name="og_width" default="180" />
-    <arg name="og_height" default="220" />
+    <arg name="og_width" default="15" />
+    <arg name="og_height" default="15" />
     <arg name="og_resolution" default="0.2" />    
     <arg name="og_origin_x" default="-17.581444" />
     <arg name="og_origin_y" default="-22.876441" />
@@ -36,29 +36,26 @@
         <param name="use_astar" value="$(arg use_astar)"/>
         <param name="use_mpc" value="$(arg use_mpc)"/>
 
+       
+        <!--Start MPC path planner-->
+            
+        <rosparam file="$(find svea_core)/src/svea/path_planners/mpc_planner.yaml" command="load" />
+        <rosparam file="$(arg obstacles_list)" command="load" />
 
+        <!-- Occupancy grid parameters -->
+        <param name="og_width" value="$(arg og_width)"/>
+        <param name="og_height" value="$(arg og_height)"/>
+        <param name="og_resolution" value="$(arg og_resolution)"/>
+        <param name="og_origin_x" value="$(arg og_origin_x)"/>
+        <param name="og_origin_y" value="$(arg og_origin_y)"/>
+
+        <param name="planner_algorithm" value="$(arg planner_algorithm)"/>
+
+        <remap from="~initial_state" to="/initialpose" />
+        <remap from="~goal_state" to="/move_base_simple/goal" />
+            
+        
     </node>
-
-    <group if="$(eval use_mpc == true)">
-      <!--Start MPC path planner-->
-        <node name="planner" pkg="svea_core" type="run_mpc_planner.py" output="screen">
-            <rosparam file="$(find svea_core)/src/svea/path_planners/mpc_planner.yaml" command="load" />
-            <rosparam file="$(arg obstacles_list)" command="load" />
-
-            <!-- Occupancy grid parameters -->
-            <param name="og_width" value="$(arg og_width)"/>
-            <param name="og_height" value="$(arg og_height)"/>
-            <param name="og_resolution" value="$(arg og_resolution)"/>
-            <param name="og_origin_x" value="$(arg og_origin_x)"/>
-            <param name="og_origin_y" value="$(arg og_origin_y)"/>
-
-            <param name="planner_algorithm" value="$(arg planner_algorithm)"/>
-
-            <remap from="~initial_state" to="/initialpose" />
-            <remap from="~goal_state" to="/move_base_simple/goal" />
-        </node>
-    </group>
-
 
 
 </launch>

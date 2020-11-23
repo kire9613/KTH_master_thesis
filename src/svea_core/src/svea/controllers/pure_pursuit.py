@@ -108,3 +108,5 @@ class PurePursuitController(object):
         if (self.last_time - self.print_time)  > 1:
             print(message, data)
             self.print_time = self.last_time
+    def reset_isfinished(self):
+            self.is_finished = False

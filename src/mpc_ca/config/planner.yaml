@@ -7,8 +7,8 @@ angle_tolerance: deg(30) # Minimum angle error to consider that the planner has 
 
 speed_min: -0.6 # Minimum speed (in meters/seconds)
 speed_max: 0.6 # Maximum speed (in meters/seconds)
-steering_angle_min: -0.5 #-0.78 # (-pi / 4) Minimum angular speed (in radians/seconds)
-steering_angle_max: 0.5 #0.78 # (pi / 4) Maximum angular speed (in radians/seconds)
+steering_angle_min: -0.78 #-0.78 # (-pi / 4) Minimum angular speed (in radians/seconds)
+steering_angle_max: -0.78 #0.78 # (pi / 4) Maximum angular speed (in radians/seconds)
 
 publish_frequency: 10 # ROS path publish frequency (in Hz)
 path_frame: 'map' # ROS frame where to publish the path
@@ -17,4 +17,4 @@ path_frame: 'map' # ROS frame where to publish the path
 N: 7 #7 #20 # Prediction horizon (in steps)
 R_speed: 1. # Weight on the speed (input)
 R_steering_angle: 1. # Weight on the steering_angle (input)
-kappa: 1. # Weight on the total time
+kappa: 0.1. # Weight on the total time

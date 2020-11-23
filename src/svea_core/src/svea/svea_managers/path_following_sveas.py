@@ -119,3 +119,6 @@ class SVEAPurePursuit(SVEAManager):
     def is_finished(self):
         """Check if pure-pursuit controller is finished or not"""
         return self.controller.is_finished
+        
+    def reset_isfinished(self):
+            self.controller.reset_isfinished()

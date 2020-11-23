@@ -52,8 +52,6 @@ def generateTrajectory(x0,y0,theta0, xt,yt,plotBool,file = None):
         ax2.set_xlabel("grid index")
         ax2.imshow(numpy.rot90(grid))
         plt.show()
-
-
     return xtraj,ytraj
 
 def calculateHeuristic(elem):
@@ -145,8 +143,8 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
                 children_nodes[index][0].parent = currnode[0]
                 steering_angle = children_nodes[index][1]
                 children_nodes[index][0].howtofindme.append(steering_angle) # append the angle # append x,y
-                if currnode[2] + 0.01 + abs(steering_angle)*0.01 < Qchild[2]: # cost to reach
-                    Q[Q.index(Qchild)][2] = currnode[2] + 0.01 + abs(steering_angle)*0.01 # cost to reach from start
+                if currnode[2] + 0.01 + abs(steering_angle)*0.03 < Qchild[2]: # cost to reach
+                    Q[Q.index(Qchild)][2] = currnode[2] + 0.01 + abs(steering_angle)*0.03 # cost to reach from start
                     Q[Q.index(Qchild)][3] = currnode[0]    # update pointer to mother-node
                     Q[Q.index(Qchild)][4] = children_nodes[index][1] # heuristic cost from child to goal
         if S[-1][0].heuristic <= 0.4: # if we're close to the target --> stop

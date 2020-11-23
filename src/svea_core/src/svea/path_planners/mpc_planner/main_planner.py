@@ -1,5 +1,5 @@
-from mpc_planner.mpc import NonLinearMPC
-from mpc_planner.ros_interface import Logger as logging
+from mpc import NonLinearMPC
+from ros_interface import Logger as logging
 import numpy as np
 
 
@@ -43,9 +43,9 @@ class Planner(object):
         :return: path, where each pose is of the format [x, y, yaw]
         :rtype: list of tuples or numpy array
         """
-        xs = [-7.4 , -2.33, 10.3, 5.9]#, -7.2, -2.5]
-        ys = [-15.3,  -7.09, 11.4, 15.0]#, -4.2]#, -7.6]
-        ds = [1.12, 1.12, 3*np.pi/4, np.pi]
+#        xs = [-7.4 , -2.33, 10.3, 5.9]#, -7.2, -2.5]
+ #       ys = [-15.3,  -7.09, 11.4, 15.0]#, -4.2]#, -7.6]
+  #      ds = [1.12, 1.12, 3*np.pi/4, np.pi]
         #initial_guess = [[xs[0],ys[0],1.12],[xs[1],ys[1],1.12],[xs[2],ys[2],3*np.pi/4],[xs[3],ys[3],np.pi]]#,[xs[4],ys[4],2.685,[xs[5],ys[5],2.685]]
         initial_guess = []
         '''
