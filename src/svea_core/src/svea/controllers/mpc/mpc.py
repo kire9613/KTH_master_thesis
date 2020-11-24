@@ -77,9 +77,8 @@ class MPC(object):
                           solver_opts['ipopt.tol'] = 1e-8
         """
         model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
-        #dynamics = model.discrete_time_dynamics
+        # dynamics = model.discrete_time_dynamics
         dynamics = model.continuous_time_nonlinear_dynamics
-        #dynamics = model.svea_nonlinear_dynamics
 
         self.horizon = horizon*dt
         # self.set_reference(x_d)
@@ -341,6 +340,9 @@ class MPC(object):
         if pind >= ind:
             ind = pind
 
+        #  TODO: Fake look ahead, change this later <20-11-20, rob> #
+        # ind += 1
+
         xref[0, 0] = cx[ind]
         xref[1, 0] = cy[ind]
         xref[2, 0] = cyaw[ind]
@@ -397,6 +399,8 @@ class MPC(object):
         cy = self.traj_y
         cyaw = self.traj_yaw
 
+        #  TODO: Search might have to include numbers in a backward direction
+        #  also <20-11-20, rob> #
         dx = [state[0] - icx for icx in cx[pind:(pind + self.N_IND_SEARCH)]]
         dy = [state[1] - icy for icy in cy[pind:(pind + self.N_IND_SEARCH)]]
 
