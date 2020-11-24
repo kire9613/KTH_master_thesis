@@ -106,22 +106,15 @@ def main():
     if is_sim:
         # start simulation
         simulator.toggle_pause_simulation()
-    else:
-        initialStatePublisher = rospy.Publisher('/initialstate', PoseWithCovarianceStamped, queue_size=1)
-        initialStateMsg = PoseWithCovarianceStamped()
-        initialStateMsg.header.frame_id = "map"
-        initialStateMsg.pose.pose.position.x = -7.4
-        initialStateMsg.pose.pose.position.x = -15.3
-        initialStateMsg.pose.pose.orientation.z = 0.478559974486
-        initialStateMsg.pose.pose.orientation.w = 0.878054867773
-        initialStateMsg.pose.covariance =  [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853892326654787]
-        initialStatePublisher.publish(initialStateMsg)
+    else: 
+        rospy.wait_for_message('/initialpose',PoseWithCovarianceStamped)
+
+    initialized = False
 
     # simualtion loop
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
         state = svea.wait_for_state()
-
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
         # tic = rospy.get_time() # disabled emergency brake
