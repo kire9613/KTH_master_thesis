@@ -37,7 +37,7 @@ class MPC(object):
         self.sp = []
         self.target = None
         # initialize with 0 velocity
-        self.target_velocity = 0.0
+        self.target_velocity = 1.0
         self.last_index = 0
         self.is_finished = False
 
@@ -77,8 +77,8 @@ class MPC(object):
                           solver_opts['ipopt.tol'] = 1e-8
         """
         model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
-        # dynamics = model.discrete_time_dynamics
-        dynamics = model.continuous_time_nonlinear_dynamics
+        dynamics = model.discrete_time_dynamics
+        #dynamics = model.continuous_time_nonlinear_dynamics
 
         self.horizon = horizon*dt
         # self.set_reference(x_d)

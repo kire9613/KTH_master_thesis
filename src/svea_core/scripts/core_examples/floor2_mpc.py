@@ -111,19 +111,19 @@ def main():
     Q = np.diag([
         1, # x
         1, # y
-        1, # ψ
+        0.00000000000001, # ψ
         100, # v
     ])
     R = np.diag([
-        10, # a
-        1, # δ
+        1, # a
+       0.1, # δ
     ])
     # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
     P_LQR = np.diag([
-            100,
-            100,
+            120,
+            120,
             1,
-            1
+            100
     ])
 
     ulb = [-1e2,-np.deg2rad(40)]

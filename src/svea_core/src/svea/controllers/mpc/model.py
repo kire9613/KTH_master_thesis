@@ -86,10 +86,10 @@ class SVEAcar(object):
         B[2, 1] = self.dt * x[3] / (self.L * ca.cos(u[1]) ** 2)
         B[3, 0] = self.dt
 
-        C = ca.MX.zeros(1,4)
+        C = ca.MX.zeros(4,1)
         C[0,0] = self.dt * x[3] * ca.sin(x[2]) * x[2]
-        C[0,1] = - self.dt * x[3] * ca.cos(x[2]) * x[2]
-        C[0,2] = x[3] * u[1] / (self.L * ca.cos(u[1]) ** 2)
+        C[1,0] = - self.dt * x[3] * ca.cos(x[2]) * x[2]
+        C[2,0] = x[3] * u[1] / (self.L * ca.cos(u[1]) ** 2)
 
         self.Ad = ca.Function('Ad', [x, u], [A])
         self.Bd = ca.Function('Bd', [x, u], [B])
@@ -186,7 +186,7 @@ class SVEAcar(object):
         """
 
         return ca.mtimes(self.Ad(x0, u), x0) + \
-               ca.mtimes(self.Bd(x0, u), u )
+               ca.mtimes(self.Bd(x0, u), u ) + self.Cd(x0,u)
 
 def main():
     """
