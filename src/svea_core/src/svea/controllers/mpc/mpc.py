@@ -37,7 +37,7 @@ class MPC(object):
         self.sp = []
         self.target = None
         # initialize with 0 velocity
-        self.target_velocity = 1.0
+        self.target_velocity = 1.5
         self.last_index = 0
         self.is_finished = False
 
@@ -46,6 +46,8 @@ class MPC(object):
 
         self.pred_pub = rospy.Publisher("pred",Marker,queue_size=1)
         self.ref_pub = rospy.Publisher("ref",Marker,queue_size=1)
+        self.model_type = "nonlinear"
+        self.solver_ = "ipopt"
 
     def build_solver(self, dt, model=None, dynamics=None,
                  horizon=7, Q=None, P=None, R=None,
@@ -54,6 +56,8 @@ class MPC(object):
                  x_d=[0]*4,
                  max_iter=3000,
                  max_cpu_time=1e6,
+                 model_type = "nonlinear",
+                 solver_ = "ipopt",
                 ):
 
         """ Initialize and build the MPC solver
@@ -76,13 +80,16 @@ class MPC(object):
                     e.g.: solver_opts['print_time'] = False
                           solver_opts['ipopt.tol'] = 1e-8
         """
+        self.model_type = model_type
         model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
-        dynamics = model.discrete_time_dynamics
-        #dynamics = model.continuous_time_nonlinear_dynamics
+        if self.model_type=="linear":
+            dynamics = model.discrete_time_dynamics
+            self.linear = True
+        elif self.model_type=="nonlinear":
+            dynamics = model.continuous_time_nonlinear_dynamics
+            self.linear = False
 
         self.horizon = horizon*dt
-        # self.set_reference(x_d)
-        # model.set_reference(x_d)
 
         build_solver_time = -time.time()
         self.dt = model.dt
@@ -212,39 +219,47 @@ class MPC(object):
         # Build NLP Solver (can also solve QP)
         nlp = dict(x=opt_var, f=obj, g=con, p=param_s)
         options = {
-            'ipopt.print_level' : 0,
-            'ipopt.mu_init' : 0.01,
-            'ipopt.tol' : 1e-8,
-            'ipopt.sb' : 'yes',
-            'ipopt.warm_start_init_point' : 'yes',
-            'ipopt.warm_start_bound_push' : 1e-9,
-            'ipopt.warm_start_bound_frac' : 1e-9,
-            'ipopt.warm_start_slack_bound_frac' : 1e-9,
-            'ipopt.warm_start_slack_bound_push' : 1e-9,
-            'ipopt.warm_start_mult_bound_push' : 1e-9,
-            'ipopt.mu_strategy' : 'adaptive',
-            'ipopt.max_iter': max_iter,
-            'ipopt.max_cpu_time': max_cpu_time,
-            # 'osqp.verbose': False,
-            # 'warm_start_primal': True,
-            # 'error_on_fail': False,
-            'print_time' : False,
             'verbose' : False,
-            # 'expand' : True,
-            # 'jit': True
+            'print_time' : False,
         }
+        if self.linear:
+            options.update({
+                # 'osqp.verbose': False,
+                # 'warm_start_primal': True,
+                # 'error_on_fail': False,
+                'expand' : True,
+                'jit': True,
+            })
+        if self.solver_=="ipopt":
+            options.update({
+                'ipopt.print_level' : 0,
+                'ipopt.mu_init' : 0.01,
+                'ipopt.tol' : 1e-8,
+                'ipopt.sb' : 'yes',
+                'ipopt.warm_start_init_point' : 'yes',
+                'ipopt.warm_start_bound_push' : 1e-9,
+                'ipopt.warm_start_bound_frac' : 1e-9,
+                'ipopt.warm_start_slack_bound_frac' : 1e-9,
+                'ipopt.warm_start_slack_bound_push' : 1e-9,
+                'ipopt.warm_start_mult_bound_push' : 1e-9,
+                'ipopt.mu_strategy' : 'adaptive',
+                'ipopt.max_iter': max_iter,
+                'ipopt.max_cpu_time': max_cpu_time,
+            })
         if solver_opts is not None:
             options.update(solver_opts)
-        # self.solver = ca.qpsol('mpc_solver', 'osqp', nlp, options)
-        self.solver = ca.nlpsol('mpc_solver', 'ipopt', nlp, options)
+        if self.solver_=="ipopt":
+            self.solver = ca.nlpsol('mpc_solver', 'ipopt', nlp, options)
+        elif self.solver_=="osqp":
+            self.solver = ca.qpsol('mpc_solver', 'osqp', nlp, options)
 
         build_solver_time += time.time()
-        print('________________________________________')
+        print('\n________________________________________')
         print('# Time to build mpc solver: %f sec' % build_solver_time)
         print('# Number of variables: %d' % self.num_var)
         print('# Number of equality constraints: %d' % num_eq_con)
         print('# Number of inequality constraints: %d' % num_ineq_con)
-        print('----------------------------------------')
+        print('----------------------------------------\n')
 
     def set_cost_functions(self):
 
@@ -330,6 +345,7 @@ class MPC(object):
         cy = self.traj_y
         cyaw = self.traj_yaw
         sp = self.sp
+        dind = None
 
         xref = np.zeros((self.Nx, self.Nt + 1))
         dref = np.zeros((1, self.Nt + 1))
@@ -352,7 +368,11 @@ class MPC(object):
         travel = 0.0
 
         for i in range(self.Nt + 1):
-            travel += abs(state[3]) * self.dt
+            # travel += abs(state[3]) * self.dt
+            if dind==None:
+                travel += abs(sp[ind]) * self.dt
+            else:
+                travel += abs(sp[ind+dind]) * self.dt
             dind = int(round(travel / self.dl))
 
             if (ind + dind) < ncourse:

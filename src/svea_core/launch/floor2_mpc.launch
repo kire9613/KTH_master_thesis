@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
-    <!--arg name="start_pt" default= '-2.33, -7.09, 0.8978652, 0'/-->
-    <arg name="start_pt" default= '0.535, -2.9267, 0.8978652, 0'/>
+    <!-- <arg name="start_pt" default= '-2.33, -7.09, 0.8978652, 0.0'/> -->
+    <!-- <arg name="start_pt" default= '0.535, -2.9267, -2.25, 0.0'/> -->
+    <arg name="start_pt" default= '0.535, -2.9267, 0.8978652, 0.0'/>
     <arg name="use_rviz" default="true"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
