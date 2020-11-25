@@ -7,7 +7,7 @@ from nav_msgs.msg import OccupancyGrid
 
 dirname = os.path.dirname(__file__)
 svea_core = os.path.join(dirname, '../../')
-map_name = "floor2" # change this for different maps
+map_name = "floor2_rot" # change this for different maps
 file_path = svea_core + 'resources/maps/' + map_name + ".pickle"
 
 saved = False

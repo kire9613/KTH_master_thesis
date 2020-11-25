@@ -61,7 +61,7 @@ class SVEAcar(object):
         dae = {'x': x, 'ode': self.model_nl(x,u), 'p':ca.vertcat(u)}
         self.Integrator = ca.integrator('integrator', 'cvodes', dae, options)
 
-    def set_discrete_time_system(self):
+    def set_discrete_time_system_OLD(self):
         """
         SVEA dynamics discretized using Euler forward step, inspired by
         PythonRobotics
@@ -86,10 +86,51 @@ class SVEAcar(object):
         B[2, 1] = self.dt * x[3] / (self.L * ca.cos(u[1]) ** 2)
         B[3, 0] = self.dt
 
-        C = ca.MX.zeros(1,4)
+        C = ca.MX.zeros(4,1)
         C[0,0] = self.dt * x[3] * ca.sin(x[2]) * x[2]
-        C[0,1] = - self.dt * x[3] * ca.cos(x[2]) * x[2]
-        C[0,2] = x[3] * u[1] / (self.L * ca.cos(u[1]) ** 2)
+        C[1,0] = - self.dt * x[3] * ca.cos(x[2]) * x[2]
+        C[2,0] = x[3] * u[1] / (self.L * ca.cos(u[1]) ** 2)
+
+        self.Ad = ca.Function('Ad', [x, u], [A])
+        self.Bd = ca.Function('Bd', [x, u], [B])
+        self.Cd = ca.Function('Cd', [x, u], [C])
+
+    def set_discrete_time_system(self):
+        """
+        """
+        # Set CasADi variables
+        x = ca.MX.sym('x', 4)
+        u = ca.MX.sym('u', 2)
+
+        A = ca.MX.zeros(4,4)
+        A[0,0] = 1
+        A[0,3] = (self.dt*(2*self.L*ca.cos(x[2]) - self.dt*x[3]*ca.tan(u[1])*ca.sin(x[2])))/(2*self.L)
+        A[0,2] = -self.dt*x[3]*ca.sin(x[2])
+
+        A[1,1] = 1
+        A[1,3] = (self.dt*(2*self.L*ca.sin(x[2]) + self.dt*x[3]*ca.cos(x[2])*ca.tan(u[1])))/(2*self.L)
+        A[1,2] = self.dt*x[3]*ca.cos(x[2])
+
+        A[3,3] = 1
+
+        A[2,3] = (self.dt*ca.tan(u[1]))/self.L
+        A[2,2] = 1
+
+        B = ca.MX.zeros(4,2)
+        B[0,0] = (self.dt**2*(3*self.L*ca.cos(x[2]) - self.dt*x[3]*ca.tan(u[1])*ca.sin(x[2])))/(6*self.L)
+        B[0,1] = -(self.dt**2*x[3]**2*ca.sin(x[2]))/(2*self.L*ca.cos(u[1])**2)
+        B[1,0] = (self.dt**2*(3*self.L*ca.sin(x[2]) + self.dt*x[3]*ca.cos(x[2])*ca.tan(u[1])))/(6*self.L)
+        B[1,1] = (self.dt**2*x[3]**2*ca.cos(x[2]))/(2*self.L*ca.cos(u[1])**2)
+        B[3,0] = self.dt
+        B[3,1] = 0
+        B[2,0] = (self.dt**2*ca.tan(u[1]))/(2*self.L)
+        B[2,1] = (self.dt*x[3])/(self.L*ca.cos(u[1])**2)
+
+        C = ca.MX.zeros(4,1)
+        C[0,0] = self.dt*x[2]*x[3]*ca.sin(x[2]) + (u[1]*self.dt**2*x[3]**2*ca.sin(x[2]))/(2*self.L*ca.cos(u[1])**2)
+        C[1,0] = - self.dt*x[2]*x[3]*ca.cos(x[2]) - (u[1]*self.dt**2*x[3]**2*ca.cos(x[2]))/(2*self.L*ca.cos(u[1])**2)
+        C[3,0] = 0
+        C[2,0] = -(u[1]*self.dt*x[3])/(self.L*ca.cos(u[1])**2)
 
         self.Ad = ca.Function('Ad', [x, u], [A])
         self.Bd = ca.Function('Bd', [x, u], [B])
@@ -186,7 +227,7 @@ class SVEAcar(object):
         """
 
         return ca.mtimes(self.Ad(x0, u), x0) + \
-               ca.mtimes(self.Bd(x0, u), u )
+               ca.mtimes(self.Bd(x0, u), u ) + self.Cd(x0,u)
 
 def main():
     """

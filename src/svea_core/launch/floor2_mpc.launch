@@ -1,12 +1,14 @@
 <?xml version="1.0"?>
 <launch>
 
-    <!--arg name="start_pt" default= '-2.33, -7.09, 0.8978652, 0'/-->
-    <arg name="start_pt" default= '0.535, -2.9267, 0.8978652, 0'/>
+    <!-- <arg name="start_pt" default= '-2.33, -7.09, 0.8978652, 0.0'/> -->
+    <!-- <arg name="start_pt" default= '0.535, -2.9267, -2.25, 0.0'/> -->
+    <arg name="start_pt" default= '0.535, -2.9267, 0.8978652, 0.0'/>
     <arg name="use_rviz" default="true"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
+    <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/gimp/floor2_rot.yaml" /> -->
     <arg name="run_lidar" default="true"/>
 
     <group if="$(eval use_rviz == true)">
@@ -15,6 +17,7 @@
 
     <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
+    <!-- <rosparam command="load" file="$(find svea_core)/resources/params/obstacles_rot.yaml" /> -->
     <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
 
     <node pkg="svea_core" type="floor2_mpc.py" name="floor2_team1" output="screen">

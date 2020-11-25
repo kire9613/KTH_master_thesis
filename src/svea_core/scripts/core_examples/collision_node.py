@@ -1,53 +1,27 @@
 #!/usr/bin/env python
-
 """
 	@by Johan Hedin Team1
 """
-
 # Python standard library
-import math
-import rospy
 import numpy as np
-from math import sin, cos, atan2, fabs, radians, sqrt, ceil, floor
-from numpy.linalg import norm
-
-import os
 # ROS
 import rospy
 
 # ROS messages
+from geometry_msgs.msg import Pose, PoseStamped
 from nav_msgs.msg import OccupancyGrid
+from nav_msgs.msg import Path
 
 # SVEA
 from svea_msgs.msg import VehicleState
 
-# PIL
-try:
-    from PIL import Image
-except ImportError:
-    print("You do not have PIL/Pillow installed")
+# OTHER
+from matrix_astar import AStarPlanner
 
 ## COLLISION NODE PARAMS ######################################################
-update_rate = 5
-width=721 
-height=880
-
-default_value=-1
-unknown_space = np.int8(-1)
-free_space = np.int8(0)
-c_space = np.int8(128)
-intersected_obs = -np.int8(64)
-occupied_space = np.int8(254)
-start_spot = -np.int8(150)
-goal_spot = -np.int8(170)
-
-img_file_name = os.path.dirname(os.path.abspath(__file__)) + os.sep + "problem.png"
-unknown_space_rgb = (128, 128, 128)  # Grey
-free_space_rgb = (255, 255, 255)     # White
-c_space_rgb = (255, 0, 0)            # Red
-occupied_space_rgb = (255, 255, 0)   # Yellow
-start_spot_rgb = (0, 0, 255)		 # Blue
-goal_spot_rgb = (0, 255, 0) 		 # Green
+update_rate = 1
+resolution = 0.05
+splice_tol = 0.5
 ###############################################################################
 
 class Node:
@@ -58,13 +32,15 @@ class Node:
 
 		rospy.init_node('collision_node')
 
-		self.problem_sub = rospy.Subscriber('/problems', OccupancyGrid, self.callback)
+		self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
 
-		self.problem = OccupancyGrid()
+		self.problem_sub = rospy.Subscriber('/problems', OccupancyGrid, self.callback_problem)
+		self.path_sub = rospy.Subscriber('/global_path', Path, self.callback_path)
+		self.map_sub = rospy.Subscriber('/map', OccupancyGrid, self.callback_map)
 
-	def callback(self, map):
-		self.problem = map
-		save_as_img(self.problem.data)
+		self.global_path = Path()
+		self.global_map = OccupancyGrid()
+		self.problem_map = OccupancyGrid()
 
 	def run(self):
 
@@ -75,30 +51,80 @@ class Node:
 
 		rospy.spin()
 
-def save_as_img(data):
-		map_image = Image.new('RGB', (width, height))
-		map_data_rgb = map_to_rgb(data)
-		map_image.putdata(map_data_rgb)
-		map_image.save(img_file_name)
+	def callback_path(self, path):
+		self.global_path = path
+	
+	def callback_map(self, occ_map):
+		self.global_map = occ_map
 
-def map_to_rgb(map_data):
-	map_data_rgb = [unknown_space_rgb] * len(map_data)
-	# Convert to RGB
-	for i in range(0, len(map_data)):
-		if map_data[i] == unknown_space:
-			map_data_rgb[i] = unknown_space_rgb
-		elif map_data[i] == free_space:
-			map_data_rgb[i] = free_space_rgb
-		elif map_data[i] == c_space:
-			map_data_rgb[i] = c_space_rgb
-		elif map_data[i] == occupied_space:
-			map_data_rgb[i] = occupied_space_rgb
-		elif map_data[i] == start_spot:
-			map_data_rgb[i] = start_spot_rgb
-		elif map_data[i] == goal_spot:
-			map_data_rgb[i] = goal_spot_rgb
+	def callback_problem(self, occ_map):
+		self.problem_map = occ_map
 
-	return map_data_rgb
+		problem_vec = np.asarray(self.problem_map.data)
+
+		glb_map_vec = np.asarray(self.global_map.data)
+
+		planning_vec = glb_map_vec - problem_vec
+
+		planner = AStarPlanner(planning_vec)
+		y_list, x_list = planner.planning()
+
+		for i in range(len(x_list)):
+			x_list[i] = x_list[i]*resolution
+			y_list[i] = y_list[i]*resolution
+		
+		x_new_global = []
+		y_new_global = []
+
+		n = len(self.global_path.poses)
+
+		i = 0
+		while 1:
+			x = self.global_path.poses[i].pose.position.x
+			y = self.global_path.poses[i].pose.position.y
+			x_new_global.append(x)
+			y_new_global.append(y)
+
+			dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
+
+			if dist < splice_tol:
+				x_new_global.extend(x_list)
+				y_new_global.extend(y_list)
+				break
+			i += 1
+		
+		i = n - 1
+		while 1:
+			x = self.global_path.poses[i].pose.position.x
+			y = self.global_path.poses[i].pose.position.y
+
+			dist = np.sqrt((x_list[len(x_list) - 1] - x)**2 + (y_list[len(y_list) - 1] - y)**2)
+
+			if dist < splice_tol:
+				for j in range(i, n):
+					x_new_global.append(self.global_path.poses[j].pose.position.x)
+					y_new_global.append(self.global_path.poses[j].pose.position.y)
+				break
+			i -= 1
+
+		new_path = lists_to_path(x_new_global, y_new_global)
+	
+		#new_path = lists_to_path(x_list, y_list)
+
+		self.solution_pub.publish(new_path)
+
+def lists_to_path(x_list, y_list):
+	path = Path()
+	path.header.stamp = rospy.Time.now()
+	path.header.frame_id = 'map'
+	path.poses = []
+	for i in range(len(x_list)):
+		curr_pose = PoseStamped()
+		curr_pose.header.frame_id = 'map'
+		curr_pose.pose.position.x = float(x_list[i])
+		curr_pose.pose.position.y = float(y_list[i])
+		path.poses.append(curr_pose)
+	return path
 
 if __name__ == '__main__':
 	try:
