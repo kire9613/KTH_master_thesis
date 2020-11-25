@@ -22,10 +22,14 @@ __maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin, Aravind
 __status__ = "Development"
 """
 
+
 ## SIMULATION PARAMS ##########################################################
+param_name = "test"
+params = parameters.get(param_name)
+
 vehicle_name = ""
 target_velocity = 1.5 # [m/s]
-dt = 0.05 # frequency of the model updates
+dt = params.dt # frequency of the model updates
 
 xs = [-2.33, 10.48]
 ys = [-7.09, 11.71]
@@ -117,9 +121,6 @@ def main():
         data_handler = DataHandler
     )
 
-    param_name = "test"
-    params = parameters.get(param_name)
-
     Q = params.Q
     R = params.R
     P = params.P
@@ -138,9 +139,9 @@ def main():
         xlb=xlb,
         xub=xub,
         max_cpu_time=0.8*dt,
-        horizon=7,
+        horizon=params.horizon,
         model_type="linear",
-        solver_="osqp",
+        solver_="ipopt",
     )
     svea.start(wait=True)
 
