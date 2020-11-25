@@ -70,7 +70,7 @@ class is_at_waypoint(pt.behaviour.Behaviour):
 
     def update(self):
         if np.all(waypoints[current_waypoint] == waypoints[-1]):
-            margin = 0.5
+            margin = 0.65
         else:
             margin = 2
 
