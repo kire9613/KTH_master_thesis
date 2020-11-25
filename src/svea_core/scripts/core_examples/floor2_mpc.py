@@ -14,6 +14,8 @@ from sensor_msgs.msg import LaserScan
 from svea.svea_managers.mpc_path_following_sveas import SVEAMPC
 from svea.controllers.mpc.mpc import MPC
 
+from svea.controllers.mpc.parameters import parameters
+
 """
 __team__ = "Team 1"
 __maintainers__ = "Roberto Castro Sundin, Astrid Lindstedt, Johan Hedin, Aravind Sadashiv, Sarthak Manocha”
@@ -103,50 +105,43 @@ def main():
 
     # start pure pursuit SVEA manager
     mpc = MPC
+    #  TODO: This doesn't work for some reason <25-11-20, rob> #
     mpc.target_velocity = target_velocity
     mpc.dl = dt*target_velocity
-    svea = SVEAMPC(vehicle_name,
-                   LocalizationInterface,
-                   mpc,
-                   traj_x, traj_y,
-                   data_handler = DataHandler)
-    Q = np.diag([
-        100, # x
-        100, # y
-        0.01, # ψ
-        100, # v
-    ])
-    R = np.diag([
-        1, # a
-       0.01, # δ
-    ])
-    # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
-    P_LQR = np.diag([
-            1200,
-            1200,
-            1,
-            100
-    ])
+
+    svea = SVEAMPC(
+        vehicle_name,
+        LocalizationInterface,
+        mpc,
+        traj_x, traj_y,
+        data_handler = DataHandler
+    )
+
+    param_name = "test"
+    params = parameters.get(param_name)
+
+    Q = params.Q
+    R = params.R
+    P = params.P
 
     ulb = [-1e2,-np.deg2rad(40)]
     uub = [ 1e2, np.deg2rad(40)]
     xlb = [-np.inf]*3+[-1]
-    #xlb = [-np.inf,-np.inf, -np.deg2rad(40), 3.6]
     xub = [ np.inf]*3+[3.6]
-    #xub = [np.inf,np.inf, np.deg2rad(40), -3.6]
-    svea.controller.build_solver(dt,
-                                 Q=Q,
-                                 R=R,
-                                 P=P_LQR,
-                                 ulb=ulb,
-                                 uub=uub,
-                                 xlb=xlb,
-                                 xub=xub,
-                                 max_cpu_time=0.8*dt,
-                                 horizon=7,
-                                 model_type="linear",
-                                 solver_="osqp",
-                                 )
+    svea.controller.build_solver(
+        dt,
+        Q=Q,
+        R=R,
+        P=P,
+        ulb=ulb,
+        uub=uub,
+        xlb=xlb,
+        xub=xub,
+        max_cpu_time=0.8*dt,
+        horizon=7,
+        model_type="linear",
+        solver_="osqp",
+    )
     svea.start(wait=True)
 
     if is_sim:

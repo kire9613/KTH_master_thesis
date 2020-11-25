@@ -506,15 +506,17 @@ def main():
     """
     Run some tests
     """
-    svea = SVEAcar(h=0.1)
+    svea = SVEAcar(h=0.1,target_velocity=1.,tau=0.1)
 
     horizon = 10
     x_d=[0,0,0,0]
+    u_d=[0,0]
+    svea.set_equilibrium_point(x_d, u_d)
 
     A, B, C = svea.get_discrete_system_matrices_at_eq()
     Q = np.eye(4)
     R = np.eye(2)
-    # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
+    P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
     P_LQR = np.eye(4)
 
     ulb = [-1e2,-np.deg2rad(40)]
