@@ -27,7 +27,7 @@ from nav_msgs.msg import Path
 from svea_msgs.msg import VehicleState
 
 ## MAP EXPLORER PARAMS ########################################################
-update_rate = 5 # [Hz]
+update_rate = 1 # [Hz]
 
 frame_id="map" 
 resolution=0.05 # The map resolution [m/cell]
@@ -56,6 +56,7 @@ file_path2 = svea_core + 'resources/maps/' + map_name2 + ".pickle"
 ###############################################################################
 
 path_lookup = np.zeros((width,height))
+index_lookup = np.zeros((width,height))
 
 class Node:
 	"""
@@ -84,9 +85,12 @@ class Node:
 		self.scan = scan
 	
 	def callback_path(self, path):
+
 		for i in range(len(path.poses) - 2):
-			x_start, y_start = path.poses[i].pose.position.x, path.poses[i].pose.position.y
-			x_end, y_end = path.poses[i+1].pose.position.x, path.poses[i+1].pose.position.y
+			x_start = path.poses[i].pose.position.x 
+			y_start = path.poses[i].pose.position.y
+			x_end = path.poses[i+1].pose.position.x 
+			y_end = path.poses[i+1].pose.position.y
 
 			x_s = int(x_start/resolution)
 			y_s = int(y_start/resolution)
@@ -99,8 +103,9 @@ class Node:
 			
 			for cell in ray:
 				#self.mapper.add_to_map(cell[0],cell[1],path_val)
-				
 				path_lookup[cell] = 1
+				index_lookup[cell] = i
+
 				for r in range(1, radius + 3):
 					t = 0
 					while t <= 2*np.pi:                        
@@ -109,33 +114,34 @@ class Node:
 						a = int(a)
 						b = int(b)
 						if is_in_bounds(a,b):
-							#self.mapper.add_to_map(a,b,path_val)
 							path_lookup[(a,b)] = 1
+							index_lookup[(a,b)] = i
 						t = t + np.pi/32
 				
 			path_lookup[end] = 1
-			
+			index_lookup[end] = len(path.poses) - 1
 
 	def run(self):
 		rate = rospy.Rate(update_rate)
 
 		while not rospy.is_shutdown():
 			self.mapper.update_map(self.state, self.scan)
-
-			self.mapper.inflate_map(occupied_space, c_space)
-
 			self.map_pub.publish(self.mapper.map)
 
 			if self.mapper.detection == True:
-				print("Hej")
+				
+				self.mapper.inflate_map(occupied_space, c_space)
+				"""
 				pic = self.mapper.map
+				
 				np_pic = np.asarray(self.mapper.map.data)
+				
 				with open(file_path, 'wb') as f:
 					pickle.dump(pic, f)
 				
 				with open(file_path2, 'wb') as f2:
 					np.save(f2,np_pic)
-
+				"""
 				self.problem_pub.publish(self.mapper.map)
 
 			self.mapper.reset_map()
@@ -215,10 +221,13 @@ class MapExplore:
 
 		intersected = []
 		for c in obstacles:
-			if path_lookup[c] == 1:
-				intersected.append(c)
+			if is_in_bounds(c[0],c[1]):
+				if path_lookup[c] == 1:
+					#print("Intersected!")
+					intersected.append(c)
 				
-		if len(intersected) > 3:
+		if len(intersected) >= 1:
+			#print("Intersected > 1")
 			sum_x = 0
 			sum_y = 0
 			for c in intersected:
@@ -241,22 +250,36 @@ class MapExplore:
 						lst.append((a,b))
 				t = t + np.pi/64
 			
-			if len(lst) > 2:
-				srt = np.squeeze(np.zeros((1,len(lst))))
-				for i, entry in enumerate(lst):
-					srt[i] = np.sqrt((start[0] - entry[0])^2 + (start[1] - entry[1])^2)
-				indices = np.argsort(srt)
-				closest = lst[int(indices[0])]
-				furthest = lst[int(indices[2])]
+			if len(lst) >= 1:
+				min_index = np.Inf
+				max_index = 0
+				closest = None
+				furthest = None
+				for entry in lst:
+					index = index_lookup[entry]
+					if index < min_index:
+						min_index = index
+						closest = entry
+					if index > max_index:
+						max_index = index
+						furthest = entry
+
 				self.add_to_map(closest[0], closest[1], start_spot)
 				self.add_to_map(furthest[0], furthest[1], goal_spot)
-				self.detection = True
+
+			self.detection = True
+		
+		else:
+			self.detection = False
 			
 		self.map.data = self.map_matrix.reshape(-1)
 
 	def reset_map(self):
 		self.map_matrix = np.full((height, width), unknown_space, dtype=np.int8)
 		self.map.data = self.map_matrix.reshape(-1)
+		self.detection = False
+		path_lookup = np.zeros((width,height))
+		index_lookup = np.zeros((width,height))
 
 	def inflate_map(self, target_val, inflate_val):
 		"""
@@ -267,7 +290,7 @@ class MapExplore:
 			for j in range(0, width):
 				if self.map_matrix[i,j] == target_val:
 					t = 0
-					for r in range(1, radius + 2):
+					for r in range(1, radius + 7):
 						t = 0
 						while t <= 2*np.pi:                        
 							a = i + r*cos(t)
