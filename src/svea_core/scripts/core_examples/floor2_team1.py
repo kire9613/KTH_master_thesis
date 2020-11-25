@@ -23,23 +23,23 @@ __status__ = "Development"
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = ""
-target_velocity = 1.5 # [m/s]
+target_velocity = 0.75 # [m/s]
 dt = 0.01 # frequency of the model updates
 
-xs = [14.55, 37.18]
-ys = [1.67, 1.32]
+xs = [14.47, 37.26]
+ys = [1.60, 1.29]
 traj_x = np.linspace(xs[0], xs[1]).tolist()
 traj_y = np.linspace(ys[0], ys[1]).tolist()
-xs = [37.18,37.25]
-ys = [1.32,6.97]
+xs = [37.26,37.35]
+ys = [1.29,6.96]
 traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:])
 traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:])
-xs = [37.25,14.63]
-ys = [6.97,7.29]
+xs = [37.35,14.68]
+ys = [6.96,7.31]
 traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:])
 traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:])
-xs = [14.63,14.55]
-ys = [7.29,1.67]
+xs = [14.69,14.47]
+ys = [7.31,1.60]
 traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:-1])
 traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:-1])
 

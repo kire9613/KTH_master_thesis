@@ -14,13 +14,13 @@ import rospy
 # ROS messages
 from nav_msgs.msg import OccupancyGrid
 
-# PARAMS
+## TEST MAP NODE PARAMS #######################################################
 update_rate = 1
-
 dirname = os.path.dirname(__file__)
 svea_core = os.path.join(dirname, '../../')
 map_name = "problem_map_occ" # change this for different maps
 file_path = svea_core + 'resources/maps/' + map_name + ".pickle"
+###############################################################################
 
 class Node:
 	"""
@@ -31,6 +31,7 @@ class Node:
 		rospy.init_node('pickle_pub')
 
 		self.pickled_map_pub = rospy.Publisher('pickled_map', OccupancyGrid, queue_size=1, latch=True)
+		
 		self.pickled_map = OccupancyGrid()
 
 		with open(file_path, 'rb') as f:

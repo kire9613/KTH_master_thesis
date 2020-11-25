@@ -13,24 +13,42 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-show_animation = True
+show_animation = False
 
 dirname = os.path.dirname(__file__)
 svea_core = os.path.join(dirname, '../../')
-map_name = "problem_map" # change this for different maps
+map_name = "problem_map_np" # change this for different maps
 file_path = svea_core + 'resources/maps/' + map_name + ".pickle"
 
-height = 880
-width = 721
+width = 879
+height = 171
 
-unknown_space = np.int8(-1)
-free_space = np.int8(0)
-c_space = np.int8(128)
-intersected_obs = -np.int8(64)
-occupied_space = np.int8(254)
-start_spot = -np.int8(150)
-goal_spot = -np.int8(170)
-bounding_box = -np.int8(190)
+unknown_space = np.int8(-1) #grey
+free_space = np.int8(0) #white
+c_space = np.int8(25) #grey
+occupied_space = np.int8(75) #black
+start_spot = np.int8(127) #green
+goal_spot = -np.int8(127) #red
+bounding_box = -np.int8(10) #yellow
+
+unknown_space_glb = np.int8(-1) #grey
+free_space_glb = np.int8(0) #white
+occupied_space_glb = np.int8(100) #black
+
+obstacles1 = occupied_space_glb #100
+obstacles2 = occupied_space_glb - unknown_space#101
+obstacles3 = occupied_space_glb - occupied_space #25
+obstacles4 = occupied_space_glb - c_space #75
+obstacles5 = unknown_space_glb - occupied_space #-76
+obstacles6 = unknown_space_glb - c_space #-26
+obstacles7 = -c_space #-25
+obstacles8 = -occupied_space #-75
+
+start = -start_spot
+goal = -goal_spot
+
+bounds1 = -bounding_box
+bounds2 = unknown_space_glb - bounding_box
 
 class AStarPlanner:
 
@@ -40,29 +58,23 @@ class AStarPlanner:
 		"""
 		self.motion = self.get_motion_model()
 
-		problem_map = problem_vector.reshape(height, width)
+		self.sx = None
+		self.sy = None
+		self.gx = None
+		self.gy = None
 
-#		for i in range(height):
-#			for j in range(width):
-#				x = i
-#				y = j	
-#				yaw_cal = math.radians(12)
-#				x = math.cos(yaw_cal)*i - math.sin(yaw_cal)*j
-#				y = math.sin(yaw_cal)*i + math.cos(yaw_cal)*j
-#
-#				x = int(x)
-#				y = int(y)
-#
-#				problem_map[x,y] == problem_map[i,j]		
+		print(start)
+		print(goal)
+
+		problem_map = problem_vector.reshape(height, width)
 
 		minx = height
 		maxx = 0
 		miny = width
 		maxy = 0
-
 		for i in range(height):
 			for j in range(width):
-				if problem_map[i,j] == bounding_box:
+				if problem_map[i,j] == bounds1 or problem_map[i,j] == bounds2:
 					if i < minx:
 						minx = i
 					if j < miny:
@@ -76,7 +88,16 @@ class AStarPlanner:
 		self.min_y = miny
 		self.max_x = maxx
 		self.max_y = maxy
-		
+
+		if self.min_x > 5:
+			self.min_x = self.min_x - 5
+		if self.max_x < height - 5:
+			self.max_x = self.max_x + 5
+		if self.min_y > 5:
+			self.min_y = self.min_y - 5
+		if self.max_y < width - 5:
+			self.max_y = self.max_y + 5
+
 		self.x_width = self.max_x - self.min_x
 		self.y_width = self.max_y - self.min_y
 
@@ -86,14 +107,30 @@ class AStarPlanner:
 			x = ix + self.min_x
 			for iy in range(self.y_width):
 				y = iy + self.min_y
-				if problem_map[x,y] == occupied_space: 
+				if problem_map[x,y] == obstacles1:
 					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == start_spot:
-					sx = x
-					sy = y
-				if problem_map[x,y] == goal_spot:
-					gx = x
-					gy = y
+				if problem_map[x,y] == obstacles2:
+					self.obstacle_map[ix,iy] = np.uint8(1)
+				if problem_map[x,y] == obstacles3:
+					self.obstacle_map[ix,iy] = np.uint8(1)
+				if problem_map[x,y] == obstacles4:
+					self.obstacle_map[ix,iy] = np.uint8(1)
+				if problem_map[x,y] == obstacles5:
+					self.obstacle_map[ix,iy] = np.uint8(1)
+				if problem_map[x,y] == obstacles6:
+					self.obstacle_map[ix,iy] = np.uint8(1)
+				if problem_map[x,y] == obstacles7:
+					self.obstacle_map[ix,iy] = np.uint8(1)
+				if problem_map[x,y] == obstacles8:
+					self.obstacle_map[ix,iy] = np.uint8(1)					
+				if problem_map[x,y] == start:
+					print("Hej")
+					self.sx = x
+					self.sy = y
+				if problem_map[x,y] == goal:
+					print("Hej2")
+					self.gx = x
+					self.gy = y
 
 		if show_animation:
 			plt.grid(True)
@@ -102,17 +139,27 @@ class AStarPlanner:
 				x = ix + self.min_x
 				for iy in range(self.y_width):
 					y = iy + self.min_y
-					if problem_map[x,y] == occupied_space:
+					if problem_map[x,y] == obstacles1:
+						plt.plot(x, y, ".k")
+					if problem_map[x,y] == obstacles2:
+						plt.plot(x, y, ".k")
+					if problem_map[x,y] == obstacles3:
+						plt.plot(x, y, ".k")
+					if problem_map[x,y] == obstacles4:
+						plt.plot(x, y, ".k")
+					if problem_map[x,y] == obstacles5:
+						plt.plot(x, y, ".k")
+					if problem_map[x,y] == obstacles6:
+						plt.plot(x, y, ".k")
+					if problem_map[x,y] == obstacles7:
+						plt.plot(x, y, ".k")
+					if problem_map[x,y] == obstacles8:
 						plt.plot(x, y, ".k")
 					if problem_map[x,y] == start_spot:
 						plt.plot(x, y, "og")
 					if problem_map[x,y] == goal_spot:
 						plt.plot(x, y, "xb")
 
-		self.sx = sx
-		self.sy = sy
-		self.gx = gx
-		self.gy = gy
 		"""
 		print("min_x:", self.min_x)
 		print("min_y:", self.min_y)

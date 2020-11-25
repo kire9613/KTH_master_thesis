@@ -2,13 +2,14 @@
 <launch>
 
     <arg name="use_rviz" default="true"/>
-    <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
+    <arg name="map_file" default="$(find svea_core)/resources/maps/gimp/floor2_rot.yaml" />
 
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/johans_test.rviz" />
 
     <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
 
-    <node pkg="svea_core" type="pickle_pub_node.py" name="explore_node" output="screen" />
+    <node pkg="svea_core" type="pickle_pub_node.py" name="pickled_map_node" output="screen" />
+    <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" />
 	<node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
 
 </launch>

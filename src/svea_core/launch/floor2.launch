@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="start_pt" default= '14.55, 1.67, 0.00, 0'/>
+    <arg name="start_pt" default= '14.47, 1.60, 0.00, 0'/>
     <arg name="use_rviz" default="true"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
@@ -25,5 +25,6 @@
     </node>
 
     <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" />
+    <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
 
 </launch>
