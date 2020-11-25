@@ -55,9 +55,6 @@ map_name2 = "problem_map_np" # change this for different maps
 file_path2 = svea_core + 'resources/maps/' + map_name2 + ".pickle"
 ###############################################################################
 
-path_lookup = np.zeros((width,height))
-index_lookup = np.zeros((width,height))
-
 class Node:
 	"""
 	asd
@@ -78,6 +75,9 @@ class Node:
 
 		self.mapper = MapExplore()
 
+		self.path_lookup = np.zeros((width,height))
+		self.index_lookup = np.zeros((width,height))
+
 	def callback_state(self, state):
 		self.state = state
 		
@@ -85,6 +85,8 @@ class Node:
 		self.scan = scan
 	
 	def callback_path(self, path):
+		self.path_lookup = np.zeros((width,height))
+		self.index_lookup = np.zeros((width,height))
 
 		for i in range(len(path.poses) - 2):
 			x_start = path.poses[i].pose.position.x 
@@ -103,8 +105,8 @@ class Node:
 			
 			for cell in ray:
 				#self.mapper.add_to_map(cell[0],cell[1],path_val)
-				path_lookup[cell] = 1
-				index_lookup[cell] = i
+				self.path_lookup[cell] = 1
+				self.index_lookup[cell] = i
 
 				for r in range(1, radius + 3):
 					t = 0
@@ -114,18 +116,18 @@ class Node:
 						a = int(a)
 						b = int(b)
 						if is_in_bounds(a,b):
-							path_lookup[(a,b)] = 1
-							index_lookup[(a,b)] = i
+							self.path_lookup[(a,b)] = 1
+							self.index_lookup[(a,b)] = i
 						t = t + np.pi/32
 				
-			path_lookup[end] = 1
-			index_lookup[end] = len(path.poses) - 1
+			self.path_lookup[end] = 1
+			self.index_lookup[end] = len(path.poses) - 1
 
 	def run(self):
 		rate = rospy.Rate(update_rate)
 
 		while not rospy.is_shutdown():
-			self.mapper.update_map(self.state, self.scan)
+			self.mapper.update_map(self.state, self.scan, self.path_lookup, self.index_lookup)
 			self.map_pub.publish(self.mapper.map)
 
 			if self.mapper.detection == True:
@@ -185,7 +187,7 @@ class MapExplore:
 		else:
 			return False
 
-	def update_map(self, state, scan):
+	def update_map(self, state, scan, path_lookup, index_lookup):
 		"""
 		Updates the grid_map with the data from the laser scan and the pose.
 		:type scan: LaserScan
@@ -223,7 +225,7 @@ class MapExplore:
 		for c in obstacles:
 			if is_in_bounds(c[0],c[1]):
 				if path_lookup[c] == 1:
-					#print("Intersected!")
+					print("Intersected!")
 					intersected.append(c)
 				
 		if len(intersected) >= 1:
@@ -278,8 +280,6 @@ class MapExplore:
 		self.map_matrix = np.full((height, width), unknown_space, dtype=np.int8)
 		self.map.data = self.map_matrix.reshape(-1)
 		self.detection = False
-		path_lookup = np.zeros((width,height))
-		index_lookup = np.zeros((width,height))
 
 	def inflate_map(self, target_val, inflate_val):
 		"""
@@ -290,7 +290,7 @@ class MapExplore:
 			for j in range(0, width):
 				if self.map_matrix[i,j] == target_val:
 					t = 0
-					for r in range(1, radius + 7):
+					for r in range(1, radius + 15):
 						t = 0
 						while t <= 2*np.pi:                        
 							a = i + r*cos(t)
