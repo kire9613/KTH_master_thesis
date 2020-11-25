@@ -19,7 +19,7 @@ from svea_msgs.msg import VehicleState
 from matrix_astar import AStarPlanner
 
 ## COLLISION NODE PARAMS ######################################################
-update_rate = 5
+update_rate = 1
 resolution = 0.05
 splice_tol = 0.5
 ###############################################################################
@@ -34,7 +34,7 @@ class Node:
 
 		self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
 
-		self.problem_sub = rospy.Subscriber('/pickled_map', OccupancyGrid, self.callback_problem)
+		self.problem_sub = rospy.Subscriber('/problems', OccupancyGrid, self.callback_problem)
 		self.path_sub = rospy.Subscriber('/global_path', Path, self.callback_path)
 		self.map_sub = rospy.Subscriber('/map', OccupancyGrid, self.callback_map)
 
@@ -61,27 +61,10 @@ class Node:
 		self.problem_map = occ_map
 
 		problem_vec = np.asarray(self.problem_map.data)
-		values = []
-		for el in problem_vec:
-			if el not in values:
-				values.append(el)
-		print(values)
 
 		glb_map_vec = np.asarray(self.global_map.data)
 
-		values = []
-		for el in glb_map_vec:
-			if el not in values:
-				values.append(el)
-		print(values)
-
 		planning_vec = glb_map_vec - problem_vec
-
-		values = []
-		for el in planning_vec:
-			if el not in values:
-				values.append(el)
-		print(values)
 
 		planner = AStarPlanner(planning_vec)
 		y_list, x_list = planner.planning()
