@@ -20,13 +20,22 @@ class Params(object):
 
 parameters = {
     "test": Params(
+        P=np.diag([1,1,1,1]),
+        Q=np.diag([1,1,1,1]),
+        R=np.diag([1,1]),
+        model_type = "linear",
+        solver_ = "osqp",
+        dt = 0.1,
+        horizon = 7,
+    ),
+    "ZOH-good": Params(
         P=np.diag([1200, 1200, 1, 100]),
         Q=np.diag([100, 100, 0.01, 100]),
         R=np.diag([1,0.01]),
         model_type = "linear",
         solver_ = "osqp",
         dt = 0.1,
-        horizon = 10,
+        horizon = 7,
     ),
 }
 
