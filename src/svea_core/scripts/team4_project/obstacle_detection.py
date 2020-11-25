@@ -67,12 +67,11 @@ def main():
     vis_pub = rospy.Publisher('/vis_collision', PointStamped, queue_size=1)
 
     # Run check continuously
-    rate = rospy.Rate(1)
     while not rospy.is_shutdown():
         state = rospy.wait_for_message('/state', VehicleState)
         grid = map_update.get_inflated_map()
         path_msg = rospy.wait_for_message('/targets', Path)
-	
+
 	# Check closest point in path
         dx = []
         dy = []
@@ -116,10 +115,6 @@ def main():
             if collision:
                 break
         collision_pub.publish(collision_msg)
-
-        if rate.remaining().to_sec() < 0:
-            rospy.logwarn('Obstacle detection too slow for sample rate!')
-        rate.sleep()
 
 if __name__ == '__main__':
     main()
