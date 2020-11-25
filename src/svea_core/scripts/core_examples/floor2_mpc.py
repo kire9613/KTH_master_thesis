@@ -142,6 +142,8 @@ def main():
         horizon=params.horizon,
         model_type="linear",
         solver_="ipopt",
+        TAU = params.TAU,
+        N_IND_SEARCH = params.N_IND_SEARCH,
     )
     svea.start(wait=True)
 

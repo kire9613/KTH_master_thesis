@@ -28,8 +28,6 @@ from visualization_msgs.msg import Marker
 import math
 
 class MPC(object):
-    N_IND_SEARCH = 10  # Search index number
-    TAU = 0.1 # TODO: Hardcoded
     def __init__(self, vehicle_name=''):
         self.traj_x = []
         self.traj_y = []
@@ -58,6 +56,8 @@ class MPC(object):
                  max_cpu_time=1e6,
                  model_type = "nonlinear",
                  solver_ = "ipopt",
+                 TAU = 0.1,
+                 N_IND_SEARCH = 10,  # Search index number
                 ):
 
         """ Initialize and build the MPC solver
@@ -80,6 +80,8 @@ class MPC(object):
                     e.g.: solver_opts['print_time'] = False
                           solver_opts['ipopt.tol'] = 1e-8
         """
+        self.TAU = TAU
+        self.N_IND_SEARCH = N_IND_SEARCH
         self.model_type = model_type
         model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
         if self.model_type=="linear":
