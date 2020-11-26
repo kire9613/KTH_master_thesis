@@ -5,7 +5,7 @@
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
     <arg name="use_astar" default="true"/>
-    <arg name="use_mpc" default="false"/>
+    <arg name="use_mpc" default="true"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
     <arg name="obstacles_list" default="$(find svea_core)/src/svea/path_planners/mpc_obstacles.yaml" />
 
@@ -27,6 +27,8 @@
     <!--rosparam command="load" file="$(find svea_core)/resources/params/crazyObstacle.yaml" /-->
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
     <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
+    <!-- Give different obstacles than to A* to simulate dynamic obstacles-->
+    <rosparam command="load" file="$(find svea_core)/src/svea/path_planners/mpc_obstacles.yaml" />
 
     <node pkg="svea_core" type="team_5_floor2.py" name="team_5_floor2" output="screen">
         <param name="start_pt" value="$(arg start_pt)"/>

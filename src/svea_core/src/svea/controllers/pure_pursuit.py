@@ -2,7 +2,9 @@
 Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math, rospy
+import numpy as np
 from pprint import pprint
+from sensor_msgs.msg import LaserScan
 
 class PurePursuitController(object):
 
@@ -15,7 +17,7 @@ class PurePursuitController(object):
     I = 0 # intialize I value (PID)
     L = 0.324  # [m] wheel base of vehicle
     max_velocity = 1
-    emergency_distance = 0.1 # [m] minimum distance until emergency_stop activated
+    emergency_distance = 0.5 # [m] minimum distance until emergency_stop activated
     emg_angle_range = 0.785 # angle range
 
     def __init__(self, vehicle_name=''):
@@ -29,11 +31,15 @@ class PurePursuitController(object):
         self.emg_stop = False
         self.last_time = 0.0
         self.print_time = 0.0
+        self.lidar_to_base = 0.3  #svea position is measured at rear axis, but lasar at front axis 
 
     def compute_control(self, state, target=None):
-        steering = self.compute_steering(state, target)
-        velocity = self.compute_velocity(state)
-        return steering, velocity
+        if self.emg_stop == True:
+            return 0,0
+        else:
+            steering = self.compute_steering(state, target)
+            velocity = self.compute_velocity(state)
+            return steering, velocity
 
     def compute_steering(self, state, target=None):
         if target is None:
@@ -102,6 +108,52 @@ class PurePursuitController(object):
             self.is_finished = True
 
         return ind, dist
+
+    def emergency_stop(self, laserScan):
+
+        # Compute index ranges for emergency stop scan
+        min_index =  int(round((-self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
+        max_index =  int(round((self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
+
+        points = laserScan.ranges[min_index:max_index]
+
+        if min(points) < self.emergency_distance:
+            self.emg_stop = True
+
+    def laser_mapping(self,msg):
+        
+        laserScan = rospy.wait_for_message('/scan', LaserScan)
+
+        # Find indices of laserscans that make up our obstacle
+        indices = np.where(np.array(laserScan.ranges) < self.emergency_distance)
+
+        #Get svea's pose
+        svea_x = msg.x
+        svea_y = msg.y
+        yaw = msg.yaw
+
+        #Calculate lidar pose in map frame             
+        length = self.lidar_to_base 
+        lidar_coord = [svea_x+length*math.cos(yaw), svea_y+length*math.sin(yaw)]
+
+        #Mapping dynamic obstacles
+        obs_points = []
+        for idx in indices[0]:  
+            #calculate angle to laser point
+            angle = laserScan.angle_min + idx*laserScan.angle_increment
+
+            #coordinate of the laser point/obstacle
+            lidar_range = laserScan.ranges[idx]
+            obs_coord = [lidar_coord[0]+lidar_range*math.cos(yaw+angle), lidar_coord[1]+lidar_range*math.sin(yaw+angle)]
+            obs_points.append(obs_coord)
+        
+        #print(obs_points)
+
+        '''OBS need to change name ones we have merged with switch'''
+        # Update list of obstacles with the new obstacle 
+        obstacles_list = rospy.get_param('/planner/obstacles')
+        obstacles_list.append(obs_points)
+        rospy.set_param('/planner/obstacles',obstacles_list)
 
     def print_every_second(self, message, data):
                 # print once per second

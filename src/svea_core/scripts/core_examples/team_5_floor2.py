@@ -12,6 +12,7 @@ from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
+from svea_msgs.msg import VehicleState as VSM
 from svea.path_planners.astar import *
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from svea.track import Track
@@ -86,8 +87,15 @@ def param_init():
 def main():
     global timer1,timer2
     rospy.init_node('team_5_floor2')
+<<<<<<< HEAD
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
     running_mpc_traj = False
+=======
+    start_pt, is_sim, use_rviz, use_matplotlib, use_astar = param_init()
+
+    is_mapping = False
+
+>>>>>>> 70e50ba... Obstacle mapping
     # extract trajectory
     traj_x, traj_y = extract_trajectory(use_astar)
     traj_theta = compute_angles(traj_x,traj_y)
@@ -169,12 +177,20 @@ def main():
             
 
 
+        #Can maybe be exchanged once we have Frank's emergency stop
+        rospy.Subscriber('/scan', LaserScan,svea.controller.emergency_stop)
+
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
-        
-        svea.send_control(steering, velocity)
 
         svea.send_control(steering, velocity)
+
+        #Replan if obstacles are detected once svea is standing still
+        if svea.controller.emg_stop == True:
+            msg = rospy.wait_for_message('/state', VSM)
+            if msg.v < 0.05 and is_mapping == False:
+                is_mapping = True
+                svea.controller.laser_mapping(msg)
 
         # visualize data
         if use_matplotlib or use_rviz:
