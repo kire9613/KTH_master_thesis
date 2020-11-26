@@ -2,17 +2,17 @@
 <launch>
 
     <arg name="start_pt" default= '-7.43, -15.3, 0.8978652, 0'/>
-    <arg name="use_rviz" default="false"/>
+    <arg name="use_rviz" default="true"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="false"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
     <arg name="map_name" default="floor2.yaml" />
 
-
+    <!--
     <group if="$(eval use_rviz == True)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />
     </group>
-
+    -->
     <!--open serial connection for controlling SVEA-->
 	<group if="$(eval is_sim == false)">
     		<node pkg="rosserial_python" type="serial_node.py" name="serial_node">
