@@ -28,7 +28,7 @@ from visualization_msgs.msg import Marker
 import math
 
 class MPC(object):
-    def __init__(self, vehicle_name='',target_velocity=0.0,dl=0.1):
+    def __init__(self, vehicle_name='',target_velocity=0.0,low_lim=0.0,dl=0.1):
         self.traj_x = []
         self.traj_y = []
         self.traj_yaw = []
@@ -36,6 +36,7 @@ class MPC(object):
         self.target = None
         # initialize with 0 velocity
         self.target_velocity = target_velocity
+        self.low_lim = low_lim
         self.last_index = 0
         self.is_finished = False
 

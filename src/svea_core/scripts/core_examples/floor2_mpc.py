@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+from __future__ import print_function
+
 import rospy
 import numpy as np
 
@@ -28,7 +31,7 @@ param_name = "ZOH-good"
 params = parameters.get(param_name)
 
 vehicle_name = ""
-target_velocity = 3.5 # [m/s]
+target_velocity = 1.5 # [m/s]
 dt = params.dt # frequency of the model updates
 
 xs = [-2.33, 10.48]
@@ -118,7 +121,7 @@ def main():
         traj_x, traj_y,
         data_handler = DataHandler,
         target_velocity=target_velocity,
-        dl = dt*target_velocity
+        dl = dt*params.low_lim
     )
 
     ulb = [-1e2,-np.deg2rad(40)]
