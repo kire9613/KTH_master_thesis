@@ -31,7 +31,7 @@
 
     <group if="$(eval is_sim == false)">
         <node pkg="svea_core" type="test_mapping.py" name="mapping" output="screen" machine="oscar"/>
-        <node pkg="svea_core" type="obstacle_detection.py" name="obstacle_detection" output="screen" machine="adam"/>
+        <node pkg="svea_core" type="obstacle_detection.py" name="obstacle_detection" output="screen" machine="oscar"/>
         <node pkg="svea_core" type="astar_server.py" name="astar_planning" output="screen" machine="adam"/>
     </group>
     <group if="$(eval is_sim == true)">
