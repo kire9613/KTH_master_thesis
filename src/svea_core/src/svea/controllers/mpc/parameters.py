@@ -40,9 +40,9 @@ parameters = {
         horizon = 7,
     ),
     "ZOH-good": Params(
-        P=np.diag([1200, 1200, 1, 100]),
-        Q=np.diag([100, 100, 0.01, 100]),
-        R=np.diag([1,0.01]),
+        P=np.diag([10, 10, 0.01, 500]),
+        Q=np.diag([1, 1, 1e-12, 1000]),
+        R=np.diag([1,1]),
         model_type = "linear",
         solver_ = "osqp",
         dt = 0.1,

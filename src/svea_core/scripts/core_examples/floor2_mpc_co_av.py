@@ -4,16 +4,17 @@
 import rospy
 import numpy as np
 
-from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
 from svea.localizers import LocalizationInterface
-from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import String
 from nav_msgs.msg import Path
+
+from svea.svea_managers.mpc_path_following_sveas import SVEAMPC
+from svea.controllers.mpc.mpc import MPC
+from svea.controllers.mpc.parameters import parameters
 
 """
 __team__ = "Team 1"
@@ -22,9 +23,12 @@ __status__ = "Development"
 """
 
 ## SIMULATION PARAMS ##########################################################
+param_name = "ZOH-good"
+params = parameters.get(param_name)
+
 vehicle_name = ""
 target_velocity = 1# [m/s]
-dt = 0.01 # frequency of the model updates
+dt = params.dt # frequency of the model updates
 
 xs = [14.47, 37.26]
 ys = [1.60, 1.29]
@@ -50,7 +54,7 @@ default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 
 class Node:
     def __init__(self):
-        rospy.init_node('floor2_local_planning')
+        rospy.init_node('floor2_mpc_co_av')
 
         # grab parameters from launch-file
         start_pt_param = rospy.search_param('start_pt')
@@ -98,12 +102,37 @@ class Node:
             self.traj_y.append(path.poses[i].pose.position.y)
         
     def run(self):
-        # start pure pursuit SVEA manager
-        svea = SVEAPurePursuit(vehicle_name,
-                            LocalizationInterface,
-                            PurePursuitController,
-                            self.traj_x, self.traj_y,
-                            data_handler = self.DataHandler)
+        svea = SVEAMPC(
+            vehicle_name,
+            LocalizationInterface,
+            MPC,
+            self.traj_x, self.traj_y,
+            data_handler = self.DataHandler,
+            target_velocity=target_velocity,
+            dl = dt*target_velocity
+        )
+
+        ulb = [-1e2,-np.deg2rad(40)]
+        uub = [ 1e2, np.deg2rad(40)]
+        xlb = [-np.inf]*3+[-1]
+        xub = [ np.inf]*3+[3.6]
+
+        svea.controller.build_solver(
+            dt,
+            Q=params.Q,
+            R=params.R,
+            P=params.P,
+            ulb=ulb,
+            uub=uub,
+            xlb=xlb,
+            xub=xub,
+            max_cpu_time=0.8*dt,
+            horizon=params.horizon,
+            model_type=params.model_type,
+            solver_=params.solver_,
+            TAU = params.TAU,
+            N_IND_SEARCH = params.N_IND_SEARCH,
+        )
         svea.start(wait=True)
 
         if self.is_sim:
@@ -119,7 +148,7 @@ class Node:
             #This step updates the global path
             svea.update_traj(self.traj_x, self.traj_y)
 
-            # compute control input via pure pursuit
+            # compute control input 
             steering, velocity = svea.compute_control()
             svea.send_control(steering, velocity)
 
