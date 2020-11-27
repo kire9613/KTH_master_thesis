@@ -13,11 +13,16 @@ from svea_archetypes import SVEAManager
 class SVEAMPC(SVEAPurePursuit):
     """docstring for SVEAMPC"""
 
-    def __init__(self, vehicle_name, localizer, controller,
-                       traj_x, traj_y, data_handler=TrajDataHandler):
+    def __init__(self, vehicle_name, localizer, controller, traj_x, traj_y,
+                 data_handler=TrajDataHandler,
+                 target_velocity=1.0,
+                 dl=0.2,
+        ):
 
         SVEAManager.__init__(self, vehicle_name, localizer, controller,
                                    data_handler = data_handler)
+
+        self.controller = controller(vehicle_name,target_velocity,dl)
 
         self.update_traj(traj_x, traj_y)
 

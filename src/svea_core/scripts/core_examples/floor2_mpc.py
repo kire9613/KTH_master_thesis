@@ -28,7 +28,7 @@ param_name = "test"
 params = parameters.get(param_name)
 
 vehicle_name = ""
-target_velocity = 1.5 # [m/s]
+target_velocity = 3.5 # [m/s]
 dt = params.dt # frequency of the model updates
 
 xs = [-2.33, 10.48]
@@ -108,40 +108,34 @@ def main():
     lidar_sub = rospy.Subscriber("/scan", LaserScan, callback_scan)
 
     # start pure pursuit SVEA manager
-    mpc = MPC
-    #  TODO: This doesn't work for some reason <25-11-20, rob> #
-    mpc.target_velocity = target_velocity
-    mpc.dl = dt*target_velocity
-
     svea = SVEAMPC(
         vehicle_name,
         LocalizationInterface,
-        mpc,
+        MPC,
         traj_x, traj_y,
-        data_handler = DataHandler
+        data_handler = DataHandler,
+        target_velocity=target_velocity,
+        dl = dt*target_velocity
     )
-
-    Q = params.Q
-    R = params.R
-    P = params.P
 
     ulb = [-1e2,-np.deg2rad(40)]
     uub = [ 1e2, np.deg2rad(40)]
     xlb = [-np.inf]*3+[-1]
     xub = [ np.inf]*3+[3.6]
+
     svea.controller.build_solver(
         dt,
-        Q=Q,
-        R=R,
-        P=P,
+        Q=params.Q,
+        R=params.R,
+        P=params.P,
         ulb=ulb,
         uub=uub,
         xlb=xlb,
         xub=xub,
         max_cpu_time=0.8*dt,
         horizon=params.horizon,
-        model_type="linear",
-        solver_="ipopt",
+        model_type=params.model_type,
+        solver_=params.solver_,
         TAU = params.TAU,
         N_IND_SEARCH = params.N_IND_SEARCH,
     )

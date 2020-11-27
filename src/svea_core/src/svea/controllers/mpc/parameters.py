@@ -9,7 +9,10 @@ import numpy as np
 
 class Params(object):
     """ Holds parameters """
-    def __init__(self, P, Q, R, model_type, solver_, dt, horizon, TAU=0.1, N_IND_SEARCH=10):
+    def __init__(self, P=np.diag([1,1,1,1]), Q=np.diag([1,1,1,1]),
+                 R=np.diag([1,1]), model_type="linear", solver_="osqp", dt=0.05,
+                 horizon=5, TAU=0.1, N_IND_SEARCH=10,
+                 target_velocity=1.0,dl=0.2):
         self.P = P
         self.Q = Q
         self.R = R
@@ -19,6 +22,8 @@ class Params(object):
         self.horizon = horizon
         self.TAU = TAU
         self.N_IND_SEARCH = horizon
+        self.target_velocity = target_velocity
+        self.dl = dl
 
 parameters = {
     "test": Params(
