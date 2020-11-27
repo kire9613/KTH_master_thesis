@@ -27,11 +27,11 @@ __status__ = "Development"
 
 
 ## SIMULATION PARAMS ##########################################################
-param_name = "ZOH-good"
+param_name = "test"
 params = parameters.get(param_name)
 
 vehicle_name = ""
-target_velocity = 1.5 # [m/s]
+target_velocity = params.target_velocity # [m/s]
 dt = params.dt # frequency of the model updates
 
 xs = [-2.33, 10.48]
@@ -120,7 +120,7 @@ def main():
         MPC,
         traj_x, traj_y,
         data_handler = DataHandler,
-        target_velocity=target_velocity,
+        target_velocity=params.target_velocity,
         dl = dt*params.low_lim
     )
 

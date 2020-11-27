@@ -233,6 +233,7 @@ class MPC(object):
                 # 'error_on_fail': False,
                 'expand' : True,
                 'jit': True,
+                'jit_options': {"flags": ["-O2"]}, # For further optimization
             })
         if self.solver_=="ipopt":
             options.update({
@@ -250,12 +251,30 @@ class MPC(object):
                 'ipopt.max_iter': max_iter,
                 'ipopt.max_cpu_time': max_cpu_time,
             })
+        if self.solver_=="osqp":
+            options.update({
+                'osqp.verbose': False,
+                'warm_start_primal': True,
+                'error_on_fail': False,
+            })
+        if self.solver_=="sqpmethod":
+            options.update({
+                'qpsol': 'qrqp',
+                'print_header': False,
+                'print_time': False,
+                'print_in': False,
+                'print_out': False,
+                'jit': True,
+                'jit_options': {"flags": ["-O2"]}, # For further optimization
+            })
         if solver_opts is not None:
             options.update(solver_opts)
         if self.solver_=="ipopt":
             self.solver = ca.nlpsol('mpc_solver', 'ipopt', nlp, options)
         elif self.solver_=="osqp":
             self.solver = ca.qpsol('mpc_solver', 'osqp', nlp, options)
+        elif self.solver_=="sqpmethod":
+            self.solver = ca.nlpsol('mpc_solver', 'sqpmethod', nlp, options)
 
         build_solver_time += time.time()
         print('\n________________________________________')
