@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 import rospy
+from svea.path_planners.mpc_map.ros_interface import ROSInterface as MapROSInterface
 from svea.path_planners.mpc_planner.ros_interface import ROSInterface
 from svea.path_planners.mpc_planner.main_planner import Planner
 
@@ -17,6 +18,9 @@ def run_mpc_planner(ros_interface):
         for parameter_name in parameter_names
     }
     mpc_obs = parameters['obstacles']
+
+    #Publish obstacles
+    MapROSInterface.publish(mpc_obs)
     
     planner_name = ros_interface.planner_algorithm
     planner_parameters = ros_interface.get_planner_parameters()

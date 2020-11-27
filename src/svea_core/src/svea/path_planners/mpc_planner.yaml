@@ -5,10 +5,10 @@ length: 0.586 #0.7 # Car length (in m)
 distance_tolerance: 0.5 # Minimum distance error to consider that the planner has reached the goal (in meters)
 angle_tolerance: deg(30) # Minimum angle error to consider that the planner has reached the goal (in radians)
 
-speed_min: -2 # Minimum speed (in meters/seconds)
-speed_max: 2 # Maximum speed (in meters/seconds)
-steering_angle_min: -2 #-0.78 # (-pi / 4) Minimum angular speed (in radians/seconds)
-steering_angle_max: 2 #0.78 # (pi / 4) Maximum angular speed (in radians/seconds)
+speed_min: -1 #-2 Minimum speed (in meters/seconds)
+speed_max: 1 #2 Maximum speed (in meters/seconds)
+steering_angle_min: -0.78 #-2 # (-pi / 4) Minimum angular speed (in radians/seconds)
+steering_angle_max: 0.78 #2 # (pi / 4) Maximum angular speed (in radians/seconds)
 
 publish_frequency: 10 # ROS path publish frequency (in Hz)
 path_frame: 'map' # ROS frame where to publish the path
