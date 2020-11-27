@@ -351,12 +351,12 @@ class MPC(object):
         status          = self.solver.stats()['return_status']
         optvar          = self.opt_var(sol['x'])
 
-        print(status)
+        # print(status)
 
 
         solve_time+=time.time()
-        print('MPC took %f seconds to solve.\r' %(solve_time))
-        print('MPC cost: ', sol['f'])
+        # print('MPC took %f seconds to solve.\r' %(solve_time))
+        # print('MPC cost: ', sol['f'])
         #print("optvar[x] = ", optvar['x'], "optvar['u'] = ", optvar['u'])
         return optvar['x'], optvar['u']
 
@@ -391,11 +391,13 @@ class MPC(object):
         travel = 0.0
 
         for i in range(self.Nt + 1):
-            # travel += abs(state[3]) * self.dt
             if dind==None:
                 travel += abs(sp[ind]) * self.dt
             else:
-                travel += abs(sp[ind+dind]) * self.dt
+                #  TODO: This is not working, sp[min(ind+dind,ncourse-1)] solves the
+                #  problem but the car doesn't go to a full stop then. <27-11-20, rob> #
+                travel += abs(sp[min(ind+dind,ncourse-1)]) * self.dt
+            # travel += abs(state[3]) * self.dt
             dind = int(round(travel / self.dl))
 
             if (ind + dind) < ncourse:
@@ -482,7 +484,7 @@ class MPC(object):
         if self.target_ind is None:
             self.target_ind, _ = self.calc_nearest_index(x0, 0)
 
-        print(self.target_ind)
+        # print(self.target_ind)
         self.target_ind, _ = self.calc_nearest_index(x0, self.target_ind)
 
         # self.target_ind, _ = self.calc_nearest_index(x0, 0)
@@ -490,7 +492,7 @@ class MPC(object):
         self.calc_ref_trajectory(x0, self.target_ind)
 
         x_pred, u_pred = self.solve_mpc(x0,self.u0)
-        print("u_pred", u_pred[0][1])
+        # print("u_pred", u_pred[0][1])
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
@@ -520,7 +522,7 @@ class MPC(object):
         vd = self.TAU*u_pred[0][0] + state.v
         #vd = 0.6
         #vd = x_pred[1][3]
-        print("vd = ", vd)
+        # print("vd = ", vd)
 
         return float(u_pred[0][1]), float(vd)
 
