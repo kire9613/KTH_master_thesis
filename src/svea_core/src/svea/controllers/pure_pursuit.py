@@ -105,8 +105,6 @@ class PurePursuitController(object):
             ind += 1
 
         # terminating condition
-
-        #TODO
         if dist < 0.1:
             self.is_finished = True
 
@@ -123,7 +121,7 @@ class PurePursuitController(object):
         if min(points) < self.emergency_distance:
             self.emg_stop = True
 
-    def laser_mapping(self,msg):
+    def laser_mapping(self,state):
         
         laserScan = rospy.wait_for_message('/scan', LaserScan)
 
@@ -131,9 +129,9 @@ class PurePursuitController(object):
         indices = np.where(np.array(laserScan.ranges) < self.emergency_distance)
 
         #Get svea's pose
-        svea_x = msg.x
-        svea_y = msg.y
-        yaw = msg.yaw
+        svea_x = state[0]
+        svea_y = state[1]
+        yaw = state[2]
 
         #Calculate lidar pose in map frame             
         length = self.lidar_to_base 

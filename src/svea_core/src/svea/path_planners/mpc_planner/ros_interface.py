@@ -28,6 +28,7 @@ class ROSInterface(object):
         self.goal_angles = []
         self.x_traj = x_traj
         self.y_traj = y_traj
+        self.current_speed = 0
         #self.path_publisher = rospy.Publisher('~path', Path, queue_size=1)
         
     def set_goal_angles(self, angles):
@@ -169,6 +170,7 @@ class ROSInterface(object):
         x, y, yaw = [getattr(msg, coord) for coord in ('x', 'y','yaw')]
 
         self.initial_state = [x, y, yaw]
+        self.current_speed = msg.v
         
         # self.initial_state = [self.x0,self.y0,self.theta0] #original 
 
