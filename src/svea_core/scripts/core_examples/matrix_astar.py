@@ -13,7 +13,17 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-show_animation = False
+from PIL import Image, ImageDraw
+
+img_file_name = os.path.dirname(os.path.abspath(__file__)) + os.sep + "astar.png"
+space_RGB = (255, 255, 255)# White
+node_RGB = (0, 0, 255)     # Blue
+obstacle_RGB = (0, 0, 0)   # Black
+path_RGB = (255, 0, 0)     # Red
+start_RGB = (0, 255, 0)    # Green
+goal_RGB = (255, 255, 0)   # Yellow
+
+show_animation = True
 
 dirname = os.path.dirname(__file__)
 svea_core = os.path.join(dirname, '../../')
@@ -23,152 +33,38 @@ file_path = svea_core + 'resources/maps/' + map_name + ".pickle"
 width = 879
 height = 171
 
-unknown_space = np.int8(-1) #grey
-free_space = np.int8(0) #white
-c_space = np.int8(25) #grey
-occupied_space = np.int8(75) #black
-start_spot = np.int8(127) #green
-goal_spot = -np.int8(127) #red
-bounding_box = -np.int8(10) #yellow
-
-unknown_space_glb = np.int8(-1) #grey
-free_space_glb = np.int8(0) #white
-occupied_space_glb = np.int8(100) #black
-
-obstacles1 = occupied_space_glb #100
-obstacles2 = occupied_space_glb - unknown_space#101
-obstacles3 = occupied_space_glb - occupied_space #25
-obstacles4 = occupied_space_glb - c_space #75
-obstacles5 = unknown_space_glb - occupied_space #-76
-obstacles6 = unknown_space_glb - c_space #-26
-obstacles7 = -c_space #-25
-obstacles8 = -occupied_space #-75
-
-start = -start_spot
-goal = -goal_spot
-
-bounds1 = -bounding_box
-bounds2 = unknown_space_glb - bounding_box
+occupied_space = np.int8(100) #black
 
 class AStarPlanner:
 
-	def __init__(self, problem_vector):
+	def __init__(self, init_map):
 		"""
 		Initialize grid map for a star planning
 		"""
 		self.motion = self.get_motion_model()
 
-		self.sx = None
-		self.sy = None
-		self.gx = None
-		self.gy = None
+		init_map = init_map.reshape(height, width)
 
-		print(start)
-		print(goal)
-
-		problem_map = problem_vector.reshape(height, width)
-
-		minx = height
-		maxx = 0
-		miny = width
-		maxy = 0
-		for i in range(height):
-			for j in range(width):
-				if problem_map[i,j] == bounds1 or problem_map[i,j] == bounds2:
-					if i < minx:
-						minx = i
-					if j < miny:
-						miny = j
-					if i > maxx:
-						maxx = i
-					if j > maxy:
-						maxy = j		
-
-		self.min_x = minx
-		self.min_y = miny
-		self.max_x = maxx
-		self.max_y = maxy
-
-		if self.min_x > 5:
-			self.min_x = self.min_x - 5
-		if self.max_x < height - 5:
-			self.max_x = self.max_x + 5
-		if self.min_y > 5:
-			self.min_y = self.min_y - 5
-		if self.max_y < width - 5:
-			self.max_y = self.max_y + 5
-
-		self.x_width = self.max_x - self.min_x
-		self.y_width = self.max_y - self.min_y
+		self.x_width = height
+		self.y_width = width
 
 		self.obstacle_map = np.full((self.x_width, self.y_width), 0, dtype=np.uint8)
 		
-		for ix in range(self.x_width):
-			x = ix + self.min_x
-			for iy in range(self.y_width):
-				y = iy + self.min_y
-				if problem_map[x,y] == obstacles1:
-					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == obstacles2:
-					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == obstacles3:
-					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == obstacles4:
-					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == obstacles5:
-					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == obstacles6:
-					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == obstacles7:
-					self.obstacle_map[ix,iy] = np.uint8(1)
-				if problem_map[x,y] == obstacles8:
-					self.obstacle_map[ix,iy] = np.uint8(1)					
-				if problem_map[x,y] == start:
-					print("Hej")
-					self.sx = x
-					self.sy = y
-				if problem_map[x,y] == goal:
-					print("Hej2")
-					self.gx = x
-					self.gy = y
+		for x in range(self.x_width):
+			for y in range(self.y_width):
+				if init_map[x,y] == occupied_space:
+					self.obstacle_map[x,y] = np.uint8(1)
+					for r in range(1, 3):
+						t = 0
+						while t <= 2*np.pi:                        
+							a = x + r*np.cos(t)
+							b = y + r*np.sin(t)
+							a = int(a)
+							b = int(b)
+							if 0 <= a < height and 0 <= b < width:
+								self.obstacle_map[a,b] = np.uint8(1)
+							t = t + np.pi/32
 
-		if show_animation:
-			plt.grid(True)
-			plt.axis("equal")
-			for ix in range(self.x_width):
-				x = ix + self.min_x
-				for iy in range(self.y_width):
-					y = iy + self.min_y
-					if problem_map[x,y] == obstacles1:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == obstacles2:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == obstacles3:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == obstacles4:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == obstacles5:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == obstacles6:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == obstacles7:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == obstacles8:
-						plt.plot(x, y, ".k")
-					if problem_map[x,y] == start_spot:
-						plt.plot(x, y, "og")
-					if problem_map[x,y] == goal_spot:
-						plt.plot(x, y, "xb")
-
-		"""
-		print("min_x:", self.min_x)
-		print("min_y:", self.min_y)
-		print("max_x:", self.max_x)
-		print("max_y:", self.max_y)
-
-		print("x_width:", self.x_width)
-		print("y_width:", self.y_width)
-		"""
 	class Node:
 		def __init__(self, x, y, cost, parent_index):
 			self.x = x  # index of grid
@@ -176,16 +72,38 @@ class AStarPlanner:
 			self.cost = cost
 			self.parent_index = parent_index
 
-	def planning(self):
-		"""
-		A star path search
-		output:
-			rx: x position list of the final path
-			ry: y position list of the final path
-		"""
+	def planning(self, obstacles, sx, sy, gx, gy):
+		if show_animation:
+			#Draw images of the planning
+			image = Image.new('RGB', (width, height))
+			draw_obj = ImageDraw.Draw(image)
+			image.putdata([space_RGB]*(height*width))
 
-		start_node = self.Node(self.sx - self.min_x, self.sy - self.min_y, 0.0, -1)
-		goal_node = self.Node(self.gx - self.min_x, self.gy - self.min_y, 0.0, -1)
+		obstacle_map = self.obstacle_map
+
+		for entry in obstacles:
+			obstacle_map[entry] = np.uint8(1)
+			for r in range(1, 10):
+					t = 0
+					while t <= 2*np.pi:                        
+						a = entry[0] + r*np.cos(t)
+						b = entry[1] + r*np.sin(t)
+						a = int(a)
+						b = int(b)
+						if self.verify(a,b, obstacle_map):
+							obstacle_map[a,b] = np.uint8(1)
+						t = t + np.pi/32
+
+		if show_animation:
+			for x in range(self.x_width):
+				for y in range(self.y_width):
+					if obstacle_map[x,y] == 1:
+						draw_obj.point((y, x), obstacle_RGB)
+			draw_obj.point((sy, sx), start_RGB)
+			draw_obj.point((gy, gx), goal_RGB)
+
+		start_node = self.Node(sx, sy, 0.0, -1)
+		goal_node = self.Node(gx, gy, 0.0, -1)
 
 		open_set, closed_set = dict(), dict()
 		open_set[self.calc_grid_index(start_node)] = start_node
@@ -200,11 +118,7 @@ class AStarPlanner:
 
 			# show graph
 			if show_animation:  # pragma: no cover
-				plt.plot(current.x + self.min_x, current.y + self.min_y, "xc")
-				# for stopping simulation with the esc key.
-				plt.gcf().canvas.mpl_connect('key_release_event',
-												lambda event: [exit(
-													0) if event.key == 'escape' else None])
+				draw_obj.point((current.y, current.x), node_RGB)
 				
 			if current.x == goal_node.x and current.y == goal_node.y:
 				print("Find goal")
@@ -226,7 +140,7 @@ class AStarPlanner:
 				n_id = self.calc_grid_index(node)
 
 				# If the node is not safe, do nothing
-				if not self.verify_node(node):
+				if not self.verify(node.x, node.y, obstacle_map):
 					continue
 
 				if n_id in closed_set:
@@ -241,23 +155,25 @@ class AStarPlanner:
 
 		rx, ry = self.calc_final_path(goal_node, closed_set)
 		
-		if show_animation:  # pragma: no cover
-			plt.plot(rx, ry, "-r")
-			plt.show()
+		if show_animation:
+			for i in range(len(rx)):
+				draw_obj.point((ry[i],rx[i]), path_RGB)
+			image.save(img_file_name)
+			print("Tried to save image")
 
 		rx.reverse()
 		ry.reverse()
-		
+
 		return rx, ry
 
 	def calc_final_path(self, goal_node, closed_set):
 		# generate final course
-		rx, ry = [goal_node.x + self.min_x], [goal_node.y + self.min_y]
+		rx, ry = [goal_node.x], [goal_node.y]
 		parent_index = goal_node.parent_index
 		while parent_index != -1:
 			n = closed_set[parent_index]
-			rx.append(n.x + self.min_x)
-			ry.append(n.y + self.min_y)
+			rx.append(n.x)
+			ry.append(n.y)
 			parent_index = n.parent_index
 
 		return rx, ry
@@ -269,23 +185,20 @@ class AStarPlanner:
 		return d
 
 	def calc_grid_index(self, node):
-		return (node.y - self.min_y) * self.x_width + (node.x - self.min_x)
+		return (node.y) * self.x_width + (node.x)
 
-	def verify_node(self, node):
-		px = node.x + self.min_x
-		py = node.y + self.min_y
-
-		if px < self.min_x:
+	def verify(self, x, y, obstacle_map):
+		if x < 0:
 			return False
-		elif py < self.min_y:
+		elif y < 0:
 			return False
-		elif px >= self.max_x:
+		elif x >= height:
 			return False
-		elif py >= self.max_y:
+		elif y >= width:
 			return False
 
 		# collision check
-		if self.obstacle_map[node.x, node.y] == np.uint8(1):
+		if obstacle_map[x, y] == np.uint8(1):
 			return False
 
 		return True
@@ -303,7 +216,7 @@ class AStarPlanner:
 					[1, 1, math.sqrt(2)]]
 
 		return motion
-
+"""
 def main():
 	with open(file_path, 'rb') as f:
 		pickled_problem = np.load(f)
@@ -316,3 +229,4 @@ def main():
 
 if __name__ == '__main__':
     main() 
+"""

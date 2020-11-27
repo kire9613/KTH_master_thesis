@@ -27,13 +27,14 @@ from nav_msgs.msg import Path
 from svea_msgs.msg import VehicleState
 
 ## MAP EXPLORER PARAMS ########################################################
-update_rate = 1 # [Hz]
+update_rate = 5 # [Hz]
+lightweight = True
 
 frame_id="map" 
 resolution=0.05 # The map resolution [m/cell]
-width=879#721 
-height=171#880
-radius = 1
+width=879
+height=171
+
 x_org=0
 y_org=0
 yaw_org= radians(0)
@@ -41,10 +42,10 @@ yaw_org= radians(0)
 unknown_space = np.int8(-1) #grey
 free_space = np.int8(0) #white
 c_space = np.int8(25) #grey
-occupied_space = np.int8(75) #black
-start_spot = np.int8(127) #green
+occupied_space = np.int8(100) #black
+start_val = np.int8(120) #green
 #path_val = -np.int8(2) #yellow
-goal_spot = -np.int8(127) #red
+goal_val = -np.int8(120) #red
 bounding_box = -np.int8(10) #yellow
 
 dirname = os.path.dirname(__file__)
@@ -64,7 +65,7 @@ class Node:
 		rospy.init_node('explore_node')
 		
 		self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
-		self.problem_pub = rospy.Publisher('problems', OccupancyGrid, queue_size=1, latch=True)
+		self.problem_pub = rospy.Publisher('problems', OccupancyGrid, queue_size=1, latch=False)
 
 		self.state_sub = rospy.Subscriber('/state', VehicleState, self.callback_state)
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.callback_scan)
@@ -77,6 +78,9 @@ class Node:
 
 		self.path_lookup = np.zeros((width,height))
 		self.index_lookup = np.zeros((width,height))
+		self.coord_lookup = None
+		
+		self.rate_timeout = rospy.Rate(1)
 
 	def callback_state(self, state):
 		self.state = state
@@ -87,6 +91,7 @@ class Node:
 	def callback_path(self, path):
 		self.path_lookup = np.zeros((width,height))
 		self.index_lookup = np.zeros((width,height))
+		self.coord_lookup = np.zeros((len(path.poses),2))
 
 		for i in range(len(path.poses) - 2):
 			x_start = path.poses[i].pose.position.x 
@@ -98,6 +103,9 @@ class Node:
 			y_s = int(y_start/resolution)
 			x_e = int(x_end/resolution)
 			y_e = int(y_end/resolution)
+			self.coord_lookup[i,0] = x_s
+			self.coord_lookup[i,1] = y_s
+
 			start = (x_s, y_s)
 			end = (x_e,y_e)
 
@@ -108,7 +116,7 @@ class Node:
 				self.path_lookup[cell] = 1
 				self.index_lookup[cell] = i
 
-				for r in range(1, radius + 3):
+				for r in range(1, 1):
 					t = 0
 					while t <= 2*np.pi:                        
 						a = cell[0] + r*cos(t)
@@ -127,12 +135,10 @@ class Node:
 		rate = rospy.Rate(update_rate)
 
 		while not rospy.is_shutdown():
-			self.mapper.update_map(self.state, self.scan, self.path_lookup, self.index_lookup)
+			self.mapper.update_map(self.state, self.scan, self.path_lookup, self.index_lookup, self.coord_lookup)
 			self.map_pub.publish(self.mapper.map)
 
 			if self.mapper.detection == True:
-				
-				self.mapper.inflate_map(occupied_space, c_space)
 				"""
 				pic = self.mapper.map
 				
@@ -145,6 +151,7 @@ class Node:
 					np.save(f2,np_pic)
 				"""
 				self.problem_pub.publish(self.mapper.map)
+				self.rate_timeout.sleep()
 
 			self.mapper.reset_map()
 			rate.sleep()
@@ -157,7 +164,6 @@ class MapExplore:
 	"""
 	def __init__(self):
 		"""
-		hej
 		"""
 		self.map = OccupancyGrid()
 		# Fill in the header
@@ -187,7 +193,7 @@ class MapExplore:
 		else:
 			return False
 
-	def update_map(self, state, scan, path_lookup, index_lookup):
+	def update_map(self, state, scan, path_lookup, index_lookup, coord_lookup):
 		"""
 		Updates the grid_map with the data from the laser scan and the pose.
 		:type scan: LaserScan
@@ -211,7 +217,7 @@ class MapExplore:
 			else:
 				i = i + 1
 				continue
-
+					
 			start = (int(x_grid), int(y_grid))
 			ray = raytrace(start, obs)
 			for d in ray:
@@ -225,52 +231,25 @@ class MapExplore:
 		for c in obstacles:
 			if is_in_bounds(c[0],c[1]):
 				if path_lookup[c] == 1:
+					print(c[0]*0.05, c[1]*0.05)
 					print("Intersected!")
 					intersected.append(c)
-				
+
 		if len(intersected) >= 1:
-			#print("Intersected > 1")
-			sum_x = 0
-			sum_y = 0
-			for c in intersected:
-				sum_x += c[0]
-				sum_y += c[1]
-		
-			gsx = sum_x/len(intersected)
-			gsy = sum_y/len(intersected)
-
-			lst = []
-			t = 0
-			while t <= 2*np.pi:                        
-				a = gsx + 60*cos(t)
-				b = gsy + 60*sin(t)
-				a = int(a)
-				b = int(b)
-				if is_in_bounds(a,b):
-					self.add_to_map(a, b, bounding_box)
-					if path_lookup[(a,b)] == 1:
-						lst.append((a,b))
-				t = t + np.pi/64
+			print("Intersected >= 1")
 			
-			if len(lst) >= 1:
-				min_index = np.Inf
-				max_index = 0
-				closest = None
-				furthest = None
-				for entry in lst:
-					index = index_lookup[entry]
-					if index < min_index:
-						min_index = index
-						closest = entry
-					if index > max_index:
-						max_index = index
-						furthest = entry
+			obs_ind = int(index_lookup[intersected[0]])
+			print(obs_ind)
+			closest_x = int(coord_lookup[obs_ind - 5,0])
+			closest_y = int(coord_lookup[obs_ind - 5,1])
+			furthest_x = int(coord_lookup[obs_ind + 5,0])
+			furthest_y = int(coord_lookup[obs_ind + 5,1])
 
-				self.add_to_map(closest[0], closest[1], start_spot)
-				self.add_to_map(furthest[0], furthest[1], goal_spot)
-
+			print(closest_x, closest_y)
+			print(furthest_x, furthest_y)
+			self.add_to_map(closest_x, closest_y, start_val)
+			self.add_to_map(furthest_x, furthest_y, goal_val)
 			self.detection = True
-		
 		else:
 			self.detection = False
 			
@@ -280,28 +259,6 @@ class MapExplore:
 		self.map_matrix = np.full((height, width), unknown_space, dtype=np.int8)
 		self.map.data = self.map_matrix.reshape(-1)
 		self.detection = False
-
-	def inflate_map(self, target_val, inflate_val):
-		"""
-		Inflate the map with c_space assuming the robot
-		has a radius of radius.
-		"""
-		for i in range(0, height):
-			for j in range(0, width):
-				if self.map_matrix[i,j] == target_val:
-					t = 0
-					for r in range(1, radius + 15):
-						t = 0
-						while t <= 2*np.pi:                        
-							a = i + r*cos(t)
-							b = j + r*sin(t)
-							a = int(a)
-							b = int(b)
-							if is_in_bounds(b,a) and self.map_matrix[a,b] != target_val:
-								self.add_to_map(b, a, inflate_val)
-							t = t + np.pi/32
-
-		self.map.data = self.map_matrix.reshape(-1)
 		
 def is_in_bounds(x, y):
 	"""Returns weather (x, y) is inside grid_map or not."""
@@ -309,6 +266,7 @@ def is_in_bounds(x, y):
 		if y >= 0 and y < height:
 			return True
 	else:
+		print("False: ({0},{1})".format(x,y))
 		return False
 
 def raytrace(start, end):

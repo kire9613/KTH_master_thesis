@@ -24,7 +24,7 @@ __status__ = "Development"
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = ""
-target_velocity = 1.5 # [m/s]
+target_velocity = 1# [m/s]
 dt = 0.01 # frequency of the model updates
 
 xs = [14.47, 37.26]
