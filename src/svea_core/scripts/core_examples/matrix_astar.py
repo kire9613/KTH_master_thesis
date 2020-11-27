@@ -23,7 +23,7 @@ path_RGB = (255, 0, 0)     # Red
 start_RGB = (0, 255, 0)    # Green
 goal_RGB = (255, 255, 0)   # Yellow
 
-show_animation = True
+show_animation = False
 
 dirname = os.path.dirname(__file__)
 svea_core = os.path.join(dirname, '../../')
