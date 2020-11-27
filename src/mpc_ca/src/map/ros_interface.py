@@ -87,7 +87,7 @@ class ROSInterface(object):
         :type obstacles: list
         """
         obstacles_publisher = rospy.Publisher(
-            '~obstacles', MarkerArray, queue_size=1, latch=True
+            '/team_5_floor2/obstacles', MarkerArray, queue_size=1, latch=True
         )
 
         markers = [

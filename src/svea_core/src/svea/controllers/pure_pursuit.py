@@ -29,12 +29,15 @@ class PurePursuitController(object):
         self.last_index = 0
         self.is_finished = False
         self.emg_stop = False
+        self.mpc_running = False
         self.last_time = 0.0
         self.print_time = 0.0
         self.lidar_to_base = 0.3  #svea position is measured at rear axis, but lasar at front axis 
+    def set_mpc_running(self,running):
+        self.mpc_running = running 
 
     def compute_control(self, state, target=None):
-        if self.emg_stop == True:
+        if self.emg_stop and not self.mpc_running:
             return 0,0
         else:
             steering = self.compute_steering(state, target)
@@ -57,7 +60,7 @@ class PurePursuitController(object):
         return delta
 
     def compute_velocity(self, state):
-        if self.is_finished or self.emg_stop:
+        if self.is_finished:
             # stop moving if trajectory done and reset controller.
             self.I = 0.0
             self.P = 0.0
@@ -151,9 +154,9 @@ class PurePursuitController(object):
 
         '''OBS need to change name ones we have merged with switch'''
         # Update list of obstacles with the new obstacle 
-        obstacles_list = rospy.get_param('/planner/obstacles')
+        obstacles_list = rospy.get_param('/team_5_floor2/obstacles')
         obstacles_list.append(obs_points)
-        rospy.set_param('/planner/obstacles',obstacles_list)
+        rospy.set_param('/team_5_floor2/obstacles',obstacles_list)
 
     def print_every_second(self, message, data):
                 # print once per second

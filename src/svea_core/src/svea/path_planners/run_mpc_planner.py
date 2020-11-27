@@ -14,11 +14,11 @@ if __name__ == '__main__':
     ros_interface = ROSInterface()
 
     # old code
-    occupancy_grid_parameters = MapROSInterface.get_occupancy_grid_parameters()
+    #occupancy_grid_parameters = MapROSInterface.get_occupancy_grid_parameters()
 
-    occupancy_grid = OccupancyGrid(**occupancy_grid_parameters)
+    #occupancy_grid = OccupancyGrid(**occupancy_grid_parameters)
 
-    MapROSInterface.publish(occupancy_grid)
+    #MapROSInterface.publish(occupancy_grid)
     # old code
     
     #Fetch mpc obstacles without initializing occupancy grid class
