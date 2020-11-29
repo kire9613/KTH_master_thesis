@@ -28,12 +28,13 @@ from svea_msgs.msg import VehicleState
 
 ## MAP EXPLORER PARAMS ########################################################
 update_rate = 5 # [Hz]
+lightweight = True
 
 frame_id="map" 
 resolution=0.05 # The map resolution [m/cell]
-width=879#721 
-height=171#880
-radius = 1
+width=879
+height=171
+
 x_org=0
 y_org=0
 yaw_org= radians(0)
@@ -41,10 +42,10 @@ yaw_org= radians(0)
 unknown_space = np.int8(-1) #grey
 free_space = np.int8(0) #white
 c_space = np.int8(25) #grey
-occupied_space = np.int8(75) #black
-start_spot = np.int8(127) #green
+occupied_space = np.int8(100) #black
+start_val = np.int8(120) #green
 #path_val = -np.int8(2) #yellow
-goal_spot = -np.int8(127) #red
+goal_val = -np.int8(120) #red
 bounding_box = -np.int8(10) #yellow
 
 dirname = os.path.dirname(__file__)
@@ -55,8 +56,6 @@ map_name2 = "problem_map_np" # change this for different maps
 file_path2 = svea_core + 'resources/maps/' + map_name2 + ".pickle"
 ###############################################################################
 
-path_lookup = np.zeros((width,height))
-
 class Node:
 	"""
 	asd
@@ -66,7 +65,7 @@ class Node:
 		rospy.init_node('explore_node')
 		
 		self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
-		self.problem_pub = rospy.Publisher('problems', OccupancyGrid, queue_size=1, latch=True)
+		self.problem_pub = rospy.Publisher('problems', OccupancyGrid, queue_size=1, latch=False)
 
 		self.state_sub = rospy.Subscriber('/state', VehicleState, self.callback_state)
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.callback_scan)
@@ -77,6 +76,12 @@ class Node:
 
 		self.mapper = MapExplore()
 
+		self.path_lookup = np.zeros((width,height))
+		self.index_lookup = np.zeros((width,height))
+		self.coord_lookup = None
+		
+		self.rate_timeout = rospy.Rate(1)
+
 	def callback_state(self, state):
 		self.state = state
 		
@@ -84,14 +89,23 @@ class Node:
 		self.scan = scan
 	
 	def callback_path(self, path):
+		self.path_lookup = np.zeros((width,height))
+		self.index_lookup = np.zeros((width,height))
+		self.coord_lookup = np.zeros((len(path.poses),2))
+
 		for i in range(len(path.poses) - 2):
-			x_start, y_start = path.poses[i].pose.position.x, path.poses[i].pose.position.y
-			x_end, y_end = path.poses[i+1].pose.position.x, path.poses[i+1].pose.position.y
+			x_start = path.poses[i].pose.position.x 
+			y_start = path.poses[i].pose.position.y
+			x_end = path.poses[i+1].pose.position.x 
+			y_end = path.poses[i+1].pose.position.y
 
 			x_s = int(x_start/resolution)
 			y_s = int(y_start/resolution)
 			x_e = int(x_end/resolution)
 			y_e = int(y_end/resolution)
+			self.coord_lookup[i,0] = x_s
+			self.coord_lookup[i,1] = y_s
+
 			start = (x_s, y_s)
 			end = (x_e,y_e)
 
@@ -99,9 +113,10 @@ class Node:
 			
 			for cell in ray:
 				#self.mapper.add_to_map(cell[0],cell[1],path_val)
-				
-				path_lookup[cell] = 1
-				for r in range(1, radius + 3):
+				self.path_lookup[cell] = 1
+				self.index_lookup[cell] = i
+
+				for r in range(1, 1):
 					t = 0
 					while t <= 2*np.pi:                        
 						a = cell[0] + r*cos(t)
@@ -109,34 +124,34 @@ class Node:
 						a = int(a)
 						b = int(b)
 						if is_in_bounds(a,b):
-							#self.mapper.add_to_map(a,b,path_val)
-							path_lookup[(a,b)] = 1
+							self.path_lookup[(a,b)] = 1
+							self.index_lookup[(a,b)] = i
 						t = t + np.pi/32
 				
-			path_lookup[end] = 1
-			
+			self.path_lookup[end] = 1
+			self.index_lookup[end] = len(path.poses) - 1
 
 	def run(self):
 		rate = rospy.Rate(update_rate)
 
 		while not rospy.is_shutdown():
-			self.mapper.update_map(self.state, self.scan)
-
-			self.mapper.inflate_map(occupied_space, c_space)
-
+			self.mapper.update_map(self.state, self.scan, self.path_lookup, self.index_lookup, self.coord_lookup)
 			self.map_pub.publish(self.mapper.map)
 
 			if self.mapper.detection == True:
-				print("Hej")
+				"""
 				pic = self.mapper.map
+				
 				np_pic = np.asarray(self.mapper.map.data)
+				
 				with open(file_path, 'wb') as f:
 					pickle.dump(pic, f)
 				
 				with open(file_path2, 'wb') as f2:
 					np.save(f2,np_pic)
-
+				"""
 				self.problem_pub.publish(self.mapper.map)
+				self.rate_timeout.sleep()
 
 			self.mapper.reset_map()
 			rate.sleep()
@@ -149,7 +164,6 @@ class MapExplore:
 	"""
 	def __init__(self):
 		"""
-		hej
 		"""
 		self.map = OccupancyGrid()
 		# Fill in the header
@@ -179,7 +193,7 @@ class MapExplore:
 		else:
 			return False
 
-	def update_map(self, state, scan):
+	def update_map(self, state, scan, path_lookup, index_lookup, coord_lookup):
 		"""
 		Updates the grid_map with the data from the laser scan and the pose.
 		:type scan: LaserScan
@@ -203,7 +217,7 @@ class MapExplore:
 			else:
 				i = i + 1
 				continue
-
+					
 			start = (int(x_grid), int(y_grid))
 			ray = raytrace(start, obs)
 			for d in ray:
@@ -215,70 +229,36 @@ class MapExplore:
 
 		intersected = []
 		for c in obstacles:
-			if path_lookup[c] == 1:
-				intersected.append(c)
-				
-		if len(intersected) > 3:
-			sum_x = 0
-			sum_y = 0
-			for c in intersected:
-				sum_x += c[0]
-				sum_y += c[1]
-		
-			gsx = sum_x/len(intersected)
-			gsy = sum_y/len(intersected)
+			if is_in_bounds(c[0],c[1]):
+				if path_lookup[c] == 1:
+					print(c[0]*0.05, c[1]*0.05)
+					print("Intersected!")
+					intersected.append(c)
 
-			lst = []
-			t = 0
-			while t <= 2*np.pi:                        
-				a = gsx + 60*cos(t)
-				b = gsy + 60*sin(t)
-				a = int(a)
-				b = int(b)
-				if is_in_bounds(a,b):
-					self.add_to_map(a, b, bounding_box)
-					if path_lookup[(a,b)] == 1:
-						lst.append((a,b))
-				t = t + np.pi/64
+		if len(intersected) >= 1:
+			print("Intersected >= 1")
 			
-			if len(lst) > 2:
-				srt = np.squeeze(np.zeros((1,len(lst))))
-				for i, entry in enumerate(lst):
-					srt[i] = np.sqrt((start[0] - entry[0])^2 + (start[1] - entry[1])^2)
-				indices = np.argsort(srt)
-				closest = lst[int(indices[0])]
-				furthest = lst[int(indices[2])]
-				self.add_to_map(closest[0], closest[1], start_spot)
-				self.add_to_map(furthest[0], furthest[1], goal_spot)
-				self.detection = True
+			obs_ind = int(index_lookup[intersected[0]])
+			print(obs_ind)
+			closest_x = int(coord_lookup[obs_ind - 5,0])
+			closest_y = int(coord_lookup[obs_ind - 5,1])
+			furthest_x = int(coord_lookup[obs_ind + 5,0])
+			furthest_y = int(coord_lookup[obs_ind + 5,1])
+
+			print(closest_x, closest_y)
+			print(furthest_x, furthest_y)
+			self.add_to_map(closest_x, closest_y, start_val)
+			self.add_to_map(furthest_x, furthest_y, goal_val)
+			self.detection = True
+		else:
+			self.detection = False
 			
 		self.map.data = self.map_matrix.reshape(-1)
 
 	def reset_map(self):
 		self.map_matrix = np.full((height, width), unknown_space, dtype=np.int8)
 		self.map.data = self.map_matrix.reshape(-1)
-
-	def inflate_map(self, target_val, inflate_val):
-		"""
-		Inflate the map with c_space assuming the robot
-		has a radius of radius.
-		"""
-		for i in range(0, height):
-			for j in range(0, width):
-				if self.map_matrix[i,j] == target_val:
-					t = 0
-					for r in range(1, radius + 2):
-						t = 0
-						while t <= 2*np.pi:                        
-							a = i + r*cos(t)
-							b = j + r*sin(t)
-							a = int(a)
-							b = int(b)
-							if is_in_bounds(b,a) and self.map_matrix[a,b] != target_val:
-								self.add_to_map(b, a, inflate_val)
-							t = t + np.pi/32
-
-		self.map.data = self.map_matrix.reshape(-1)
+		self.detection = False
 		
 def is_in_bounds(x, y):
 	"""Returns weather (x, y) is inside grid_map or not."""
@@ -286,6 +266,7 @@ def is_in_bounds(x, y):
 		if y >= 0 and y < height:
 			return True
 	else:
+		print("False: ({0},{1})".format(x,y))
 		return False
 
 def raytrace(start, end):

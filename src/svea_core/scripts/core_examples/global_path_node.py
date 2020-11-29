@@ -35,12 +35,12 @@ class Node:
 		ys = [1.29,6.96]
 		traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:])
 		traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:])
-		xs = [37.35,14.68]
-		ys = [6.96,7.31]
+		xs = [37.35,13.27]
+		ys = [6.96,7.11]
 		traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:])
 		traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:])
-		xs = [14.69,14.47]
-		ys = [7.31,1.60]
+		xs = [13.27,14.47]
+		ys = [7.11,1.60]
 		traj_x = np.append(traj_x,np.linspace(xs[0], xs[1]).tolist()[1:-1])
 		traj_y = np.append(traj_y,np.linspace(ys[0], ys[1]).tolist()[1:-1])	
 

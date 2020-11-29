@@ -28,19 +28,19 @@ from visualization_msgs.msg import Marker
 import math
 
 class MPC(object):
-    N_IND_SEARCH = 10  # Search index number
-    TAU = 0.1 # TODO: Hardcoded
-    def __init__(self, vehicle_name=''):
+    def __init__(self, vehicle_name='',target_velocity=0.0,low_lim=0.0,dl=0.1):
         self.traj_x = []
         self.traj_y = []
         self.traj_yaw = []
         self.sp = []
         self.target = None
         # initialize with 0 velocity
-        self.target_velocity = 1.5
+        self.target_velocity = target_velocity
+        self.low_lim = low_lim
         self.last_index = 0
         self.is_finished = False
 
+        self.dl = dl
         self.target_ind = None
         self.u0 = None
 
@@ -58,6 +58,8 @@ class MPC(object):
                  max_cpu_time=1e6,
                  model_type = "nonlinear",
                  solver_ = "ipopt",
+                 TAU = 0.1,
+                 N_IND_SEARCH = 10,  # Search index number
                 ):
 
         """ Initialize and build the MPC solver
@@ -80,6 +82,8 @@ class MPC(object):
                     e.g.: solver_opts['print_time'] = False
                           solver_opts['ipopt.tol'] = 1e-8
         """
+        self.TAU = TAU
+        self.N_IND_SEARCH = N_IND_SEARCH
         self.model_type = model_type
         model = SVEAcar(dt,target_velocity=self.target_velocity,tau=self.TAU)
         if self.model_type=="linear":
@@ -229,6 +233,7 @@ class MPC(object):
                 # 'error_on_fail': False,
                 'expand' : True,
                 'jit': True,
+                'jit_options': {"flags": ["-O2"]}, # For further optimization
             })
         if self.solver_=="ipopt":
             options.update({
@@ -246,12 +251,30 @@ class MPC(object):
                 'ipopt.max_iter': max_iter,
                 'ipopt.max_cpu_time': max_cpu_time,
             })
+        if self.solver_=="osqp":
+            options.update({
+                'osqp.verbose': False,
+                'warm_start_primal': True,
+                'error_on_fail': False,
+            })
+        if self.solver_=="sqpmethod":
+            options.update({
+                'qpsol': 'qrqp',
+                'print_header': False,
+                'print_time': False,
+                'print_in': False,
+                'print_out': False,
+                'jit': True,
+                'jit_options': {"flags": ["-O2"]}, # For further optimization
+            })
         if solver_opts is not None:
             options.update(solver_opts)
         if self.solver_=="ipopt":
             self.solver = ca.nlpsol('mpc_solver', 'ipopt', nlp, options)
         elif self.solver_=="osqp":
             self.solver = ca.qpsol('mpc_solver', 'osqp', nlp, options)
+        elif self.solver_=="sqpmethod":
+            self.solver = ca.nlpsol('mpc_solver', 'sqpmethod', nlp, options)
 
         build_solver_time += time.time()
         print('\n________________________________________')
@@ -328,12 +351,12 @@ class MPC(object):
         status          = self.solver.stats()['return_status']
         optvar          = self.opt_var(sol['x'])
 
-        print(status)
+        # print(status)
 
 
         solve_time+=time.time()
-        print('MPC took %f seconds to solve.\r' %(solve_time))
-        print('MPC cost: ', sol['f'])
+        # print('MPC took %f seconds to solve.\r' %(solve_time))
+        # print('MPC cost: ', sol['f'])
         #print("optvar[x] = ", optvar['x'], "optvar['u'] = ", optvar['u'])
         return optvar['x'], optvar['u']
 
@@ -368,11 +391,13 @@ class MPC(object):
         travel = 0.0
 
         for i in range(self.Nt + 1):
-            # travel += abs(state[3]) * self.dt
             if dind==None:
                 travel += abs(sp[ind]) * self.dt
             else:
-                travel += abs(sp[ind+dind]) * self.dt
+                #  TODO: This is not working, sp[min(ind+dind,ncourse-1)] solves the
+                #  problem but the car doesn't go to a full stop then. <27-11-20, rob> #
+                travel += abs(sp[min(ind+dind,ncourse-1)]) * self.dt
+            # travel += abs(state[3]) * self.dt
             dind = int(round(travel / self.dl))
 
             if (ind + dind) < ncourse:
@@ -459,7 +484,7 @@ class MPC(object):
         if self.target_ind is None:
             self.target_ind, _ = self.calc_nearest_index(x0, 0)
 
-        print(self.target_ind)
+        # print(self.target_ind)
         self.target_ind, _ = self.calc_nearest_index(x0, self.target_ind)
 
         # self.target_ind, _ = self.calc_nearest_index(x0, 0)
@@ -467,7 +492,7 @@ class MPC(object):
         self.calc_ref_trajectory(x0, self.target_ind)
 
         x_pred, u_pred = self.solve_mpc(x0,self.u0)
-        print("u_pred", u_pred[0][1])
+        # print("u_pred", u_pred[0][1])
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
@@ -497,7 +522,7 @@ class MPC(object):
         vd = self.TAU*u_pred[0][0] + state.v
         #vd = 0.6
         #vd = x_pred[1][3]
-        print("vd = ", vd)
+        # print("vd = ", vd)
 
         return float(u_pred[0][1]), float(vd)
 
@@ -506,15 +531,17 @@ def main():
     """
     Run some tests
     """
-    svea = SVEAcar(h=0.1)
+    svea = SVEAcar(h=0.1,target_velocity=1.,tau=0.1)
 
     horizon = 10
     x_d=[0,0,0,0]
+    u_d=[0,0]
+    svea.set_equilibrium_point(x_d, u_d)
 
     A, B, C = svea.get_discrete_system_matrices_at_eq()
     Q = np.eye(4)
     R = np.eye(2)
-    # P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
+    P_LQR = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
     P_LQR = np.eye(4)
 
     ulb = [-1e2,-np.deg2rad(40)]

@@ -3,7 +3,11 @@
 """
 Module containing path following SVEA managers based on MPC
 """
+from __future__ import division
+from __future__ import print_function
+
 import math
+import numpy as np
 
 from svea.path_planners import cubic_spline_planner
 from path_following_sveas import SVEAPurePursuit
@@ -13,11 +17,17 @@ from svea_archetypes import SVEAManager
 class SVEAMPC(SVEAPurePursuit):
     """docstring for SVEAMPC"""
 
-    def __init__(self, vehicle_name, localizer, controller,
-                       traj_x, traj_y, data_handler=TrajDataHandler):
+    def __init__(self, vehicle_name, localizer, controller, traj_x, traj_y,
+                 data_handler=TrajDataHandler,
+                 target_velocity=1.0,
+                 low_lim=0.5,
+                 dl=0.1,
+        ):
 
         SVEAManager.__init__(self, vehicle_name, localizer, controller,
                                    data_handler = data_handler)
+
+        self.controller = controller(vehicle_name,target_velocity,low_lim,dl)
 
         self.update_traj(traj_x, traj_y)
 
@@ -43,13 +53,18 @@ class SVEAMPC(SVEAPurePursuit):
         self.controller.traj_y = cy
         self.controller.traj_yaw = cyaw
         self.controller.sp = self.calc_speed_profile(
-            cx,cy,cyaw,self.controller.target_velocity
+            cx,cy,cyaw,ckappa,self.controller.target_velocity,self.controller.low_lim
         )
 
-    def calc_speed_profile(self, cx, cy, cyaw, target_speed):
+    def calc_speed_profile(self, cx, cy, cyaw, ckappa, target_speed, low_lim=None):
 
         speed_profile = [target_speed] * len(cx)
         direction = 1.0  # forward
+
+        if low_lim == None:
+            low_lim = target_speed/2
+
+        curv = np.array(ckappa)/max(ckappa)
 
         # Set stop point
         for i in range(len(cx) - 1):
@@ -68,7 +83,7 @@ class SVEAMPC(SVEAPurePursuit):
             if direction != 1.0:
                 speed_profile[i] = - target_speed
             else:
-                speed_profile[i] = target_speed
+                speed_profile[i] = max(target_speed*(1-curv[i]),low_lim)
         #print("speed profile=",speed_profile)
         speed_profile[-1] = 0.0
 

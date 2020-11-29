@@ -19,9 +19,11 @@ from svea_msgs.msg import VehicleState
 from matrix_astar import AStarPlanner
 
 ## COLLISION NODE PARAMS ######################################################
-update_rate = 5
+update_rate = 1
 resolution = 0.05
 splice_tol = 0.5
+width=879
+height=171
 ###############################################################################
 
 class Node:
@@ -34,14 +36,15 @@ class Node:
 
 		self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
 
-		self.problem_sub = rospy.Subscriber('/pickled_map', OccupancyGrid, self.callback_problem)
-		self.path_sub = rospy.Subscriber('/global_path', Path, self.callback_path)
+		self.problem_sub = rospy.Subscriber('/problems', OccupancyGrid, self.callback_problem)
+		self.path_sub = rospy.Subscriber('/path_plan', Path, self.callback_path)
 		self.map_sub = rospy.Subscriber('/map', OccupancyGrid, self.callback_map)
 
 		self.global_path = Path()
-		self.global_map = OccupancyGrid()
-		self.problem_map = OccupancyGrid()
 
+		self.rate_timeout = rospy.Rate(0.1)
+		
+		self.planner = None
 	def run(self):
 
 		rate = rospy.Rate(update_rate)
@@ -55,36 +58,27 @@ class Node:
 		self.global_path = path
 	
 	def callback_map(self, occ_map):
-		self.global_map = occ_map
+		self.planner = AStarPlanner(np.asarray(occ_map.data))
+		self.rate_timeout.sleep()
 
 	def callback_problem(self, occ_map):
-		self.problem_map = occ_map
+		problem_map = np.asarray(occ_map.data)
+		problem_map = problem_map.reshape(height, width)
+		obstacles = []
+		sx, sy = None, None
+		gx, gy = None, None
+		for x in range(height):
+			for y in range(width):
+				if problem_map[x,y] == np.int8(100):
+					obstacles.append((x,y))
+				if problem_map[x,y] == np.int8(120):
+					sx = x
+					sy = y
+				if problem_map[x,y] == -np.int8(120):
+					gx = x
+					gy = y
 
-		problem_vec = np.asarray(self.problem_map.data)
-		values = []
-		for el in problem_vec:
-			if el not in values:
-				values.append(el)
-		print(values)
-
-		glb_map_vec = np.asarray(self.global_map.data)
-
-		values = []
-		for el in glb_map_vec:
-			if el not in values:
-				values.append(el)
-		print(values)
-
-		planning_vec = glb_map_vec - problem_vec
-
-		values = []
-		for el in planning_vec:
-			if el not in values:
-				values.append(el)
-		print(values)
-
-		planner = AStarPlanner(planning_vec)
-		y_list, x_list = planner.planning()
+		y_list, x_list = self.planner.planning(obstacles, sx, sy, gx, gy)
 
 		for i in range(len(x_list)):
 			x_list[i] = x_list[i]*resolution
@@ -129,6 +123,7 @@ class Node:
 		#new_path = lists_to_path(x_list, y_list)
 
 		self.solution_pub.publish(new_path)
+		self.rate_timeout.sleep()
 
 def lists_to_path(x_list, y_list):
 	path = Path()
