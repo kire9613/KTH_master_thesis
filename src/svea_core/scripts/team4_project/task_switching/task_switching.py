@@ -37,6 +37,12 @@ class BehaviourTree(pt.trees.BehaviourTree):
             ])
         ])
 
+        timeout = RSequence('Plannin timeout', children=[
+            tn.planning_timed_out(),
+            tn.move_waypoint(),
+            tn.reset_planning_timeout()
+        ])
+
         collision = RSequence("Collision", children=[
             tn.obstacle_detected(),
             tn.adjust_replan_speed(),
@@ -69,6 +75,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
                     tn.set_speed(0)
                 ]),
                 check_at_goal,
+                timeout,
                 collision,
                 following
             ])

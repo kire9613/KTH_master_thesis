@@ -11,12 +11,14 @@ import actionlib
 from copy import deepcopy
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
+PLANNING_TIMEOUT = 20 # seconds
 
 waypoints = []
 current_path = Path()
 current_waypoint = 0
 initialized = False
 collision_point = np.zeros((2,))
+planning_start_time = None
 
 def interpolate(start, end, distance):
     # Create n_steps points that are evenly distributed
@@ -175,6 +177,70 @@ class set_speed(pt.behaviour.Behaviour):
         self.speed_pub.publish(self.speed)
         return self.return_val
 
+class planning_timed_out(pt.behaviour.Behaviour):
+    def __init__(self):
+        super(planning_timed_out, self).__init__("Planning timed out?")
+
+    def update(self):
+        if planning_start_time is None:
+            return pt.common.Status.FAILURE
+
+        if (rospy.Time.now() - planning_start_time).to_sec() > PLANNING_TIMEOUT:
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+
+class move_waypoint(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
+
+        self.WAYPOINT_CONVERGED_DISTANCE = 0.3
+
+        super(move_waypoint, self).__init__("Remove waypoint")
+
+    def update(self):
+        global waypoints
+
+        # If waypoint we are planning to is not the last
+        # waypoint, move it clser to the next one
+        if current_waypoint+1 < len(waypoints)-1:
+            p1 = waypoints[current_waypoint+1]
+            p2 = waypoints[current_waypoint+2]
+
+            # Move half the distance to p2
+            p1 = p1 + 0.5*(p2-p1)
+
+            # If we move the waypoint on top of the next
+            # one remove it
+            if np.linalg.norm(p1-p2) <= self.WAYPOINT_CONVERGED_DISTANCE:
+                del waypoints[current_waypoint+1]
+            else:
+                waypoints[current_waypoint+1] = p1
+
+            vis_waypoint_msg = PointCloud()
+            vis_waypoint_msg.header.frame_id = 'map'
+
+            for p in waypoints:
+                vis_point = Point32()
+                vis_point.x = p[0]
+                vis_point.y = p[1]
+                vis_waypoint_msg.points.append(vis_point)
+
+            self.waypoint_vis.publish(vis_waypoint_msg)
+
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+
+class reset_planning_timeout(pt.behaviour.Behaviour):
+    def __init__(self):
+        super(reset_planning_timeout, self).__init__("Reset planning timeout")
+
+    def update(self):
+        global planning_start_time
+        planning_start_time = rospy.Time.now()
+        return pt.common.Status.SUCCESS
+
 class replan_path(pt.behaviour.Behaviour):
     def __init__(self):
         self.targets_pub = rospy.Publisher('/targets', Path, queue_size=1, latch=True)
@@ -188,9 +254,11 @@ class replan_path(pt.behaviour.Behaviour):
         super(replan_path, self).__init__("Replan path")
 
     def update(self):
-        global waypoints
+        global waypoints, planning_start_time
+
         if not self.is_planning and not self.has_planned:
             rospy.loginfo("Replanning path...")
+            planning_start_time = rospy.Time.now()
             self.is_planning = True
 
             if current_waypoint+1 < len(waypoints):
@@ -227,7 +295,7 @@ class replan_path(pt.behaviour.Behaviour):
         self.is_planning = False
         self.has_planned = True
         if state == actionlib.TerminalState.PREEMPTED:
-            rospy.logerr("Planning stopped!")
+            rospy.loginfo("Planning stopped!")
             return
         if state != actionlib.TerminalState.SUCCEEDED:
             rospy.logerr("Replanning failed!")
