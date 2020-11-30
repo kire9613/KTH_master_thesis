@@ -81,7 +81,7 @@ class Environment(object):
 
     def obstacle_free(self, x, y):
         """ Check if point is in occupied position in gridmap """
-        if self.map[y,x] != 0:
+        if self.map[y,x] != 0 and self.map[y,x] != -1:
             return False
         else:
             return True
