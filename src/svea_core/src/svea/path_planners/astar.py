@@ -5,12 +5,14 @@ import math
 import numpy
 import matplotlib.pyplot as plt
 import os
+import rospy
 
 
-def generateTrajectory(x0,y0,theta0, xt,yt,resolution,plotBool,use_track, file = None):
+def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None):
     ###########################################################################
     # define parameters and initialize variables: #
-    obstacleResolution = resolution#0.05 [m]
+    obstacleResolution = 0.05 # [m]
+
     # create lists that contain x,y coordinates of obstacles
     expanded_obstacle_list_x = []
     expanded_obstacle_list_y = []
@@ -22,7 +24,9 @@ def generateTrajectory(x0,y0,theta0, xt,yt,resolution,plotBool,use_track, file =
     # find path to obstacles
     astarPath = os.path.dirname(os.path.abspath(__file__))
     #file = open(astarPath + '/aStarPlannerObstacles.yaml') # track with the corridor as obstacles
-    if use_track:
+    if "subscribe_to_obstacles" in astar_settings:
+        track = rospy.get_param('/team_5_floor2/obstacles')
+    elif astar_settings["use_track"]:
         file = open(astarPath + '/aStarTrack.yaml') # the geofenced track provided by the TAs
         obstacles = yaml.safe_load(file)
         track = obstacles.get('track')
@@ -30,6 +34,8 @@ def generateTrajectory(x0,y0,theta0, xt,yt,resolution,plotBool,use_track, file =
         file = open(astarPath + '/track.yaml') # mpc obstacle list
         obstacles = yaml.safe_load(file)
         track = obstacles.get('obstacles')
+
+    
     ###########################################################################
     # range over the different obstacles and add
     
@@ -43,7 +49,7 @@ def generateTrajectory(x0,y0,theta0, xt,yt,resolution,plotBool,use_track, file =
 
     # call A_star planner to generate trajectory based on the extracted and
     # modified obstacles
-    xtraj,ytraj,success = A_star(xt,yt,x0,y0,theta0,expanded_obstacle_list_x,expanded_obstacle_list_y)
+    xtraj,ytraj,success = A_star(xt,yt,x0,y0,theta0,expanded_obstacle_list_x,expanded_obstacle_list_y, astar_settings)
     if plotBool:
         fig1, (ax1,ax2) = plt.subplots(nrows=1, ncols=2)
         ax1.set_title('Generated A* Path')
@@ -65,7 +71,7 @@ class gridpt(object):
     # a linked node object representing a coordinate in the map providing ability
     # to run A* with regard to approximated car dynamics.
     global grid, dl, xlb, ylb
-    def __init__(self,x,y,theta,xt,yt):
+    def __init__(self, settings, x, y, theta, xt, yt):
         # coordinates of node
         self.x  = x
         self.y  = y
@@ -85,13 +91,13 @@ class gridpt(object):
         # heuristic values set as the euclidean distance to target node
         self.heuristic = math.sqrt((x-xt)**2+(y-yt)**2)
         # time interval of one step
-        self.dt = 0.25    # should not be put too larer number than 2times safety distance
+        self.dt = settings["driving_distance"]   # should not be put too larer number than 2times safety distance
         # estimated speed of car when planning
         self.v = 1 # keep as 1
 
 
-    def generate_children(self,list_obs_x,list_obs_y):
-        safety_dist = 0.4
+    def generate_children(self,settings,list_obs_x,list_obs_y):
+        safety_dist = settings["safety_distance"]
         new_pose = []
         for dTheta in ([-math.pi/8, -math.pi/12, 0, math.pi/12, math.pi/8 ]):
             new_pose.append([self.x + self.v*self.dt*math.cos(self.theta +dTheta), self.y + self.v*self.dt*math.sin(self.theta +dTheta), self.theta +dTheta, dTheta])
@@ -110,13 +116,16 @@ class gridpt(object):
                 break
           if status != False:
             grid[gridx,gridy] = 0
-            self.children.append([gridpt(child[0],child[1],child[2],self.xt,self.yt),child[3]]) # attach and create new node to list w the corresponding steeering angle
+            self.children.append([gridpt(settings,child[0],child[1],child[2],self.xt,self.yt),child[3]]) # attach and create new node to list w the corresponding steeering angle
 
-def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
+def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
     print('calling A*')
 
     global grid, dl, xlb, ylb
-    dl = 0.075
+    if "grid_resolution" in settings:
+        dl = settings["grid_resolution"]
+    else:
+        dl = 0.075
     xub, xlb = max(list_obs_x),min(list_obs_x)
     yub, ylb = max(list_obs_y),min(list_obs_y)
     # initialize grid to keep track of explored coordinates
@@ -129,7 +138,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
     #### A* algorithm: ####
 
     S = [] # explored list
-    S0 = gridpt(x0,y0,theta0,xt,yt)
+    S0 = gridpt(settings,x0,y0,theta0,xt,yt)
     Q = [[S0,S0.heuristic,0,None,None]] # expansion queue
     Vr = [0] # cost list
     Vr_pathpter = [None] # pa
@@ -138,7 +147,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
         Q.sort(key=calculateHeuristic)
         currnode = Q[0] # pick the current node as the one w the best heur
         S.append(Q.pop(0))  ## adding the best node to the solved list
-        currnode[0].generate_children(list_obs_x,list_obs_y)
+        currnode[0].generate_children(settings,list_obs_x,list_obs_y)
         children_nodes  = currnode[0].children
         print "\r number of expanded nodes: ", len(S),
         if len(children_nodes) > 0:
@@ -170,7 +179,20 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
 def __main__():
     xt, yt = -3.46, -6.93
     x0, y0, theta0 =  -7.276, -15.047, 1.119
-    return generateTrajectory(x0,y0,theta0,xt,yt,plotBool=True)
+    settings = {
+    "grid_resolution": 0.05,
+    "driving_distance": 0.2,
+    "dictionary_string": "obstacles",
+    "xt": -3.46,
+    "yt": -6.93,
+    "x0":  -7.276,
+    "y0":-15.047,
+    "theta0":1.119,
+    "use_track": True,
+    "safety_distance": 0.4
+
+    }
+    return generateTrajectory(settings,x0,y0,theta0,xt,yt,True)
 
 
 if __name__ == "__main__":

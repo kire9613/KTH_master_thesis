@@ -46,7 +46,12 @@ def extract_trajectory(use_astar):
     if use_astar:
         xt, yt = -3.46, -6.93
         x0, y0, theta0 =  -7.4,-15.3, 0.8978652
-        traj_x, traj_y,success = generateTrajectory(x0,y0,theta0,xt,yt,0.05,False,True)
+        settings = {
+            "driving_distance": 0.25,
+            "use_track": True,
+            "safety_distance": 0.4
+            }
+        traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)
         traj_x.reverse()
         traj_y.reverse()
     else:
@@ -145,6 +150,7 @@ def main():
         state = svea.wait_for_state()
   
         if istate == 0: # IDLE state - waits here untill emergency stop
+            svea.controller.target_velocity = target_velocity
             if svea.controller.emg_stop:
                 print("state 1")
                 istate = 1
@@ -188,7 +194,14 @@ def main():
                 ros_interface.compute_goal()
                 x0, y0, theta0 = ros_interface.initial_state
                 xt,yt,thetat = ros_interface.goal_state
-                g_traj_x, g_traj_y,success = generateTrajectory(x0,y0,theta0,xt,yt,0.02,False,False)
+                settings = {
+                    "driving_distance": 0.1,
+                    "use_track": False,
+                    "safety_distance": 0.2,
+                    "subscribe_to_obstacles": True,
+                    "grid_resolution": 0.05
+                    }
+                g_traj_x, g_traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)# False
                 g_traj_x.reverse()
                 g_traj_y.reverse()
                 
@@ -204,7 +217,7 @@ def main():
                     print("state 0")
                     istate = 0
         elif istate == 4: # Follow replanned path
-                  
+            svea.controller.target_velocity = 0.5
             if  svea.is_finished:
                 svea.controller.emg_stop = False
                 svea.reset_isfinished() # sets is_finished to false
