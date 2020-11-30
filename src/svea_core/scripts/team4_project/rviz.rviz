@@ -86,7 +86,7 @@ Visualization Manager:
       Draw Behind: true
       Enabled: true
       Name: Map
-      Topic: /map
+      Topic: /custom_map
       Unreliable: false
       Use Timestamp: false
       Value: true
