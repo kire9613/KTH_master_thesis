@@ -23,7 +23,7 @@ path_RGB = (255, 0, 0)     # Red
 start_RGB = (0, 255, 0)    # Green
 goal_RGB = (255, 255, 0)   # Yellow
 
-show_animation = False
+show_animation = True
 
 dirname = os.path.dirname(__file__)
 svea_core = os.path.join(dirname, '../../')
@@ -54,7 +54,7 @@ class AStarPlanner:
 			for y in range(self.y_width):
 				if init_map[x,y] == occupied_space:
 					self.obstacle_map[x,y] = np.uint8(1)
-					for r in range(1, 3):
+					for r in range(1, 4):
 						t = 0
 						while t <= 2*np.pi:                        
 							a = x + r*np.cos(t)

@@ -6,11 +6,14 @@
 import numpy as np
 # ROS
 import rospy
+import message_filters
 
 # ROS messages
 from geometry_msgs.msg import Pose, PoseStamped
 from nav_msgs.msg import OccupancyGrid
+from map_msgs.msg import OccupancyGridUpdate
 from nav_msgs.msg import Path
+from rospy.numpy_msg import numpy_msg
 
 # SVEA
 from svea_msgs.msg import VehicleState
@@ -24,6 +27,8 @@ resolution = 0.05
 splice_tol = 0.5
 width=879
 height=171
+
+oob_delimiter = max(width,height) + 1
 ###############################################################################
 
 class Node:
@@ -36,7 +41,8 @@ class Node:
 
 		self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
 
-		self.problem_sub = rospy.Subscriber('/problems', OccupancyGrid, self.callback_problem)
+		self.problem_sub = rospy.Subscriber('/problem_map', OccupancyGridUpdate, self.callback_problem)
+
 		self.path_sub = rospy.Subscriber('/path_plan', Path, self.callback_path)
 		self.map_sub = rospy.Subscriber('/map', OccupancyGrid, self.callback_map)
 
@@ -45,6 +51,7 @@ class Node:
 		self.rate_timeout = rospy.Rate(0.1)
 		
 		self.planner = None
+
 	def run(self):
 
 		rate = rospy.Rate(update_rate)
@@ -56,29 +63,32 @@ class Node:
 
 	def callback_path(self, path):
 		self.global_path = path
-	
+
 	def callback_map(self, occ_map):
 		self.planner = AStarPlanner(np.asarray(occ_map.data))
 		self.rate_timeout.sleep()
 
-	def callback_problem(self, occ_map):
-		problem_map = np.asarray(occ_map.data)
-		problem_map = problem_map.reshape(height, width)
-		obstacles = []
-		sx, sy = None, None
-		gx, gy = None, None
-		for x in range(height):
-			for y in range(width):
-				if problem_map[x,y] == np.int8(100):
-					obstacles.append((x,y))
-				if problem_map[x,y] == np.int8(120):
-					sx = x
-					sy = y
-				if problem_map[x,y] == -np.int8(120):
-					gx = x
-					gy = y
+	def callback_problem(self, problem_map):
 
-		y_list, x_list = self.planner.planning(obstacles, sx, sy, gx, gy)
+		obstacles = []
+
+		problem_matr = np.asarray(problem_map.data).reshape(problem_map.height, problem_map.width)
+
+		for i in range(0, problem_map.width):
+			for j in range(0, problem_map.height):
+				if problem_matr[j,i] >= 75:
+					obstacles.append((problem_map.y + j, problem_map.x + i))
+				if problem_matr[j,i] == -np.int8(1):
+					sx = problem_map.x + i
+					sy = problem_map.y + j
+				if problem_matr[j,i] == -np.int8(2):
+					gx = problem_map.x + i
+					gy = problem_map.y + j
+		
+		print(sx,sy)
+		print(gx,gy)
+
+		y_list, x_list = self.planner.planning(obstacles, sy, sx, gy, gx)
 
 		for i in range(len(x_list)):
 			x_list[i] = x_list[i]*resolution
