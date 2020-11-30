@@ -46,7 +46,7 @@ def extract_trajectory(use_astar):
     if use_astar:
         xt, yt = -3.46, -6.93
         x0, y0, theta0 =  -7.4,-15.3, 0.8978652
-        traj_x, traj_y = generateTrajectory(x0,y0,theta0,xt,yt,False)
+        traj_x, traj_y,success = generateTrajectory(x0,y0,theta0,xt,yt,0.05,False,True)
         traj_x.reverse()
         traj_y.reverse()
     else:
@@ -88,8 +88,9 @@ def main():
     global timer1,timer2
     rospy.init_node('team_5_floor2')
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
-    running_mpc_traj = False
+    running_emg_traj = False
     istate = 0
+    print_time = 0
     # extract trajectory
     traj_x, traj_y = extract_trajectory(use_astar)
     traj_theta = compute_angles(traj_x,traj_y)
@@ -136,17 +137,12 @@ def main():
     rospy.Subscriber('/target', PointStamped, ros_interface.cb_target_state)
     # simualtion loop
     svea.controller.target_velocity = target_velocity
-    #timer1 = rospy.get_time()
     #Can maybe be exchanged once we have Frank's emergency stop
     rospy.Subscriber('/scan', LaserScan,svea.controller.emergency_stop)
 
-    #rospy.wait_for_message('/state', VSM, state_cb)
-
-    while (not svea.is_finished and not rospy.is_shutdown()) or running_mpc_traj:
+    while (not svea.is_finished and not rospy.is_shutdown()) or svea.controller.emg_traj_running:
         tic = rospy.get_time() # get time
         state = svea.wait_for_state()
-
-        #Replan if obstacles are detected once svea is standing still
   
         if istate == 0: # IDLE state - waits here untill emergency stop
             if svea.controller.emg_stop:
@@ -158,12 +154,15 @@ def main():
                 if use_mpc:
                     print("state 2")
                     istate = 2
+                elif use_astar:
+                    print("state 3")
+                    istate = 3
                 else:
                     print("state 0")
                     istate = 0
         elif istate == 2: # Replan with MPC
             if  ros_interface._current_target_state != [0,0] and ros_interface.initial_state != None:
-                running_mpc_traj = True
+                svea.controller.set_emg_traj_running(True)   
                 timer1 = rospy.get_time()
                 print("trigger! Replan is true")
                 g_traj_x, g_traj_y, success = run_mpc_planner(ros_interface)
@@ -176,28 +175,54 @@ def main():
                 print("traj_y",g_traj_y)
                 if success:
                     svea.update_traj(g_traj_x, g_traj_y)
-                    print("state 3")
-                    istate = 3
-                else: 
-                    running_mpc_traj = False
+                    print("state 4")
+                    istate = 4
+                else: # do something here if fails
+                    svea.controller.set_emg_traj_running(False)  
                     print("state 0")
                     istate = 0   
-                svea.controller.set_mpc_running(running_mpc_traj)     
-        elif istate == 3: # Follow MPC path      
+                  
+        elif istate == 3: # Replan with Astar
+            if  ros_interface._current_target_state != [0,0]  and ros_interface.initial_state != None:
+                svea.controller.set_emg_traj_running(True)
+                ros_interface.compute_goal()
+                x0, y0, theta0 = ros_interface.initial_state
+                xt,yt,thetat = ros_interface.goal_state
+                g_traj_x, g_traj_y,success = generateTrajectory(x0,y0,theta0,xt,yt,0.02,False,False)
+                g_traj_x.reverse()
+                g_traj_y.reverse()
+                
+                print("Astar Replanning Trajectory:")
+                print("traj_x",g_traj_x)
+                print("traj_y",g_traj_y)
+                if success:
+                    svea.update_traj(g_traj_x, g_traj_y)
+                    print("state 4")
+                    istate = 4
+                else: # do something here if fails
+                    svea.controller.set_emg_traj_running(False)  
+                    print("state 0")
+                    istate = 0
+        elif istate == 4: # Follow replanned path
+                  
             if  svea.is_finished:
-                running_mpc_traj = False
                 svea.controller.emg_stop = False
                 svea.reset_isfinished() # sets is_finished to false
                 # extract trajectory
                 print("Switching back to Astar")
                 svea.update_traj(traj_x, traj_y)
-                svea.controller.set_mpc_running(running_mpc_traj)
+                svea.controller.set_emg_traj_running(False) 
                 print("state 0")
                 istate = 0
-       
-
+            
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
+
+        
+        last_time = rospy.get_time()
+        if (last_time - print_time)  > 1:
+            #print("velocity",velocity)
+            print_time = last_time  
 
         svea.send_control(steering, velocity)
 

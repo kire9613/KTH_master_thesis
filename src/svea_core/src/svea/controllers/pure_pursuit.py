@@ -29,15 +29,15 @@ class PurePursuitController(object):
         self.last_index = 0
         self.is_finished = False
         self.emg_stop = False
-        self.mpc_running = False
+        self.emg_traj_running = False
         self.last_time = 0.0
         self.print_time = 0.0
         self.lidar_to_base = 0.3  #svea position is measured at rear axis, but lasar at front axis 
-    def set_mpc_running(self,running):
-        self.mpc_running = running 
+    def set_emg_traj_running(self,running):
+        self.emg_traj_running = running 
 
     def compute_control(self, state, target=None):
-        if self.emg_stop and not self.mpc_running:
+        if self.emg_stop and not self.emg_traj_running:
             return 0,0
         else:
             steering = self.compute_steering(state, target)
@@ -147,10 +147,7 @@ class PurePursuitController(object):
             lidar_range = laserScan.ranges[idx]
             obs_coord = [lidar_coord[0]+lidar_range*math.cos(yaw+angle), lidar_coord[1]+lidar_range*math.sin(yaw+angle)]
             obs_points.append(obs_coord)
-        
-        #print(obs_points)
 
-        '''OBS need to change name ones we have merged with switch'''
         # Update list of obstacles with the new obstacle 
         obstacles_list = rospy.get_param('/team_5_floor2/obstacles')
         obstacles_list.append(obs_points)

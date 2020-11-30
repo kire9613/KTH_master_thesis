@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import os
 
 
-def generateTrajectory(x0,y0,theta0, xt,yt,plotBool,file = None):
+def generateTrajectory(x0,y0,theta0, xt,yt,resolution,plotBool,use_track, file = None):
     ###########################################################################
     # define parameters and initialize variables: #
-    obstacleResolution = 0.05# [m]
+    obstacleResolution = resolution#0.05 [m]
     # create lists that contain x,y coordinates of obstacles
     expanded_obstacle_list_x = []
     expanded_obstacle_list_y = []
@@ -22,13 +22,17 @@ def generateTrajectory(x0,y0,theta0, xt,yt,plotBool,file = None):
     # find path to obstacles
     astarPath = os.path.dirname(os.path.abspath(__file__))
     #file = open(astarPath + '/aStarPlannerObstacles.yaml') # track with the corridor as obstacles
-    file = open(astarPath + '/aStarTrack.yaml') # the geofenced track provided by the TAs
-    obstacles = yaml.safe_load(file)
-
-
+    if use_track:
+        file = open(astarPath + '/aStarTrack.yaml') # the geofenced track provided by the TAs
+        obstacles = yaml.safe_load(file)
+        track = obstacles.get('track')
+    else:
+        file = open(astarPath + '/track.yaml') # mpc obstacle list
+        obstacles = yaml.safe_load(file)
+        track = obstacles.get('obstacles')
     ###########################################################################
     # range over the different obstacles and add
-    track = obstacles.get('track')
+    
     for i in range(len(track)): # ranges over all obstacles in the map_file
         obstacle = track[i]
         for indexPt in range(len(track[i])-1):
@@ -39,7 +43,7 @@ def generateTrajectory(x0,y0,theta0, xt,yt,plotBool,file = None):
 
     # call A_star planner to generate trajectory based on the extracted and
     # modified obstacles
-    xtraj,ytraj = A_star(xt,yt,x0,y0,theta0,expanded_obstacle_list_x,expanded_obstacle_list_y)
+    xtraj,ytraj,success = A_star(xt,yt,x0,y0,theta0,expanded_obstacle_list_x,expanded_obstacle_list_y)
     if plotBool:
         fig1, (ax1,ax2) = plt.subplots(nrows=1, ncols=2)
         ax1.set_title('Generated A* Path')
@@ -52,7 +56,7 @@ def generateTrajectory(x0,y0,theta0, xt,yt,plotBool,file = None):
         ax2.set_xlabel("grid index")
         ax2.imshow(numpy.rot90(grid))
         plt.show()
-    return xtraj,ytraj
+    return xtraj,ytraj,success
 
 def calculateHeuristic(elem):
     return elem[2] + elem[1]
@@ -119,6 +123,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
     grid = numpy.ones([int((xub-xlb + 1)/dl),int((yub-ylb + 1)/dl)]) # 1 = not visited
     xtraj =[]
     ytraj = []
+    success = False
     #### PARAMS #####
 
     #### A* algorithm: ####
@@ -148,6 +153,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
                     Q[Q.index(Qchild)][3] = currnode[0]    # update pointer to mother-node
                     Q[Q.index(Qchild)][4] = children_nodes[index][1] # heuristic cost from child to goal
         if S[-1][0].heuristic <= 0.4: # if we're close to the target --> stop
+            success = True
             print('\n target found!')
             endnode = S[-1][0]
             xtraj.append(endnode.x)
@@ -158,8 +164,8 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y):
                 endnode = endnode.parent
             break
     if len(xtraj) == 0:
-        print('\n could not find trajectory... try other settings?')
-    return xtraj,ytraj
+        print('\n could not find trajectory... try other settings?')      
+    return xtraj,ytraj,success
 
 def __main__():
     xt, yt = -3.46, -6.93
