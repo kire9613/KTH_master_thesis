@@ -136,6 +136,36 @@ def updateNeighbors(obs, openSet, closedSet, n):
             xn = xnew
             yn = ynew
         cost = 1 if angle == 0 else 1.5#1.1
+
+        # Convert position to grid indices
+        y_index = int((yn - obs._environment.origin_y)/obs._environment.resolution)
+        x_index = int((xn - obs._environment.origin_x)/obs._environment.resolution)
+
+        # Create a slice of the map centered around the
+        # node to search for non-free space in
+        map = np.array(obs._environment.map)
+        # Search in a square of size 2*obstacle_square_size
+        obstacle_square_size = int(round(0.5/obs._environment.resolution))
+        miny = max(0, y_index-obstacle_square_size)
+        maxy = min(map.shape[0], y_index+obstacle_square_size+1)
+        minx = max(0, x_index-obstacle_square_size)
+        maxx = min(map.shape[1], x_index+obstacle_square_size+1)
+        map_slice = map[miny:maxy, minx:maxx]
+
+        node_pos_in_slice = np.array([y_index-miny, x_index-minx]).reshape((2,1))
+
+        # Create a matrix of all indices that correspond to
+        # any kind of non-free space
+        occupied_pos = np.concatenate(np.where(map_slice >= 100)).reshape((2, -1))
+        if np.prod(occupied_pos.shape) > 0:
+            # Add a cost that is a function of the distance to the closest
+            # non-free cell
+            distance = np.min(np.linalg.norm(occupied_pos - node_pos_in_slice, axis=0))
+            # Avoid division by zero
+            if distance == 0.0:
+                distance = 0.001
+            cost += 1.5/distance**2
+
         nn = Node(thetan, xn, yn, n.cost+cost, n, angle)
 
         if not isClosed(closedSet, nn):
