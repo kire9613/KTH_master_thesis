@@ -54,19 +54,6 @@ def get_path(map_updater, start, goal):
     grid_map = OccupancyGrid()
     grid_map.info = map_updater.get_map_info()
     grid_map.data = np.reshape(map_updater.get_inflated_map(), (grid_map.info.width*grid_map.info.height,))
-    f = open(os.path.dirname(os.path.realpath(__file__)) + "/blocking.txt", "r")
-    for line in f:
-        l = line.split(",")
-    (x0,y0) = ((float(l[0])-grid_map.info.origin.position.x)/grid_map.info.resolution,(float(l[1])-grid_map.info.origin.position.y)/grid_map.info.resolution)
-    (xt,yt) = ((float(l[2])-grid_map.info.origin.position.x)/grid_map.info.resolution,(float(l[3])-grid_map.info.origin.position.y)/grid_map.info.resolution)
-    t = raytrace((int(x0), int(y0)), (int(xt), int(yt)))
-    if 1 < len(t):
-        for (t_x, t_y) in t[1:]:
-            grid_map.data[(t_y+1) * grid_map.info.width + t_x] = 100
-            grid_map.data[(t_y-1) * grid_map.info.width + t_x] = 100
-            grid_map.data[(t_y) * grid_map.info.width + (t_x+1)] = 100
-            grid_map.data[(t_y) * grid_map.info.width + (t_x-1)] = 100
-            grid_map.data[t_y * grid_map.info.width + t_x] = 100
     return get_next_goal(start, goal)
 
 def map_callback(msg):

@@ -20,6 +20,7 @@ import team4_project.task_switching.tree_nodes as tn
 from team4_project.mapping2.updatemap import UpdateMap
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
+GOAL_LIST = [[5.13,3.69],[8.26, 13.1],[-0.638,5.62],[-3.89, -6.19]] # List of "goals" or waypoints for car to plan between initially
 
 def print_tree(t):
     print("\033[2J\033[H")
@@ -108,18 +109,24 @@ def main():
     rospy.sleep(1)
     start_state = rospy.wait_for_message('/state', VehicleState)
     rospy.loginfo('Planning path...')
-    path = get_path(map_updater, [start_state.x, start_state.y], [-3.89, -6.19]) #[-5.36, -1.66] [5.94, 14.5]
-    path = list(reversed(path))
 
     vis_waypoint_msg = PointCloud()
     vis_waypoint_msg.header.frame_id = 'map'
 
-    for p in path:
-        tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
-        vis_point = Point32()
-        vis_point.x = p.pose.position.x
-        vis_point.y = p.pose.position.y
-        vis_waypoint_msg.points.append(vis_point)
+    for i in range(len(GOAL_LIST)):
+        if i == 0: # If first waypoint, plan from start to waypoint
+            path = get_path(map_updater, [start_state.x, start_state.y], GOAL_LIST[i]) #[-5.36, -1.66] [5.94, 14.5]
+            path = list(reversed(path))
+        else: # Else, plan from previous waypoint to next
+            path = get_path(map_updater, GOAL_LIST[i-1], GOAL_LIST[i])
+            path = list(reversed(path))
+
+        for p in path:
+            tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+            vis_point = Point32()
+            vis_point.x = p.pose.position.x
+            vis_point.y = p.pose.position.y
+            vis_waypoint_msg.points.append(vis_point)
 
     waypoint_vis.publish(vis_waypoint_msg)
     # map_updater no longer needed. Delete to save computational resources
