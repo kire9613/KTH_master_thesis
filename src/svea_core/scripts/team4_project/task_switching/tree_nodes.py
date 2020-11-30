@@ -194,6 +194,8 @@ class move_waypoint(pt.behaviour.Behaviour):
     def __init__(self):
         self.waypoint_vis = rospy.Publisher("/vis_waypoints", PointCloud, queue_size=1, latch=True)
 
+        self.WAYPOINT_CONVERGED_DISTANCE = 0.3
+
         super(move_waypoint, self).__init__("Remove waypoint")
 
     def update(self):
@@ -207,7 +209,13 @@ class move_waypoint(pt.behaviour.Behaviour):
 
             # Move half the distance to p2
             p1 = p1 + 0.5*(p2-p1)
-            waypoints[current_waypoint+1] = p1
+
+            # If we move the waypoint on top of the next
+            # one remove it
+            if np.linalg.norm(p1-p2) <= self.WAYPOINT_CONVERGED_DISTANCE:
+                del waypoints[current_waypoint+1]
+            else:
+                waypoints[current_waypoint+1] = p1
 
             vis_waypoint_msg = PointCloud()
             vis_waypoint_msg.header.frame_id = 'map'
