@@ -25,7 +25,7 @@ class UpdateMap:
         self.gridmap = np.array(map.data).reshape(self.height,self.width)
         self.infl_gridmap = np.array(map.data).reshape(self.height,self.width)
 
-        thread.start_new_thread( self.subscriber, ("map_updates", OccupancyGridUpdate, self.update_map))
+        thread.start_new_thread( self.subscriber, ("custom_map_updates", OccupancyGridUpdate, self.update_map))
         thread.start_new_thread( self.subscriber, ("infl_map_updates", OccupancyGridUpdate, self.update_infl_map))
 
         #self.__update_map_sub = rospy.Subscriber("map_updates", OccupancyGridUpdate, self.update_map)
@@ -61,7 +61,7 @@ class UpdateMap:
         return deepcopy(self.gridmap)
 
     def get_map_update(self):
-        upd = rospy.wait_for_message("map_updates", OccupancyGridUpdate)
+        upd = rospy.wait_for_message("custom_map_updates", OccupancyGridUpdate)
         return upd
 
     def get_infl_map_update(self):
