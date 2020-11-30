@@ -34,10 +34,6 @@ class EngineROS:
         rospy.loginfo("Init EngineROS")
         rospy.init_node('Mapper')
 
-        rospy.loginfo('Mapping is waiting for initial position...')
-        rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
-        rospy.sleep(1)
-
         # Map properties
         self.width = map_width
         self.height = map_height
@@ -57,20 +53,22 @@ class EngineROS:
         #self.__map_sub = rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
 
         # Init map publishers
-        self.__map_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=1,
+        self.__map_pub = rospy.Publisher('/custom_map', OccupancyGrid, queue_size=1,
                                          latch=True)
 
         self.__map_upd_pub = rospy.Publisher('/map_upd_map', OccupancyGrid, queue_size=1,
                                          latch=True)
 
 
-        self.__map_updates_pub = rospy.Publisher("map_updates",
+        self.__map_updates_pub = rospy.Publisher("custom_map_updates",
                                                  OccupancyGridUpdate,
                                                  queue_size=10)
 
         self.__map_inflated_pub  = rospy.Publisher("infl_map_updates",
                                                  OccupancyGridUpdate,
                                                  queue_size=10)
+
+        self.started_pub = rospy.Publisher('/node_started/mapping', Bool, latch=True, queue_size=5)
 
 
         #self.__map_inflated_pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=1, latch=True)
@@ -93,6 +91,9 @@ class EngineROS:
 
         self.setup_ok = False
 
+        # publish map on /custom_map 
+        self.__map_pub.publish(self.__map)
+
         if (os.path.isfile(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt")):
             self.set_map_from_file()
         else:
@@ -106,9 +107,16 @@ class EngineROS:
 
         self.__map = np.array(self.__map.data).reshape(self.height,self.width)
         self.__imap = deepcopy(self.__map)
-        started_pub = rospy.Publisher('/node_started/mapping', Bool, latch=True, queue_size=5)
-        started_pub.publish(True)
+
+        # wait for initial position before start updating maps
+        rospy.loginfo('Mapping is waiting for initial position...')
+        rospy.wait_for_message('/initialpose', PoseWithCovarianceStamped)
+        rospy.sleep(1)
+
+        # set mapping redy
+        self.started_pub.publish(True)
         rospy.loginfo("Start mapping main loop")
+
         # Loop adding updates to map from lidar
         while not rospy.is_shutdown():
             scan = rospy.wait_for_message("/scan", LaserScan)
