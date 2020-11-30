@@ -45,11 +45,12 @@ default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 def extract_trajectory(use_astar):
     if use_astar:
         xt, yt = -3.46, -6.93
-        x0, y0, theta0 =  -7.4,-15.3, 0.8978652
+        x0, y0, theta0 =  -6.88312864304, -14.3582000732, 0.8978652
         settings = {
-            "driving_distance": 0.25,
+            "driving_distance": 0.2,
             "use_track": True,
-            "safety_distance": 0.4
+            "safety_distance": 0.45,
+            "grid_resolution": 0.055
             }
         traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)
         traj_x.reverse()
@@ -90,7 +91,13 @@ def param_init():
     return start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc
 
 def main():
-    global timer1,timer2
+    emergency_settings = {
+        "driving_distance": 0.1,
+        "use_track": False,
+        "safety_distance": 0.2,
+        "subscribe_to_obstacles": True,
+        "grid_resolution": 0.05
+        }
     rospy.init_node('team_5_floor2')
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
     running_emg_traj = False
@@ -100,7 +107,7 @@ def main():
     traj_x, traj_y = extract_trajectory(use_astar)
     traj_theta = compute_angles(traj_x,traj_y)
   
-        
+    
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
@@ -194,14 +201,7 @@ def main():
                 ros_interface.compute_goal()
                 x0, y0, theta0 = ros_interface.initial_state
                 xt,yt,thetat = ros_interface.goal_state
-                settings = {
-                    "driving_distance": 0.1,
-                    "use_track": False,
-                    "safety_distance": 0.2,
-                    "subscribe_to_obstacles": True,
-                    "grid_resolution": 0.05
-                    }
-                g_traj_x, g_traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)# False
+                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,False)# False
                 g_traj_x.reverse()
                 g_traj_y.reverse()
                 

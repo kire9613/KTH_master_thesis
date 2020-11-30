@@ -178,20 +178,14 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
 
 def __main__():
     xt, yt = -3.46, -6.93
-    x0, y0, theta0 =  -7.276, -15.047, 1.119
+    x0, y0, theta0 =  -6.88312864304, -14.3582000732, 0.8978652
     settings = {
-    "grid_resolution": 0.05,
-    "driving_distance": 0.2,
-    "dictionary_string": "obstacles",
-    "xt": -3.46,
-    "yt": -6.93,
-    "x0":  -7.276,
-    "y0":-15.047,
-    "theta0":1.119,
-    "use_track": True,
-    "safety_distance": 0.4
+        "driving_distance": 0.2,
+        "use_track": True,
+        "safety_distance": 0.45,
+        "grid_resolution": 0.055
+        }
 
-    }
     return generateTrajectory(settings,x0,y0,theta0,xt,yt,True)
 
 
