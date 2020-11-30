@@ -287,7 +287,7 @@ class replan_path(pt.behaviour.Behaviour):
         self.is_planning = False
         self.has_planned = True
         if state == actionlib.TerminalState.PREEMPTED:
-            rospy.logerr("Planning stopped!")
+            rospy.loginfo("Planning stopped!")
             return
         if state != actionlib.TerminalState.SUCCEEDED:
             rospy.logerr("Replanning failed!")
