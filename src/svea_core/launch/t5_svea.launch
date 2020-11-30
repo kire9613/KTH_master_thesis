@@ -7,7 +7,7 @@
     <arg name="use_astar" default="true"/>
     <arg name="use_mpc" default="false"/>
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
-    <arg name="obstacles_list" default="$(find svea_core)/src/svea/path_planners/track.yaml" />
+    <arg name="obstacles_list" default="$(find svea_core)/resources/params/obstacles.yaml" />
    
     <arg name="planner_algorithm" default="mpc" />
 

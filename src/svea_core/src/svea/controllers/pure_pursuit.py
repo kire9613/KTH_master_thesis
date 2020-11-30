@@ -10,15 +10,16 @@ class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.5 #TODO speed control propotional gain
+    K_p = 1 #TODO speed control propotional gain
     K_i = 2  #TODO speed control integral gain
     K_d = 0.0  #TODO speed control derivitive gain
     P = 0 # initilize P value (PID)
     I = 0 # intialize I value (PID)
     L = 0.324  # [m] wheel base of vehicle
     max_velocity = 1
-    emergency_distance = 0.5 # [m] minimum distance until emergency_stop activated
+    emergency_distance = 0.4 # [m] minimum distance until emergency_stop activated
     emg_angle_range = 0.785 # angle range
+    mapping_distance = 1
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -33,12 +34,16 @@ class PurePursuitController(object):
         self.last_time = 0.0
         self.print_time = 0.0
         self.lidar_to_base = 0.3  #svea position is measured at rear axis, but lasar at front axis 
+        self.backed_up = False
     def set_emg_traj_running(self,running):
         self.emg_traj_running = running 
 
     def compute_control(self, state, target=None):
-        if self.emg_stop and not self.emg_traj_running:
+        if self.backed_up:
+            return 0,-0.6
+        elif self.emg_stop and not self.emg_traj_running:
             return 0,0
+        
         else:
             steering = self.compute_steering(state, target)
             velocity = self.compute_velocity(state)
@@ -78,7 +83,7 @@ class PurePursuitController(object):
             if velocity_output > self.max_velocity:
                 self.I = 0 
                 velocity_output = self.max_velocity
-        return  velocity_output/1.1
+        return  velocity_output
 
 
     def find_target(self, state):
@@ -105,7 +110,7 @@ class PurePursuitController(object):
             ind += 1
 
         # terminating condition
-        if dist < 0.1:
+        if dist < 0.1 and not self.backed_up:
             self.is_finished = True
 
         return ind, dist
@@ -126,7 +131,7 @@ class PurePursuitController(object):
         laserScan = rospy.wait_for_message('/scan', LaserScan)
 
         # Find indices of laserscans that make up our obstacle
-        indices = np.where(np.array(laserScan.ranges) < self.emergency_distance)
+        indices = np.where(np.array(laserScan.ranges) < self.mapping_distance)
 
         #Get svea's pose
         svea_x = state[0]

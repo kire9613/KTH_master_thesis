@@ -27,13 +27,13 @@ def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None
     if "subscribe_to_obstacles" in astar_settings:
         track = rospy.get_param('/team_5_floor2/obstacles')
     elif astar_settings["use_track"]:
-        file = open(astarPath + '/aStarTrack.yaml') # the geofenced track provided by the TAs
+        file = open(astarPath + '/aStarPlannerObstacles.yaml') # the geofenced track provided by the TAs
         obstacles = yaml.safe_load(file)
         track = obstacles.get('track')
     else:
-        file = open(astarPath + '/track.yaml') # mpc obstacle list
+        file = open(astarPath + '/aStarPlannerObstacles.yaml') # mpc obstacle list
         obstacles = yaml.safe_load(file)
-        track = obstacles.get('obstacles')
+        track = obstacles.get('track')
 
     
     ###########################################################################

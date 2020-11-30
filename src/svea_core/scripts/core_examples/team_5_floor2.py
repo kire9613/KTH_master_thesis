@@ -47,10 +47,10 @@ def extract_trajectory(use_astar):
         xt, yt = -3.46, -6.93
         x0, y0, theta0 =  -6.88312864304, -14.3582000732, 0.8978652
         settings = {
-            "driving_distance": 0.2,
+            "driving_distance": 0.25,
             "use_track": True,
-            "safety_distance": 0.45,
-            "grid_resolution": 0.055
+            "safety_distance": 0.4,
+            "grid_resolution": 0.075
             }
         traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)
         traj_x.reverse()
@@ -101,6 +101,7 @@ def main():
     rospy.init_node('team_5_floor2')
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
     running_emg_traj = False
+    backup_attempted = False
     istate = 0
     print_time = 0
     # extract trajectory
@@ -157,7 +158,7 @@ def main():
         state = svea.wait_for_state()
   
         if istate == 0: # IDLE state - waits here untill emergency stop
-            svea.controller.target_velocity = target_velocity
+            #svea.controller.target_velocity = target_velocity
             if svea.controller.emg_stop:
                 print("state 1")
                 istate = 1
@@ -214,27 +215,51 @@ def main():
                     istate = 4
                 else: # do something here if fails
                     svea.controller.set_emg_traj_running(False)  
-                    print("state 0")
-                    istate = 0
+                    print("state 5")
+                    istate = 5
         elif istate == 4: # Follow replanned path
-            svea.controller.target_velocity = 0.5
+           # svea.controller.target_velocity = 0.5
             if  svea.is_finished:
                 svea.controller.emg_stop = False
+                backup_attempted = False
                 svea.reset_isfinished() # sets is_finished to false
                 # extract trajectory
                 print("Switching back to Astar")
                 svea.update_traj(traj_x, traj_y)
                 svea.controller.set_emg_traj_running(False) 
                 print("state 0")
+                
                 istate = 0
-            
+        elif istate == 5: # Initializa backup
+            if backup_attempted: # dont try to backup again
+                print("Planning failed")
+                break
+            svea.controller.backed_up = True
+            timeout = 2
+            time_start = rospy.get_time()
+            print ("Backing up")
+            istate = 6
+        elif istate == 6: # Backing up
+            if rospy.get_time() > time_start + timeout:
+                svea.controller.backed_up = False
+                backup_attempted = True
+                if use_mpc:
+                    print("state 2")
+                    istate = 2
+                elif use_astar:
+                    print("state 3")
+                    istate = 3
+                else:
+                    print("state 0")
+                    istate = 0
+                
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
 
         
         last_time = rospy.get_time()
         if (last_time - print_time)  > 1:
-            #print("velocity",velocity)
+            print("velocity",velocity)
             print_time = last_time  
 
         svea.send_control(steering, velocity)
