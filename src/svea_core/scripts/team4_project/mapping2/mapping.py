@@ -95,7 +95,7 @@ class Mapping:
                     for xp in range(-self.radius,self.radius+1):
                         for yp in range(-self.radius,self.radius+1):
                             if self.is_in_bounds(grid_map, x+xp, y+yp, map_info):
-                                if not grid_map[y+yp,x+xp] == self.occupied_space:
+                                if not grid_map[y+yp,x+xp] == self.occupied_space and not grid_map[y+yp,x+xp] == self.polygon_space:
                                     if sqrt(xp**2+yp**2) <= self.radius:
                                         grid_map[y+yp,x+xp] = self.c_space
 
