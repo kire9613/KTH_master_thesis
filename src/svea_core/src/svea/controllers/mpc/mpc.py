@@ -403,7 +403,7 @@ class MPC(object):
             if (ind + dind) < ncourse:
                 xref[0, i] = cx[ind + dind]
                 xref[1, i] = cy[ind + dind]
-                xref[2, i] = cyaw[ind + dind]
+                xref[2, i] = cyaw[ind + dind] if cyaw[ind+dind]*state[2]>0 else cyaw[ind + dind] + 2*np.pi
                 xref[3, i] = sp[ind + dind]
                 # dref[0, i] = 0.0
             else:
