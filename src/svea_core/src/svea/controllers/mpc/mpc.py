@@ -391,19 +391,19 @@ class MPC(object):
         travel = 0.0
 
         for i in range(self.Nt + 1):
-            if dind==None:
-                travel += abs(sp[ind]) * self.dt
-            else:
-                #  TODO: This is not working, sp[min(ind+dind,ncourse-1)] solves the
-                #  problem but the car doesn't go to a full stop then. <27-11-20, rob> #
-                travel += abs(sp[min(ind+dind,ncourse-1)]) * self.dt
-            # travel += abs(state[3]) * self.dt
+            # if dind==None:
+            #     travel += abs(sp[ind]) * self.dt
+            # else:
+            #     #  TODO: This is not working, sp[min(ind+dind,ncourse-1)] solves the
+            #     #  problem but the car doesn't go to a full stop then. <27-11-20, rob> #
+            #     travel += abs(sp[min(ind+dind,ncourse-1)]) * self.dt
+            travel += abs(state[3]) * self.dt
             dind = int(round(travel / self.dl))
 
             if (ind + dind) < ncourse:
                 xref[0, i] = cx[ind + dind]
                 xref[1, i] = cy[ind + dind]
-                xref[2, i] = cyaw[ind + dind] if cyaw[ind+dind]*state[2]>0 or state[2]<0 else cyaw[ind + dind] + 2*np.pi
+                xref[2, i] = cyaw[ind + dind] #if cyaw[ind+dind]*state[2]>0 or state[2]<np.pi/2 else cyaw[ind + dind] + 2*np.pi
                 xref[3, i] = sp[ind + dind]
                 # dref[0, i] = 0.0
             else:
@@ -412,7 +412,12 @@ class MPC(object):
                 xref[2, i] = cyaw[ncourse - 1]
                 xref[3, i] = sp[ncourse - 1]
                 # dref[0, i] = 0.0
-        # print(xref[0,:],xref[1,:])
+
+        X = np.abs(np.diff(xref[2,:]))
+        idx = np.where(X>1.25*np.pi)[0]
+        if idx:
+            rospy.logwarn("Discountinuity in yaw detected. Fixing by adding 2*pi")
+            xref[2,:] = [xref[2,i] + 2*np.pi*(i>=idx) for i in range(self.Nt+1)]
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
@@ -492,7 +497,7 @@ class MPC(object):
         self.calc_ref_trajectory(x0, self.target_ind)
 
         x_pred, u_pred = self.solve_mpc(x0,self.u0)
-        # print("u_pred", u_pred[0][1])
+        # print("acceleration: ", u_pred[0][0])
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
