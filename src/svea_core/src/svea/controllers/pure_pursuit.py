@@ -5,21 +5,22 @@ import math, rospy
 import numpy as np
 from pprint import pprint
 from sensor_msgs.msg import LaserScan
-
+from svea.path_planners.mpc_map.ros_interface import ROSInterface as MapROSInterface
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 1 #TODO speed control propotional gain
-    K_i = 2  #TODO speed control integral gain
-    K_d = 0.0  #TODO speed control derivitive gain
+    K_p = 1 #speed control propotional gain
+    K_i = 2  #speed control integral gain
+    K_d = 0.0  #speed control derivitive gain
     P = 0 # initilize P value (PID)
     I = 0 # intialize I value (PID)
     L = 0.324  # [m] wheel base of vehicle
     max_velocity = 1
-    emergency_distance = 0.4 # [m] minimum distance until emergency_stop activated
-    emg_angle_range = 0.785 # angle range
+    emergency_distance = 1 # [m] minimum distance until emergency_stop activated
     mapping_distance = 1
+    width = 0.2485
+    mapping_angle = 0.785
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -35,6 +36,14 @@ class PurePursuitController(object):
         self.print_time = 0.0
         self.lidar_to_base = 0.3  #svea position is measured at rear axis, but lasar at front axis 
         self.backed_up = False
+        self.emg_angle_range = 0
+        self.compute_angle()
+        rospy.set_param('/team_5_floor2/lidar_obstacles',[])
+
+    def compute_angle(self):
+        self.emg_angle_range = np.arctan2((self.width + 0.1),(2*self.emergency_distance))
+        print("emergency angle in rad", self.emg_angle_range)
+
     def set_emg_traj_running(self,running):
         self.emg_traj_running = running 
 
@@ -116,7 +125,7 @@ class PurePursuitController(object):
         return ind, dist
 
     def emergency_stop(self, laserScan):
-
+        
         # Compute index ranges for emergency stop scan
         min_index =  int(round((-self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
         max_index =  int(round((self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
@@ -129,9 +138,25 @@ class PurePursuitController(object):
     def laser_mapping(self,state):
         
         laserScan = rospy.wait_for_message('/scan', LaserScan)
+        #print("mapping angle", self.mapping_angle)
+        #print("angle incr", laserScan.angle_increment)
+        #print("angle min", laserScan.angle_min)
+        # Compute index ranges for emergency stop scan
+        min_index =  int(round((-self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
+        max_index =  int(round((self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
+
+        points = laserScan.ranges[min_index:max_index]
+        
+        #print("list length",len(laserScan.ranges))
+        #print("min idx", min_index)
+        #print("max idx", max_index)
 
         # Find indices of laserscans that make up our obstacle
         indices = np.where(np.array(laserScan.ranges) < self.mapping_distance)
+        #if min == max:
+        #    indices = np.where(np.array(laserScan.ranges[min_index]) < self.mapping_distance)
+        #else: 
+        #    indices = np.where(np.array(laserScan.ranges[min_index:max_index]) < self.mapping_distance)
 
         #Get svea's pose
         svea_x = state[0]
@@ -154,9 +179,17 @@ class PurePursuitController(object):
             obs_points.append(obs_coord)
 
         # Update list of obstacles with the new obstacle 
-        obstacles_list = rospy.get_param('/team_5_floor2/obstacles')
+        
+        obstacles_list = []# rospy.get_param('/team_5_floor2/lidar_obstacles')
+        #self.publish_obstacles(obstacles_list)
+        #rospy.sleep(4)
         obstacles_list.append(obs_points)
-        rospy.set_param('/team_5_floor2/obstacles',obstacles_list)
+        rospy.set_param('/team_5_floor2/lidar_obstacles',obstacles_list)
+        #self.publish_obstacles(obs_points)
+
+    def publish_obstacles(self, obstacles_list):
+        Interface = MapROSInterface()
+        Interface.publish(obstacles_list)
 
     def print_every_second(self, message, data):
                 # print once per second

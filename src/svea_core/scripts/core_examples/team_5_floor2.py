@@ -94,7 +94,7 @@ def main():
     emergency_settings = {
         "driving_distance": 0.1,
         "use_track": False,
-        "safety_distance": 0.2,
+        "safety_distance": 0.16,
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.05
         }
@@ -193,8 +193,9 @@ def main():
                     istate = 4
                 else: # do something here if fails
                     svea.controller.set_emg_traj_running(False)  
-                    print("state 0")
-                    istate = 0   
+                    print("Planning Failed")
+                    break
+                    #istate = 0   
                   
         elif istate == 3: # Replan with Astar
             if  ros_interface._current_target_state != [0,0]  and ros_interface.initial_state != None:
@@ -207,21 +208,21 @@ def main():
                 g_traj_y.reverse()
                 
                 print("Astar Replanning Trajectory:")
-                print("traj_x",g_traj_x)
-                print("traj_y",g_traj_y)
                 if success:
                     svea.update_traj(g_traj_x, g_traj_y)
                     print("state 4")
                     istate = 4
                 else: # do something here if fails
+                    # matplot lib
+                    generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)
                     svea.controller.set_emg_traj_running(False)  
-                    print("state 5")
-                    istate = 5
+                    print("Planning Failed - map again")
+                    istate = 1
         elif istate == 4: # Follow replanned path
            # svea.controller.target_velocity = 0.5
             if  svea.is_finished:
                 svea.controller.emg_stop = False
-                backup_attempted = False
+                #backup_attempted = False
                 svea.reset_isfinished() # sets is_finished to false
                 # extract trajectory
                 print("Switching back to Astar")
@@ -230,7 +231,7 @@ def main():
                 print("state 0")
                 
                 istate = 0
-        elif istate == 5: # Initializa backup
+        """ elif istate == 5: # Initializa backup
             if backup_attempted: # dont try to backup again
                 print("Planning failed")
                 break
@@ -251,7 +252,7 @@ def main():
                     istate = 3
                 else:
                     print("state 0")
-                    istate = 0
+                    istate = 0 """
                 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()

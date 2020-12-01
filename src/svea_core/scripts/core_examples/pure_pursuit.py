@@ -10,7 +10,7 @@ from svea.localizers import LocalizationInterface
 from svea.controllers.pure_pursuit import PurePursuitController
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
-
+from svea.path_planners.mpc_map.ros_interface import ROSInterface as MapROSInterface
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
@@ -26,6 +26,9 @@ traj_y = [math.sin(ix) * ix for ix in traj_x]
 show_animation = True
 ###############################################################################
 
+def publish_obstacles():
+    interface = MapROSInterface()
+    interface.publish()
 
 def param_init():
     # grab parameters from launch-file

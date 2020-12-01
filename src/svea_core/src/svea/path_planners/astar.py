@@ -23,25 +23,32 @@ def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None
 
     # find path to obstacles
     astarPath = os.path.dirname(os.path.abspath(__file__))
+
     #file = open(astarPath + '/aStarPlannerObstacles.yaml') # track with the corridor as obstacles
     if "subscribe_to_obstacles" in astar_settings:
-        track = rospy.get_param('/team_5_floor2/obstacles')
-    elif astar_settings["use_track"]:
-        file = open(astarPath + '/aStarPlannerObstacles.yaml') # the geofenced track provided by the TAs
+        track = rospy.get_param('/team_5_floor2/lidar_obstacles')
+    if astar_settings["use_track"]:
+        file = open(astarPath + '/aStarTrack.yaml') # the geofenced track provided by the TAs
         obstacles = yaml.safe_load(file)
-        track = obstacles.get('track')
+        track0 = obstacles.get('track')
     else:
         file = open(astarPath + '/aStarPlannerObstacles.yaml') # mpc obstacle list
         obstacles = yaml.safe_load(file)
-        track = obstacles.get('track')
+        track0 = obstacles.get('track')
 
     
     ###########################################################################
     # range over the different obstacles and add
-    
-    for i in range(len(track)): # ranges over all obstacles in the map_file
-        obstacle = track[i]
-        for indexPt in range(len(track[i])-1):
+    if "subscribe_to_obstacles" in astar_settings:
+        for i in range(len(track)): # ranges over all obstacles in the map_file
+            obstacle = track[i]
+            for indexPt in range(len(track[i])-1):           
+                expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(1)).tolist()
+                expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(1)).tolist()
+    print(expanded_obstacle_list_x)
+    for i in range(len(track0)): # ranges over all obstacles in the map_file
+        obstacle = track0[i]
+        for indexPt in range(len(track0[i])-1):
             dist = numpy.linalg.norm(numpy.array(obstacle[indexPt])-numpy.array(obstacle[indexPt+1]))
             expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(dist/obstacleResolution)).tolist()
             expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(dist/obstacleResolution)).tolist()

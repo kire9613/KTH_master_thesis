@@ -9,7 +9,7 @@
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
     <!--arg name="obstacles_list" default="$(find svea_core)/resources/params/track.yaml"/-->
     <!--arg name="obstacles_list" default="$(find svea_core)/src/svea/path_planners/mpc_obstacles.yaml" /-->
-    <arg name="obstacles_list" default="$(find svea_core)/src/svea/path_planners/track.yaml" />
+    <arg name="obstacles_list" default="$(find svea_core)/resources/params/obstacles.yaml" />
 
     <arg name="planner_algorithm" default="mpc" />
 
@@ -19,7 +19,6 @@
 
     <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
 
-    <!--rosparam command="load" file="$(find svea_core)/resources/params/crazyObstacle.yaml" /-->
     <!--rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" /-->
     <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
     <!-- Give different obstacles than to A* to simulate dynamic obstacles-->

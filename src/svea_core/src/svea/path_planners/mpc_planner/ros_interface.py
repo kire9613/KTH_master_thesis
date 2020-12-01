@@ -88,7 +88,7 @@ class ROSInterface(object):
             poses.append(pose)
 
 
-        print("Poses",poses) # (!) added
+        #print("Poses",poses) # (!) added
         path_msg.poses = poses
         publisher.publish(path_msg)
 
@@ -113,7 +113,7 @@ class ROSInterface(object):
     def compute_goal(self):
         old_goal_state = self.goal_state
         traj_length = len(self.x_traj)
-        print("searching for value", self._current_target_state[0], self._current_target_state[1])
+        #print("searching for value", self._current_target_state[0], self._current_target_state[1])
 
         for i in range(0,traj_length-1):
             #if (abs(self.x_traj[i] - self._current_target_state[0]) <1e-2) and (abs(self.y_traj[i] - self._current_target_state[1])) :
