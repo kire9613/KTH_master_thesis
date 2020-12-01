@@ -31,9 +31,9 @@ class Params(object):
 
 parameters = {
     "test": Params(
-        P=np.diag([10, 10, 0.01, 5000]),
-        Q=np.diag([1, 1, 1e-12, 10]),
-        R=np.diag([1,1]),
+        # P=np.diag([10, 10, 0.01, 5000]),
+        # Q=np.diag([1, 1, 1e-12, 10]),
+        # R=np.diag([1,1]),
         model_type = "linear",
         solver_ = "osqp",
         dt = 0.1,
