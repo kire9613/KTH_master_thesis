@@ -45,7 +45,7 @@ def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None
             for indexPt in range(len(track[i])-1):           
                 expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(1)).tolist()
                 expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(1)).tolist()
-    print(expanded_obstacle_list_x)
+
     for i in range(len(track0)): # ranges over all obstacles in the map_file
         obstacle = track0[i]
         for indexPt in range(len(track0[i])-1):

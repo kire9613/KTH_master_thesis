@@ -38,6 +38,7 @@ class PurePursuitController(object):
         self.backed_up = False
         self.emg_angle_range = 0
         self.compute_angle()
+        self.laser_scan = None
         rospy.set_param('/team_5_floor2/lidar_obstacles',[])
 
     def compute_angle(self):
@@ -90,7 +91,6 @@ class PurePursuitController(object):
             self.I = self.I + self.K_i*e*dt
             velocity_output = self.P + self.I
             if velocity_output > self.max_velocity:
-                self.I = 0 
                 velocity_output = self.max_velocity
         return  velocity_output
 
@@ -131,13 +131,13 @@ class PurePursuitController(object):
         max_index =  int(round((self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
 
         points = laserScan.ranges[min_index:max_index]
-
+        self.laser_scan = laserScan
         if min(points) < self.emergency_distance:
             self.emg_stop = True
 
     def laser_mapping(self,state):
         
-        laserScan = rospy.wait_for_message('/scan', LaserScan)
+        laserScan = self.laser_scan
         #print("mapping angle", self.mapping_angle)
         #print("angle incr", laserScan.angle_increment)
         #print("angle min", laserScan.angle_min)
@@ -184,6 +184,10 @@ class PurePursuitController(object):
         #self.publish_obstacles(obstacles_list)
         #rospy.sleep(4)
         obstacles_list.append(obs_points)
+        try:
+            rospy.delete_param('/team_5_floor2/lidar_obstacles')
+        except KeyError:
+            print("value not set")
         rospy.set_param('/team_5_floor2/lidar_obstacles',obstacles_list)
         #self.publish_obstacles(obs_points)
 
@@ -196,5 +200,6 @@ class PurePursuitController(object):
         if (self.last_time - self.print_time)  > 1:
             print(message, data)
             self.print_time = self.last_time
+
     def reset_isfinished(self):
             self.is_finished = False
