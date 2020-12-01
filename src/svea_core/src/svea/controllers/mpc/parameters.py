@@ -12,7 +12,7 @@ class Params(object):
     def __init__(self, P=np.diag([1,1,1,1]), Q=np.diag([1,1,1,1]),
                  R=np.diag([1,1]), model_type="linear", solver_="osqp", dt=0.05,
                  horizon=5, TAU=0.1, N_IND_SEARCH=10,
-                 target_velocity=1.0,dl=0.2):
+                 target_velocity=1.0,dl=0.2,low_lim=None):
         self.P = P
         self.Q = Q
         self.R = R
@@ -24,6 +24,10 @@ class Params(object):
         self.N_IND_SEARCH = horizon
         self.target_velocity = target_velocity
         self.dl = dl
+        if low_lim == None:
+                self.low_lim = target_velocity/2
+        else:
+                self.low_lim = low_lim
 
 parameters = {
     "test": Params(
@@ -36,6 +40,7 @@ parameters = {
         horizon = 7,
         TAU=0.5,
         target_velocity = 1.5,
+        low_lim = 1.0,
     ),
     "ZOH-good": Params(
         P=np.diag([10, 10, 0.01, 500]),
@@ -45,17 +50,6 @@ parameters = {
         solver_ = "osqp",
         dt = 0.1,
         horizon = 7,
-    ),
-    "from-svea": Params(
-        P=np.diag([50,50,0.5,1000]),
-        Q=np.diag([1,1,0.1,1000]),
-        R=np.diag([1,1]),
-        model_type = "linear",
-        solver_ = "osqp",
-        dt = 0.1,
-        horizon = 7,
-        TAU=0.5,
-        target_velocity = 1.5,
     ),
 }
 

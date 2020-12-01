@@ -28,7 +28,7 @@ from visualization_msgs.msg import Marker
 import math
 
 class MPC(object):
-    def __init__(self, vehicle_name='',target_velocity=0.0,dl=0.1):
+    def __init__(self, vehicle_name='',target_velocity=0.0,low_lim=0.0,dl=0.1):
         self.traj_x = []
         self.traj_y = []
         self.traj_yaw = []
@@ -36,6 +36,7 @@ class MPC(object):
         self.target = None
         # initialize with 0 velocity
         self.target_velocity = target_velocity
+        self.low_lim = low_lim
         self.last_index = 0
         self.is_finished = False
 
@@ -232,6 +233,7 @@ class MPC(object):
                 # 'error_on_fail': False,
                 'expand' : True,
                 'jit': True,
+                'jit_options': {"flags": ["-O2"]}, # For further optimization
             })
         if self.solver_=="ipopt":
             options.update({
@@ -249,12 +251,30 @@ class MPC(object):
                 'ipopt.max_iter': max_iter,
                 'ipopt.max_cpu_time': max_cpu_time,
             })
+        if self.solver_=="osqp":
+            options.update({
+                'osqp.verbose': False,
+                'warm_start_primal': True,
+                'error_on_fail': False,
+            })
+        if self.solver_=="sqpmethod":
+            options.update({
+                'qpsol': 'qrqp',
+                'print_header': False,
+                'print_time': False,
+                'print_in': False,
+                'print_out': False,
+                'jit': True,
+                'jit_options': {"flags": ["-O2"]}, # For further optimization
+            })
         if solver_opts is not None:
             options.update(solver_opts)
         if self.solver_=="ipopt":
             self.solver = ca.nlpsol('mpc_solver', 'ipopt', nlp, options)
         elif self.solver_=="osqp":
             self.solver = ca.qpsol('mpc_solver', 'osqp', nlp, options)
+        elif self.solver_=="sqpmethod":
+            self.solver = ca.nlpsol('mpc_solver', 'sqpmethod', nlp, options)
 
         build_solver_time += time.time()
         print('\n________________________________________')
@@ -331,12 +351,12 @@ class MPC(object):
         status          = self.solver.stats()['return_status']
         optvar          = self.opt_var(sol['x'])
 
-        print(status)
+        # print(status)
 
 
         solve_time+=time.time()
-        print('MPC took %f seconds to solve.\r' %(solve_time))
-        print('MPC cost: ', sol['f'])
+        # print('MPC took %f seconds to solve.\r' %(solve_time))
+        # print('MPC cost: ', sol['f'])
         #print("optvar[x] = ", optvar['x'], "optvar['u'] = ", optvar['u'])
         return optvar['x'], optvar['u']
 
@@ -371,17 +391,19 @@ class MPC(object):
         travel = 0.0
 
         for i in range(self.Nt + 1):
-            # travel += abs(state[3]) * self.dt
-            if dind==None:
-                travel += abs(sp[ind]) * self.dt
-            else:
-                travel += abs(sp[ind+dind]) * self.dt
+            # if dind==None:
+            #     travel += abs(sp[ind]) * self.dt
+            # else:
+            #     #  TODO: This is not working, sp[min(ind+dind,ncourse-1)] solves the
+            #     #  problem but the car doesn't go to a full stop then. <27-11-20, rob> #
+            #     travel += abs(sp[min(ind+dind,ncourse-1)]) * self.dt
+            travel += abs(state[3]) * self.dt
             dind = int(round(travel / self.dl))
 
             if (ind + dind) < ncourse:
                 xref[0, i] = cx[ind + dind]
                 xref[1, i] = cy[ind + dind]
-                xref[2, i] = cyaw[ind + dind]
+                xref[2, i] = cyaw[ind + dind] #if cyaw[ind+dind]*state[2]>0 or state[2]<np.pi/2 else cyaw[ind + dind] + 2*np.pi
                 xref[3, i] = sp[ind + dind]
                 # dref[0, i] = 0.0
             else:
@@ -390,7 +412,12 @@ class MPC(object):
                 xref[2, i] = cyaw[ncourse - 1]
                 xref[3, i] = sp[ncourse - 1]
                 # dref[0, i] = 0.0
-        # print(xref[0,:],xref[1,:])
+
+        X = np.abs(np.diff(xref[2,:]))
+        idx = np.where(X>1.25*np.pi)[0]
+        if idx:
+            rospy.logwarn("Discountinuity in yaw detected. Fixing by adding 2*pi")
+            xref[2,:] = [xref[2,i] + 2*np.pi*(i>=idx) for i in range(self.Nt+1)]
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
@@ -462,7 +489,7 @@ class MPC(object):
         if self.target_ind is None:
             self.target_ind, _ = self.calc_nearest_index(x0, 0)
 
-        print(self.target_ind)
+        # print(self.target_ind)
         self.target_ind, _ = self.calc_nearest_index(x0, self.target_ind)
 
         # self.target_ind, _ = self.calc_nearest_index(x0, 0)
@@ -470,7 +497,7 @@ class MPC(object):
         self.calc_ref_trajectory(x0, self.target_ind)
 
         x_pred, u_pred = self.solve_mpc(x0,self.u0)
-        print("u_pred", u_pred[0][1])
+        # print("acceleration: ", u_pred[0][0])
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
@@ -500,7 +527,7 @@ class MPC(object):
         vd = self.TAU*u_pred[0][0] + state.v
         #vd = 0.6
         #vd = x_pred[1][3]
-        print("vd = ", vd)
+        # print("vd = ", vd)
 
         return float(u_pred[0][1]), float(vd)
 
