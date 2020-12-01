@@ -14,7 +14,7 @@ publish_frequency: 10 # ROS path publish frequency (in Hz)
 path_frame: 'map' # ROS frame where to publish the path
 
 # MPC parameters
-N: 7 #7 #20 # Prediction horizon (in steps)
+N: 10 #7 #20 # Prediction horizon (in steps)
 R_speed: 1. # Weight on the speed (input)
 R_steering_angle: 1. # Weight on the steering_angle (input)
 kappa: 1. # Weight on the total time

@@ -179,10 +179,10 @@ class NonLinearMPC(object):
         #    casadi.fabs(self.goal_state[2] - self.X[2, -1]) <= self.angle_tolerance
         #)
         self.solver.subject_to(self.T >= 0)
-        #self.solver.subject_to(self.speed_min <= self.U[0, :])
-        #self.solver.subject_to(self.U[0, :] <= self.speed_max)
-        #self.solver.subject_to(self.steering_angle_min <= self.U[1, :])
-        #self.solver.subject_to(self.U[1, :] <= self.steering_angle_max)
+        self.solver.subject_to(self.speed_min <= self.U[0, :])
+        self.solver.subject_to(self.U[0, :] <= self.speed_max)
+        self.solver.subject_to(self.steering_angle_min <= self.U[1, :])
+        self.solver.subject_to(self.U[1, :] <= self.steering_angle_max)
 
         dx = casadi.MX.sym('dx')
         dy = casadi.MX.sym('dy')
@@ -246,10 +246,24 @@ class NonLinearMPC(object):
         try:
             result = self.solver.solve()
         except RuntimeError as e:
+            print("status: ",self.solver.stats()["return_status"])
+            print("debug X: ",self.solver.debug.value(self.X)) 
+            print("debug U speed: ",self.solver.debug.value(self.U[0, :])) 
+            print("debug U angle: ",self.solver.debug.value(self.U[1, :])) 
+            print("debug T: ",self.solver.debug.value(self.T))
+            dt = self.T / self.N
+            print("debug dt:",self.solver.value(dt))
             logging.error(e)
             return None
 
         trajectory = result.value(self.X)
+        print("status: ",self.solver.stats()["return_status"])
+        print("debug X: ",self.solver.debug.value(self.X)) 
+        print("debug U speed: ",self.solver.debug.value(self.U[0, :])) 
+        print("debug U angle: ",self.solver.debug.value(self.U[1, :])) 
+        print("debug T: ",self.solver.debug.value(self.T))
+        dt = self.T / self.N
+        print("debug dt:",self.solver.value(dt))
 
         return np.array(trajectory[0:2, :].T)
 
