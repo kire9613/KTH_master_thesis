@@ -416,8 +416,9 @@ class MPC(object):
         X = np.abs(np.diff(xref[2,:]))
         idx = np.where(X>1.25*np.pi)[0]
         if idx:
-            rospy.logwarn("Discountinuity in yaw detected. Fixing by adding 2*pi")
-            xref[2,:] = [xref[2,i] + 2*np.pi*(i>=idx) for i in range(self.Nt+1)]
+            sign = np.sign(X[idx])
+            rospy.logwarn("Discountinuity in yaw detected. Fixing by adding/subtracting 2*pi")
+            xref[2,:] = [xref[2,i] + sign*2*np.pi*(i>=idx) for i in range(self.Nt+1)] # Assumes only one discontinuous jump
 
         marker_msg = Marker()
         marker_msg.header.stamp = rospy.Time.now()
