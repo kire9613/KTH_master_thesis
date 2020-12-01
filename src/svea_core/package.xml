@@ -76,6 +76,8 @@
   <exec_depend>rosserial_python</exec_depend>
   <exec_depend>rosserial_server</exec_depend>
   <exec_depend>rosserial_msgs</exec_depend>
+  <exec_depend>rosserial_msgs</exec_depend>
+  <exec_depend>hector_mapping</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
