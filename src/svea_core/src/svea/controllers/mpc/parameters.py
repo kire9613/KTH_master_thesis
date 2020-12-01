@@ -27,13 +27,15 @@ class Params(object):
 
 parameters = {
     "test": Params(
-        P=np.diag([1,1,1,1]),
-        Q=np.diag([1,1,1,1]),
+        P=np.diag([50,50,0.5,1000]),
+        Q=np.diag([1,1,0.1,1000]),
         R=np.diag([1,1]),
         model_type = "linear",
         solver_ = "osqp",
         dt = 0.1,
         horizon = 7,
+        TAU=0.5,
+        target_velocity = 1.5,
     ),
     "ZOH-good": Params(
         P=np.diag([10, 10, 0.01, 500]),
@@ -43,6 +45,17 @@ parameters = {
         solver_ = "osqp",
         dt = 0.1,
         horizon = 7,
+    ),
+    "from-svea": Params(
+        P=np.diag([50,50,0.5,1000]),
+        Q=np.diag([1,1,0.1,1000]),
+        R=np.diag([1,1]),
+        model_type = "linear",
+        solver_ = "osqp",
+        dt = 0.1,
+        horizon = 7,
+        TAU=0.5,
+        target_velocity = 1.5,
     ),
 }
 
