@@ -19,7 +19,7 @@ from rospy.numpy_msg import numpy_msg
 from svea_msgs.msg import VehicleState
 
 # OTHER
-from matrix_astar import AStarPlanner
+from matrix_astar2 import AStarPlanner
 
 ## COLLISION NODE PARAMS ######################################################
 update_rate = 1
@@ -66,29 +66,31 @@ class Node:
 
 	def callback_map(self, occ_map):
 		self.planner = AStarPlanner(np.asarray(occ_map.data))
-		self.rate_timeout.sleep()
 
 	def callback_problem(self, problem_map):
 
+		while self.planner == None:
+			self.rate_timeout.sleep()
+
 		obstacles = []
 
-		problem_matr = np.asarray(problem_map.data).reshape(problem_map.height, problem_map.width)
+		problem_matr = np.asarray(problem_map.data).reshape(problem_map.width, problem_map.height)
 
 		for i in range(0, problem_map.width):
 			for j in range(0, problem_map.height):
-				if problem_matr[j,i] >= 75:
-					obstacles.append((problem_map.y + j, problem_map.x + i))
-				if problem_matr[j,i] == -np.int8(1):
+				if problem_matr[i,j] >= 75:
+					obstacles.append((problem_map.x + i, problem_map.y + j))
+				if problem_matr[i,j] == -np.int8(1):
 					sx = problem_map.x + i
 					sy = problem_map.y + j
-				if problem_matr[j,i] == -np.int8(2):
+				if problem_matr[i,j] == -np.int8(2):
 					gx = problem_map.x + i
 					gy = problem_map.y + j
 		
 		print(sx,sy)
 		print(gx,gy)
 
-		y_list, x_list = self.planner.planning(obstacles, sy, sx, gy, gx)
+		y_list, x_list = self.planner.planning(obstacles, sx, sy, gx, gy)
 
 		for i in range(len(x_list)):
 			x_list[i] = x_list[i]*resolution
@@ -98,7 +100,7 @@ class Node:
 		y_new_global = []
 
 		n = len(self.global_path.poses)
-
+		print("Path length: {0}".format(n))
 		i = 0
 		while 1:
 			x = self.global_path.poses[i].pose.position.x

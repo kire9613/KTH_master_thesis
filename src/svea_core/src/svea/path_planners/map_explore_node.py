@@ -33,8 +33,8 @@ lightweight = True
 
 frame_id="map" 
 resolution=0.05 # The map resolution [m/cell]
-width=879
-height=171
+width=879 #X-max
+height=171 #Y-max
 
 oob_delimiter = max(width,height) + 1
 
@@ -178,9 +178,10 @@ class MapExplore:
 		q = tf.transformations.quaternion_from_euler(0, 0, yaw_org)
 		self.map.info.origin = Pose(Point(x_org, y_org, 0),
 								Quaternion(q[0], q[1], q[2], q[3]))
-		# Fill in the map data
-		self.map_matrix = np.full((height, width), unknown_space, dtype=np.int8)
-		self.map.data = self.map_matrix.reshape(-1) # (self.__map.size)		
+		# Fill in the map data rows = x, cols = y	
+		
+		self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
+		self.map.data = np.transpose(self.map_matrix).reshape(-1)
 		
 		#self.listener = tf.TransformListener()
 
@@ -191,11 +192,11 @@ class MapExplore:
 		returns weather (x, y) is inside map or not.
 		"""
 		if is_in_bounds(x, y):
-			curr_val = self.map_matrix[y, x]
+			curr_val = self.map_matrix[x, y]
 			if curr_val + value < 0:
-				self.map_matrix[y, x] = 0
+				self.map_matrix[x, y] = 0
 			elif curr_val + value < 100:
-				self.map_matrix[y, x] = curr_val + value
+				self.map_matrix[x, y] = curr_val + value
 			return True
 		else:
 			return False
@@ -245,7 +246,7 @@ class MapExplore:
 			self.add_to_map(obstacles[j,0], obstacles[j,1], occupied_space)
 			j += 1
 
-		self.map.data = self.map_matrix.reshape(-1)
+		self.map.data = np.transpose(self.map_matrix).reshape(-1)
 	
 	def collision_check(self, path_lookup, index_lookup, path):
 
@@ -253,9 +254,9 @@ class MapExplore:
 
 		plan_width = 120
 		plan_height = 120
-
-		matr = np.transpose(self.map_matrix)*path_lookup
-
+		
+		matr = self.map_matrix*path_lookup 
+		
 		collisions = np.where(matr >= 75)
 
 		if collisions[0].size != 0:
@@ -278,9 +279,9 @@ class MapExplore:
 
 			final_width = xmax - xmin - 1
 			final_height = ymax - ymin - 1
-
-			map_matr = self.map_matrix[ymin:ymax - 1, xmin:xmax - 1]
 		
+			map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
+
 			print(xmin, xmax)
 			print(ymin, ymax)
 
@@ -296,8 +297,8 @@ class MapExplore:
 			print(start_x, start_y)
 			print(goal_x, goal_y)
 
-			map_matr[start_y - ymin, start_x - xmin] = -np.int8(1)
-			map_matr[goal_y - ymin, goal_x - xmin] = -np.int8(2)
+			map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
+			map_matr[goal_x - xmin, goal_y - ymin] = -np.int8(2)
 
 			map_slice = OccupancyGridUpdate()
 			map_slice.header.stamp = rospy.Time.now()
@@ -311,8 +312,9 @@ class MapExplore:
 		return map_slice
 
 	def reset_map(self):
-		self.map_matrix = np.full((height, width), unknown_space, dtype=np.int8)
+		self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
 		self.map.data = self.map_matrix.reshape(-1)
+
 		
 def is_in_bounds(x, y):
 	"""Returns weather (x, y) is inside grid_map or not."""

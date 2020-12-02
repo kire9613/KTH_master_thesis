@@ -41,8 +41,6 @@ class AStarPlanner:
 		"""
 		Initialize grid map for a star planning
 		"""
-		self.motion = self.get_motion_model()
-
 		init_map = init_map.reshape(height, width)
 
 		self.x_width = width
@@ -64,20 +62,24 @@ class AStarPlanner:
 							if 0 <= a < self.x_width and 0 <= b < self.y_width:
 								self.obstacle_map[a,b] = np.uint8(1)
 							t = t + np.pi/32
-		"""
-		self.grid_indices = np.zero((width,height))
+		
+		self.grid_indices = np.zeros((width,height))
 
 		for i in range(self.x_width):
 			for j in range(self.y_width):
 				self.grid_indices[i,j] = j*self.x_width + i
-		"""
 
-	class Node:
-		def __init__(self, x, y, cost, parent_index):
-			self.x = x  # index of grid
-			self.y = y  # index of grid
-			self.cost = cost
-			self.parent_index = parent_index
+		self.open_set = np.zeros((4, self.x_width*self.y_width))
+		self.closed_set = np.zeros((4, self.x_width*self.y_width))
+		
+		self.motions = np.array([[1, 0, 1],
+								[0, 1, 1],
+								[-1, 0, 1],
+								[0, -1, 1],
+								[-1, -1, np.sqrt(2)],
+								[-1, 1, np.sqrt(2)],
+								[1, -1, np.sqrt(2)],
+								[1, 1, np.sqrt(2)]])
 
 	def planning(self, obstacles, sx, sy, gx, gy):
 		if show_animation:
@@ -109,58 +111,73 @@ class AStarPlanner:
 			draw_obj.point((sx, sy), start_RGB)
 			draw_obj.point((gx, gy), goal_RGB)
 
-		start_node = self.Node(sx, sy, 0.0, -1)
-		goal_node = self.Node(gx, gy, 0.0, -1)
+		start_node = np.array([sx, sy, 0.0, -1])
+		goal_node = np.array([gx, gy, 0.0, -1])
 
-		open_set, closed_set = dict(), dict()
-		open_set[self.calc_grid_index(start_node)] = start_node
+		self.open_set[2,:] = np.inf
+		self.open_set[3,:] = 0
+		self.open_set[:, self.grid_indices[sx, sy]] = start_node
+
+		self.closed_set[2,:] = np.inf
+		self.closed_set[3,:] = 0
+		self.closed_set[:, self.grid_indices[gx, gy]] = goal_node
 
 		while 1:
-			if len(open_set) == 0:
-				print("Open set is empty..")
-				break
+			
+			w = 1.0 #Heuristic weight
+			result = self.open_set[2,:] + w*np.hypot(gx - self.open_set[0,:], gy - self.open_set[1,:])
+			c_id = np.argmin(result)
+			current = self.open_set[:,c_id]
 
-			c_id = min(open_set, key=lambda o: open_set[o].cost + self.calc_heuristic(goal_node, open_set[o]))
-			current = open_set[c_id]
+			if current[2] == np.inf:
+				print("Open set i empty")
+				break
 
 			# show graph
 			if show_animation:  # pragma: no cover
-				draw_obj.point((current.x, current.y), node_RGB)
+				draw_obj.point((current[0], current[1]), node_RGB)
 				
-			if current.x == goal_node.x and current.y == goal_node.y:
-				print("Find goal")
-				goal_node.parent_index = current.parent_index
-				goal_node.cost = current.cost
+			if current[0] == gx and current[1] == gy:
+				print("Found goal")
+				self.closed_set[2,self.grid_indices[gx, gy]] = current[2] #cost
+				self.closed_set[3,self.grid_indices[gx, gy]] = current[3] #parent index
 				break
-
+			
 			# Remove the item from the open set
-			del open_set[c_id]
+			self.open_set[:, c_id] = np.inf
 
-			# Add it to the closed set
-			closed_set[c_id] = current
+			self.closed_set[:, c_id] = current
 
 			# expand_grid search grid based on motion model
-			for i, _ in enumerate(self.motion):
-				node = self.Node(current.x + self.motion[i][0],
-									current.y + self.motion[i][1],
-									current.cost + self.motion[i][2], c_id)
-				n_id = self.calc_grid_index(node)
+			for i in range(self.motions.shape[0]):
+				node = np.array([current[0] + self.motions[i,0],
+								current[1] + self.motions[i,1],
+								current[2] + self.motions[i,2],
+								c_id])
+
+				next_id = self.grid_indices[node[0], node[1]]
 
 				# If the node is not safe, do nothing
-				if not self.verify(node.x, node.y, obstacle_map):
+
+				if self.verify(node[0], node[1], obstacle_map) == False:
 					continue
 
-				if n_id in closed_set:
+				if self.closed_set[2,next_id] != np.inf:
 					continue
 
-				if n_id not in open_set:
-					open_set[n_id] = node  # discovered a new node
+				if self.open_set[2,next_id] == np.inf:  # discovered a new node
+					self.open_set[:,next_id] = node
+					
 				else:
-					if open_set[n_id].cost > node.cost:
-						# This path is the best until now. record it
-						open_set[n_id] = node
+					if self.open_set[2,next_id] > node[2]: # This path is the best until now
+						self.open_set[:,next_id] = node
 
-		rx, ry = self.calc_final_path(goal_node, closed_set)
+		rx, ry = [goal_node[0]], [goal_node[1]]
+		parent_index = goal_node[3]
+		while parent_index != -1:
+			rx.append(self.closed_set[0,parent_index])
+			ry.append(self.closed_set[1,parent_index])
+			parent_index = self.closed_set[3,parent_index]
 		
 		if show_animation:
 			for i in range(len(rx)):
@@ -172,27 +189,6 @@ class AStarPlanner:
 		ry.reverse()
 
 		return ry, rx
-
-	def calc_final_path(self, goal_node, closed_set):
-		# generate final course
-		rx, ry = [goal_node.x], [goal_node.y]
-		parent_index = goal_node.parent_index
-		while parent_index != -1:
-			n = closed_set[parent_index]
-			rx.append(n.x)
-			ry.append(n.y)
-			parent_index = n.parent_index
-
-		return rx, ry
-
-	@staticmethod
-	def calc_heuristic(n1, n2):
-		w = 1.0  # weight of heuristic
-		d = w * math.hypot(n1.x - n2.x, n1.y - n2.y)
-		return d
-
-	def calc_grid_index(self, node):
-		return (node.y) * self.x_width + (node.x)
 
 	def verify(self, x, y, obstacle_map):
 		if x < 0:
@@ -210,19 +206,6 @@ class AStarPlanner:
 
 		return True
 
-	@staticmethod
-	def get_motion_model():
-		# dx, dy, cost
-		motion = [[1, 0, 1],
-					[0, 1, 1],
-					[-1, 0, 1],
-					[0, -1, 1],
-					[-1, -1, math.sqrt(2)],
-					[-1, 1, math.sqrt(2)],
-					[1, -1, math.sqrt(2)],
-					[1, 1, math.sqrt(2)]]
-
-		return motion
 """
 def main():
 	with open(file_path, 'rb') as f:
