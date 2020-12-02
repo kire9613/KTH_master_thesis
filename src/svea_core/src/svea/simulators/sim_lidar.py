@@ -45,7 +45,8 @@ class SimLidar(object):
     # INCREMENT = radians(0.25) # angular distance between measurements [rad]
     INCREMENT = radians(2) # angular distance between measurements [rad]
     TIME_INCREMENT = 0.00002 # time between each beam measurement [s]
-    SCAN_TIME = 0.025 # time between scans/between publication [seconds]
+    # SCAN_TIME = 0.025 # time between scans/between publication [seconds]
+    SCAN_TIME = 0.1 # time between scans/between publication [seconds]
     RANGE_MIN = 0.02 # min range of lidar [m]
     # RANGE_MAX = 30.0 # max range of lidar [m]
     RANGE_MAX = 15.0 # max range of lidar [m]
@@ -76,8 +77,8 @@ class SimLidar(object):
         self._pool = Pool(4) # worker pool for tasks that need a bit of help
 
         self._scan_msg = LaserScan()
-        # self._scan_msg.header.stamp = rospy.Time.now()
-        self._scan_msg.header.stamp = rospy.Time(0)
+        self._scan_msg.header.stamp = rospy.Time.now()
+        # self._scan_msg.header.stamp = rospy.Time(0)
         self._scan_msg.header.frame_id = 'laser'
         self._scan_msg.angle_min = self.ANGLE_MIN
         self._scan_msg.angle_max = self.ANGLE_MAX
@@ -109,7 +110,7 @@ class SimLidar(object):
 
     def _start_publish(self):
         self._scan_pub = rospy.Publisher('/scan', LaserScan,
-                                         queue_size=1, tcp_nodelay=False)
+                                         queue_size=5, tcp_nodelay=True)
         self._viz_points_pub = rospy.Publisher(self._viz_points_topic,
                                                PointCloud,
                                                queue_size=1)
@@ -215,6 +216,7 @@ class SimLidar(object):
         self._scan_msg.ranges = self.ranges
 
     def publish_scan(self):
+        self._scan_msg.header.stamp = rospy.Time.now()
         self._scan_pub.publish(self._scan_msg)
 
     def publish_viz_points(self):

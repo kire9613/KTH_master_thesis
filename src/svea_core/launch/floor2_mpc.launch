@@ -3,12 +3,12 @@
 
     <!-- <arg name="start_pt" default= '-2.33, -7.09, 0.8978652, 0.0'/> -->
     <!-- <arg name="start_pt" default= '0.535, -2.9267, -2.25, 0.0'/> -->
-    <arg name="start_pt" default= '0.535, -2.9267, 0.8978652, 0.0'/>
+    <arg name="start_pt" default= '14.535, 1.4267, 0.8978652, 0.0'/>
     <arg name="use_rviz" default="true"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
-    <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
-    <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/gimp/floor2_rot.yaml" /> -->
+    <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" /> -->
+    <arg name="map_file" default="$(find svea_core)/resources/maps/gimp/floor2_rot.yaml" />
     <arg name="run_lidar" default="true"/>
 
     <group if="$(eval use_rviz == true)">
@@ -16,12 +16,11 @@
     </group>
 
     <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
-    <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
-    <!-- <rosparam command="load" file="$(find svea_core)/resources/params/obstacles_rot.yaml" /> -->
+    <!-- <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" /> -->
+    <rosparam command="load" file="$(find svea_core)/resources/params/obstacles_rot.yaml" />
     <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
 
     <node pkg="svea_core" type="floor2_mpc.py" name="floor2_team1" output="screen">
-    <!-- <node pkg="svea_core" type="floor2_atsushi.py" name="floor2_team1" output="screen"> -->
         <param name="start_pt" value="$(arg start_pt)"/>
         <param name="use_rviz" value="$(arg use_rviz)"/>
         <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
@@ -35,56 +34,20 @@
     <!-- <node pkg="tf" type="static_transform_publisher" name="odom_to_base_link" args="0 0 0 0 0 0 /odom /base_link 100"/> -->
 
     <node pkg="tf" type="static_transform_publisher" name="base_link_2_laser" args="0.33 0 0 0 0 0 /base_link /laser 100"/>
+    <!-- <node pkg="tf" type="static_transform_publisher" name="base_link_2_laser" args="0 0 0 0 0 0 /base_link /laser 100"/> -->
 
-    <arg name="tf_map_scanmatch_transform_frame_name" default="scanmatcher_frame"/>
-    <arg name="base_frame" default="base_link"/>
-    <arg name="odom_frame" default="laser"/>
-    <arg name="pub_map_odom_transform" default="false"/>
-    <arg name="scan_subscriber_queue_size" default="5"/>
-    <arg name="scan_topic" default="scan"/>
-    <arg name="map_size" default="2048"/>
-    <node pkg="hector_mapping" type="hector_mapping" name="hector_mapping" output="screen">
-      <!-- Frame names -->
-      <remap from="map" to="updated_map" />
-      <param name="map_frame" value="map" />
-      <param name="base_frame" value="$(arg base_frame)" />
-      <param name="odom_frame" value="$(arg odom_frame)" />
-      
-      <!-- Tf use -->
-      <param name="use_tf_scan_transformation" value="true"/>
-      <param name="use_tf_pose_start_estimate" value="true"/>
-      <param name="pub_map_odom_transform" value="$(arg pub_map_odom_transform)"/>
-      
-      <!-- Map size / start point -->
-      <param name="map_resolution" value="0.050"/>
-      <param name="map_size" value="$(arg map_size)"/>
-      <param name="map_start_x" value="0.5"/>
-      <param name="map_start_y" value="0.5" />
-      <param name="map_multi_res_levels" value="2" />
-      
-      <!-- Map update parameters -->
-      <param name="update_factor_free" value="0.4"/>
-      <param name="update_factor_occupied" value="0.9" />    
-      <param name="map_update_distance_thresh" value="0.4"/>
-      <param name="map_update_angle_thresh" value="0.06" />
-      <param name="laser_z_min_value" value = "-1.0" />
-      <param name="laser_z_max_value" value = "1.0" />
-      
-      <!-- Advertising config --> 
-      <param name="advertise_map_service" value="true"/>
-      
-      <param name="scan_subscriber_queue_size" value="$(arg scan_subscriber_queue_size)"/>
-      <param name="scan_topic" value="$(arg scan_topic)"/>
-      
-      <!-- Debug parameters -->
-      <!--
-        <param name="output_timing" value="false"/>
-        <param name="pub_drawings" value="true"/>
-        <param name="pub_debug_output" value="true"/>
-      -->
-      <param name="tf_map_scanmatch_transform_frame_name" value="$(arg tf_map_scanmatch_transform_frame_name)" />
+    <!-- This broke the simulation... -->
+    <!-- <param name="/use_sim_time" value="true"/> -->
+
+    <!-- Publishes the voxel grid to rviz for display -->
+    <node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer">
+      <remap from="voxel_grid" to="costmap/voxel_grid"/>
     </node>
-    
-  <!--<node pkg="tf" type="static_transform_publisher" name="map_nav_broadcaster" args="0 0 0 0 0 0 map nav 100"/>-->
+
+    <!-- Run the costmap node -->
+    <node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" >
+      <rosparam file="$(find svea_core)/launch/costmap_params_sim.yaml" command="load" ns="costmap" />
+    </node>
+
 
 </launch>
