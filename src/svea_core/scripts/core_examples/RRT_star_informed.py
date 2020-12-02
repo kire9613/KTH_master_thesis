@@ -204,10 +204,12 @@ class InformedRRTStar:
         minIndex = dList.index(min(dList))
         return minIndex
 
+
     def get_new_node(self, rnd, n_ind, nearestNode): # TODO har ska vi begransa vinkeln! 
         
         dist_shortest = 1000
         phi_val = [-MODEL.DELTA_MAX, -MODEL.DELTA_MAX/2, 0, MODEL.DELTA_MAX/2, MODEL.DELTA_MAX]
+
 
 
 
@@ -351,9 +353,9 @@ class Node:
         self.parent = None
 
 
-def get_obs(obs_matrix): 
+def get_obs(obs_matrix):
     obslist = []
-    for n in range(200, 878): # 
+    for n in range(200, 878): #
         for m in range(0, 170): #
             value = obs_matrix[n, m]
 
@@ -366,7 +368,7 @@ def main():
     print("Start informed rrt star planning")
 
     resolution = 0.05 # The map resolution [m/cell]
-    width = 879 
+    width = 879
     height = 171
 
     pkl_file = open(file_path, 'rb')

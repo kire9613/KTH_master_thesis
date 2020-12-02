@@ -31,14 +31,15 @@ class Params(object):
 
 parameters = {
     "test": Params(
-        P=np.diag([10, 10, 0.01, 5000]),
-        Q=np.diag([1, 1, 1e-12, 10]),
+        P=np.diag([50,50,0.5,1000]),
+        Q=np.diag([1,1,0.1,1000]),
         R=np.diag([1,1]),
         model_type = "linear",
         solver_ = "osqp",
         dt = 0.1,
         horizon = 7,
-        target_velocity = 2.0,
+        TAU=0.5,
+        target_velocity = 1.5,
         low_lim = 1.0,
     ),
     "ZOH-good": Params(
