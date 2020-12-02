@@ -49,11 +49,9 @@ def get_next_goal(start, goal):
 
     return best_dist[0].get_path(grid_map.header.frame_id, grid_map)
 
-def get_path(map_updater, start, goal):
+def get_path(start, goal):
     global grid_map
-    grid_map = OccupancyGrid()
-    grid_map.info = map_updater.get_map_info()
-    grid_map.data = np.reshape(map_updater.get_inflated_map(), (grid_map.info.width*grid_map.info.height,))
+    grid_map = rospy.wait_for_message('/infl_map', OccupancyGrid)
     return get_next_goal(start, goal)
 
 def map_callback(msg):
