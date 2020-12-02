@@ -2,20 +2,31 @@
 The car uses two separate path planning systems, one for global planning which is only run during initialization and another for local re-planning which is called continuously. 
 
 ## Global path planner - RRT
-The ROS node *planner* is the node which handles the global path planning. It is called with the map provider described in [add link] to get the updated map, a start position, and a goal position. When called, the node runs a RRT algorithm and returns a set of way-points from the start position to the goal positon. The way-points are so that the lines connecting each way-point avoids obstacles in the map.  
+The ROS node *planner* is the node which handles the global path planning. It is called with the map provider described in [Mapping](https://github.com/KTH-SML/svea_starter/blob/team4_master/TEAM4_MAPPING.md "TEAM4_MAPPING") to get the updated map, a start position, and a goal position. When called, the node runs a RRT algorithm and returns a set of way-points from the start position to the goal positon. The way-points are so that the lines connecting each way-point avoids obstacles in the map.  
 
 ### RRT
-What happens?   
-sample - test stepping -if ok add to tree  
-repeat  
-if at goal, retrive path and publish  
+The RRT algorithm used takes a start position (x0,y0) and a goal position (xT,yT) as input. The algorithom works as follows:
+```
+1. Initialize a tree of nodes with the start position (x0,y0)
+2. Sample a point in the map 
+3. Test taking a step from (x0,y0) in the direction towards the sampled point.
+  - If the new point is safe (map value = 0 or -1), add new node to tree.  
+  Set the starting node as parent node to the new node.
+  - If the new node is in an obstacle, c-space or polygon space, discard node and start over from 2.
+4. Sample a new point
+5. Find the closest node in the tree
+6. Test taking a step from the closest node towards the sampled point.
+  - If the new point is safe (map value = 0 or -1), add new node to tree.  
+  Set the closest node as parent node to the new node.
+  - If the new node is in an obstacle, c-space or polygon space, discard node and start over from 4.
+7. When a node in the tree is close enough to the goal position, retreive the path taken (a list of positions from (x0,y0) to (xT,yT))
+9. Smooth path
+8. Return smoothed path
+```
 
-Special for our solution:  
-Biasing of sampling  
-Smoothing  
+The path smoothing is used to reduce the number of unneccesary way-points, this especially removes unnessecary turns, making the path straighter. The smoothing removes points if a straight linesegment between the prior and next point doesn't go through either occupied space, c-space, or polygon space.
 
-* the sampling is biased so that the sampled point is the goal point every tenth sample, and a point close to the goal every tenth sample. This increases the likelihood that the RRT finds a short path between the start and goal position.
-* Also, path smoothing is used in order to reduce unnecessary turns.
+The sampling is biased so that the sampled point is the goal point every tenth sample, and a point close to the goal every tenth sample. This increases the likelihood that the RRT finds a short path between the start and goal position.
 
 ## Local path planner - Hybrid A*
 A local planner is used to re-plan between way-points from the global planner, this is done continuously between the car position and the second next waypoint. Calling the local planner as often as possible works as obstacle avoidance, since the local planner is fed the updated map. 
