@@ -34,7 +34,7 @@ A global plan is calculated using a RRT planner, planning a path from the cars i
 This plan is done only with knowledge of the initial map of floor 2 and the polygons that defines the "virtual walls" defining the race track. The planner generates a list of waypoints defining a path, which is later used to generate a local plan.
 
 #### Part 1 - Initialization
-When launching the behavior tree, the systems waits until all initialization processes is finished. This includes:
+When launching the behavior tree, the systems waits until all initialization processes are finished. This includes:
 * Waiting for global planner to be ready by ckecking if there exists any waypoints - *Next waypoint exists?*
 * Calculation of a local plan is done in *Replan path*
 
@@ -46,7 +46,7 @@ Next, the main behavior of the car consists of the following:
 One can at any time pause the system. Then the car is stopped and velocity is set to zero. When starting the system pause will always be activated. The system can be paused/started using *start_pause.py*. By running the file, pressing enter will switch the status to the opposite one, so if system is in pause enter will start the system, and if system is started enter will pause the system.
 
 #### Part 3 - Check if Done
-This part or the tree checks if the car have reached it's goal, that is the car is at the last waypoint. This procedure consists of:
+This part of the tree checks if the car have reached it's goal, that is if the car is at the last waypoint. This procedure consists of:
 * First, check if the car is near a waypoint - *Is at waypoint*
 * If we are near a waypoint, check if this is the last waypoint, e.g. the goal - *Is last waypoint*
 * If the car is at the goal we are done, and speed is set to 0 - *Set speed 0.0*
@@ -60,9 +60,9 @@ When this is done, a new planning process will be started which hopefully not su
 Along execution we search for collisions in the planned path...
 
 #### Part 6 - Waypoint update
-The local planner plans from the cars position to a target waypoint. This target waypoint needs to be continuously updated when driving along the path. This is done by the following procedure:
+The local planner plans from the car position to a target waypoint. This target waypoint needs to be continuously updated when driving along the path. This is done by the following procedure:
 * First, check if the car is near a waypoint, otherwise we can keep the current target waypoint - *Is at waypoint*
 * If we are near a waypoint, we can update the target waypoint to be the next waypoint in the list. - *Update waypoint*
 
 #### Part 7 - Plan and Drive
-The car tries to calculate a new path as often as possible, that is, as long as no planning process is already running we call the local planner through *Replan path*. *Replan path* starts a Hybrid A* planning process with start point as the cars position and a target waypoint. Every time a new planning process is initialized, the planner gets the latest path which ensures that the latest plan also consider the latest obstacles that is detected. As long as a new path is returned, the old path is replaced with the new path.
+The car tries to calculate a new path as often as possible, that is, as long as no planning process is already running we call the local planner through *Replan path*. *Replan path* starts a Hybrid A* planning process with start point as the cars position and a target waypoint. Every time a new planning process is initialized, the planner gets the latest path which ensures that the latest plan also consider the latest obstacles that have been detected. As long as a new path is returned, the old path is replaced with the new path.
