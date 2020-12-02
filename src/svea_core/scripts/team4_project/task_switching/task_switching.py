@@ -121,6 +121,7 @@ def main():
         else: # Else, plan from previous waypoint to next
             path = get_path(map_updater, GOAL_LIST[i-1], GOAL_LIST[i])
             path = list(reversed(path))
+            del path[0]
 
         for p in path:
             tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
