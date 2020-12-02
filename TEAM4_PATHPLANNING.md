@@ -64,6 +64,10 @@ The server can be preempted, this aborts the process running Hybrid A*.
 
 ### Hybrid A*
 
+![alt text][astar_example]
+
+[astar_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/astar_img.png "AStar Planning"
+
 The Hybrid A* algorithm takes a start position (x0,y0) and a goal position (xT,yT) as input. We build a priority queue by testing certain control inputs and use a model of the SVEA to predict what the next pose will be. The algorithm works as follows:
 ```
 1. Initialize a priority queue Q
