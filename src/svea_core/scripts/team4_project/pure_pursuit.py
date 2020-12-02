@@ -11,9 +11,9 @@ class PurePursuitController(object):
 
     k = 0.6       # look forward gain
     Lfc = 0.4     # look-ahead distance
-    K_p = 0.6     # Coefficient for P-part of PI
-    K_i = 0.03    # Coefficient for I-part of PI
-    T = 5         # Anti-windup Coefficient
+    K_p = 2.0     # Coefficient for P-part of PI
+    K_i = 0.0025    # Coefficient for I-part of PI
+    T = 0.25         # Anti-windup Coefficient
     L = 0.324     # [m] wheel base of vehicle
     MAX_U = 1.7   # Maximum control signal
     MIN_U = -0.45 # Minimum control signal
@@ -66,7 +66,7 @@ class PurePursuitController(object):
         if not (self.MIN_U <= self.prev_u <= self.MAX_U):
             saturated_prev_u = min([self.MAX_U, max([self.MIN_U, self.prev_u])])
 
-        u = self.K_p*e + (self.K_i-self.K_p)*self.prev_e + self.T*saturated_prev_u + (1-self.T)*self.prev_u
+        u = self.K_p*e + (self.K_i-self.K_p)*self.prev_e + self.T*saturated_prev_u + (1.0-self.T)*self.prev_u
         self.prev_e = e
         self.prev_u = u
 
