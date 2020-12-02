@@ -12,6 +12,7 @@ from copy import deepcopy
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 PLANNING_TIMEOUT = 20 # seconds
+TARGET_VELOCITY = 0.7
 
 waypoints = []
 current_path = Path()
@@ -390,7 +391,7 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
         self.state_sub = rospy.Subscriber('/state', VehicleState, self.cache_state)
 
         # Maximum speed when approaching a collision
-        self.MAX_SPEED = 0.5
+        self.MAX_SPEED = TARGET_VELOCITY
         # Minimum distance to collision
         self.MIN_DISTANCE = 2#1.5
         # Gain for speed regulation

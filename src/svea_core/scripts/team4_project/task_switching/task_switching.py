@@ -19,7 +19,6 @@ from team4_project.task_switching.reactive_sequence import RSequence
 import team4_project.task_switching.tree_nodes as tn
 from team4_project.mapping2.updatemap import UpdateMap
 
-TARGET_VELOCITY = 0.7
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 GOAL_LIST = [[2.6,0.2],[10.4, 11.8],[5.92, 14.7],[-6.77,-3.51],[-4.17, -6.03]] # List of "goals" or waypoints for car to plan between initially
 
@@ -58,7 +57,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
                 tn.interpolate_to_next_waypoint()
             ]),
             RSequence("Drive", children=[
-                tn.set_speed(TARGET_VELOCITY),
+                tn.set_speed(tn.TARGET_VELOCITY),
                 tn.replan_path()
             ])
         ])
