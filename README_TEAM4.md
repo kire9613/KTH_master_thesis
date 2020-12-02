@@ -60,6 +60,7 @@ When this is done, a new planning process will be started which hopefully not su
 Along execution we search for collisions in the planned path...
 
 #### Part 6 - Waypoint update
+![](waypoint_timeout.gif )
 The local planner plans from the car position to a target waypoint. This target waypoint needs to be continuously updated when driving along the path. This is done by the following procedure:
 * First, check if the car is near a waypoint, otherwise we can keep the current target waypoint - *Is at waypoint*
 * If we are near a waypoint, we can update the target waypoint to be the next waypoint in the list. - *Update waypoint*
