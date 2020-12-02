@@ -15,7 +15,7 @@ class UpdateMap:
 
         rospy.loginfo("Init UpdateMap")
 
-        map = rospy.wait_for_message('/map_upd_map', OccupancyGrid)
+        map = rospy.wait_for_message('/custom_map', OccupancyGrid)
         self.height = map.info.height
         self.width = map.info.width
         self.resolution = map.info.resolution
