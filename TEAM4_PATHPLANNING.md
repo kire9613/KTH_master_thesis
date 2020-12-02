@@ -10,7 +10,7 @@ The RRT algorithm used takes a start position (x0,y0) and a goal position (xT,yT
 1. Initialize a tree of nodes with the start position (x0,y0)
 2. Sample a point in the map 
 3. Test taking a step from (x0,y0) in the direction towards the sampled point.
-  - If the new point is safe (map value = 0 or -1), add new node to tree.  
+  - If the new point is safe (map value = 0 or -1) and line from (x0,y0) to new point is safe, add new node to tree.  
   Set the starting node as parent node to the new node.
   - If the new node is in an obstacle, c-space or polygon space, discard node and start over from 2.
 4. Sample a new point
