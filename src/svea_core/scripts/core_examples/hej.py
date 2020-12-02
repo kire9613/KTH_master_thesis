@@ -44,29 +44,49 @@ def main():
     start = Node(15, 1.54, phistart, thetastart, timestart)
     #start = Node(37.29002809179802, 6.561762500969493, phistart, thetastart, timestart)
     
+    #target2 = Node(22, 4)
+    #target1 = Node(20, 1.45)
+    #target3 = Node(27, 4.5)
+    #target4 = Node(28.4, 7)
+
+
     target2 = Node(22, 4)
     target1 = Node(20, 1.45)
     target3 = Node(27, 4.5)
     target4 = Node(28.4, 7)
+    target5 = Node(36, 7.25)
+    target6 = Node(37, 2)
+    target7 = Node(26.4, 2.1)
+    target8 = Node(22, 7.35)
+    target9 = Node(14.5, 7)
+    target10 = Node(15, 1.5)
+
+
+
+
    
    # target1 = Node(36.3, 1.44)
    # target2 = Node(37.3, 6.6)
    # target3 = Node(14.8, 7.5)
    # target4 = Node(15, 1.54)
 
-    targetlist = [target1, target2, target3, target4]
+    targetlist = [target1, target2, target3, target4, target5, target6, target7, target8, target9, target10]
 
     width = 879 
     height = 171
 
     map_matrix = np.reshape(ob_array,(width, height), order='F')
+
+    big_matrix = get_bigger_matrix(map_matrix)
+    matrix_plot(big_matrix)
+
     obslist = get_obs(map_matrix)
 
     V.obs = obslist
     V.matrix = map_matrix
     traj_x = []
     traj_y = []
-    for i in range(4):
+    for i in range(len(targetlist)):
         target = targetlist[i]
 
         ax.plot(start.x, start.y, "*r")
@@ -75,7 +95,7 @@ def main():
         print('target point:', (target.x, target.y))
 
         [Nodelistx, Nodelisty, Nodelisttheta] = solution(V, start, target, ax)
-        if i < 4:
+        if i < (len(targetlist)-1):
             start.x = Nodelistx.pop()
             start.y = Nodelisty.pop()
             start.theta = Nodelisttheta.pop()
@@ -104,10 +124,44 @@ def get_obs(obs_matrix):
             value = obs_matrix[n, m]
 
             if value > 10:
+               
                 obslist.append([n*resolution, m*resolution])
                 ax.plot(n*resolution, m*resolution, '.k')
 
     return obslist
+
+# functions that lists all nodes with obsticles from the matrix that says a value == 100 if obstacle
+def get_bigger_matrix(obs_matrix): 
+    obslist = []
+    for n in range(200, 878):
+        for m in range(0, 170):
+            value = obs_matrix[n, m]
+
+            if value > 10:
+                obs_matrix = np.pad(obs_matrix, pad_width=4, mode='constant', constant_values=100)
+              #  obs_matrix[n+i, m+1] = 100
+              #  obs_matrix[n+1, m-1] = 100
+              #  obs_matrix[n-1, m-1] = 100
+              #  obs_matrix[n-1, m+1] = 100
+              #  obs_matrix[n, m+1] = 100
+              #  obs_matrix[n, m-1] = 100
+              #  obs_matrix[n+1, m] = 100
+              #  obs_matrix[n-1, m] = 100               
+
+    return obslist
+
+
+def matrix_plot(obs_matrix): 
+
+    for n in range(200, 878):
+        for m in range(0, 170):
+            value = obs_matrix[n, m]
+
+            if value > 10:
+                ax.plot(n*resolution, m*resolution, '.k')              
+    return
+
+
 
 
 
