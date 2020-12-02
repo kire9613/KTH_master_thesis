@@ -50,9 +50,23 @@
     </node>
     </group>
 
-    <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" />
-    <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
-    <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" />    
+    <include file="$(find svea_core)/launch/costmap_2d.launch">
+    </include>
+
+  	<!-- <include file="$(find svea_core)/launch/hector_mapping.launch"> --> 
+        <!-- <remap from="map" to="explored_map" /> -->
+        <!-- <arg name="tf_map_scanmatch_transform_frame_name" default="scanmatcher_frame"/> -->
+        <!-- <arg name="base_frame" default="base_link"/> -->
+        <!-- <arg name="odom_frame" default="odom"/> -->
+        <!-- <arg name="pub_map_odom_transform" default="false"/> -->
+        <!-- <arg name="scan_subscriber_queue_size" default="5"/> -->
+        <!-- <arg name="scan_topic" default="scan"/> -->
+        <!-- <arg name="map_size" default="1024"/> -->
+    <!-- </include> -->
+
+    <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
+    <!-- <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" /> -->
+    <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
 
 
 </launch>

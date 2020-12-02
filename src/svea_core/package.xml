@@ -78,6 +78,7 @@
   <exec_depend>rosserial_msgs</exec_depend>
   <exec_depend>rosserial_msgs</exec_depend>
   <exec_depend>hector_mapping</exec_depend>
+  <exec_depend>costmap_2d</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
