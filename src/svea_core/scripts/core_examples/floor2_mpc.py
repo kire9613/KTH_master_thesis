@@ -121,7 +121,8 @@ def main():
         traj_x, traj_y,
         data_handler = DataHandler,
         target_velocity=params.target_velocity,
-        dl = dt*params.low_lim
+        dl = dt*params.low_lim,
+        low_lim = params.low_lim,
     )
 
     ulb = [-1e2,-np.deg2rad(40)]
