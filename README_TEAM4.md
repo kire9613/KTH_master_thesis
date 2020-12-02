@@ -27,7 +27,7 @@ In rviz, use `2D pose estimate` to give the car an initial pose. Then press *ent
 
 [behaviour_tree]: https://github.com/KTH-SML/svea_starter/blob/team4_master/behaviour_tree.svg "Behaviour Tree"
 
-The behavior of the system is defined in a behavior tree. Using a behavior tree provides a reactive and modular structure. It is then easy to prioritize some behaviors over others, and to insert additional functionality. In order to give an overview of how the system works, let's have a look at the different parts of the behavior tree.
+The behavior of the system is defined in a behavior tree. Using a behavior tree provides a reactive and modular structure. It is then easy to prioritize some behaviors over others, and to insert additional functionality. In order to give an overview of how the system works, let's have a look at the different parts of the behavior tree. A more detailed description of all subsystems is provided in separte readme files linked in the bottom of this page.
 
 #### Before Launching Behaviour Tree
 A global plan is calculated using a RRT planner, planning a path from the cars initial position to a defined goal.
@@ -66,3 +66,8 @@ The local planner plans from the car position to a target waypoint. This target 
 
 #### Part 7 - Plan and Drive
 The car tries to calculate a new path as often as possible, that is, as long as no planning process is already running we call the local planner through *Replan path*. *Replan path* starts a Hybrid A* planning process with start point as the cars position and a target waypoint. Every time a new planning process is initialized, the planner gets the latest path which ensures that the latest plan also consider the latest obstacles that have been detected. As long as a new path is returned, the old path is replaced with the new path.
+
+### Descriptions of subsystems
+* [Mapping](https://github.com/KTH-SML/svea_starter/blob/team4_master/TEAM4_MAPPING.md "TEAM4_MAPPING")
+* [Planning](https://github.com/KTH-SML/svea_starter/blob/team4_master/TEAM4_PATHPLANNING.md "TEAM4_PATHPLANNING")
+* [Control](https://github.com/KTH-SML/svea_starter/blob/team4_master/TEAM4_CONTROLLER.md "TEAM4_CONTROLLER")
