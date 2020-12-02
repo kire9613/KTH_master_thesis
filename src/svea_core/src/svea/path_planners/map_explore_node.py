@@ -5,6 +5,8 @@
     @by Johan Hedin Team1
 """
 
+from __future__ import print_function
+
 # Python standard library
 import math
 import rospy
@@ -26,6 +28,8 @@ from nav_msgs.msg import Path
 
 # SVEA
 from svea_msgs.msg import VehicleState
+
+import matplotlib.pyplot as plt
 
 ## MAP EXPLORER PARAMS ########################################################
 update_rate = 5 # [Hz]
@@ -66,11 +70,13 @@ class Node:
     def __init__(self):
 
         rospy.init_node('explore_node')
+        self.mapper = MapExplore()
 
         # self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
-        self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
 
+        self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap_updates', OccupancyGridUpdate, self.callback_map_updates)
+        # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
         self.state_sub = rospy.Subscriber('state', VehicleState, self.callback_state)
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.callback_scan)
         self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
@@ -78,7 +84,6 @@ class Node:
         self.scan = LaserScan()
         self.state = VehicleState()
 
-        self.mapper = MapExplore()
 
         self.path_lookup = np.zeros((width,height))
         self.index_lookup = np.zeros((width,height))
@@ -86,9 +91,19 @@ class Node:
 
         self.rate_timeout = rospy.Rate(1)
 
-    def callback_map(self, map):
+    def callback_map_updates(self, map):
+        # print("got new map update!")
         self.map = map
-        self.map_matrix = np.reshape(map.data, (width, height), order='F')
+        self.mapper.map_matrix[map.x:map.x+map.width,map.y:map.y+map.height] = np.reshape(map.data, (map.width, map.height), order='F')
+        # plt.imshow(self.mapper.map_matrix.T)
+        # plt.show()
+
+    def callback_map(self, map):
+        # print("got new map")
+        self.map = map
+        self.mapper.map_matrix = np.reshape(map.data, (width, height), order='F')
+        # plt.imshow(self.map_matrix.T)
+        # plt.show()
 
     def callback_state(self, state):
         self.state = state
@@ -135,6 +150,8 @@ class Node:
 
             self.path_lookup[int_x_end, int_y_end] = 1
             self.index_lookup[int_x_end, int_y_end] = len(path.poses) - 1
+        # plt.imshow(self.path_lookup.T)
+        # plt.show()
 
     def run(self):
         rate = rospy.Rate(update_rate)
@@ -288,10 +305,10 @@ class MapExplore:
 
             map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
 
-            print(xmin, xmax)
-            print(ymin, ymax)
+            # print(xmin, xmax)
+            # print(ymin, ymax)
 
-            print(orig_x,orig_y)
+            # print(orig_x,orig_y)
             print("Intersected path")
             obs_ind = index_lookup[orig_x, orig_y]
 
@@ -300,8 +317,8 @@ class MapExplore:
             goal_x = np.int16(path.poses[obs_ind + 5].pose.position.x/resolution)
             goal_y = np.int16(path.poses[obs_ind + 5].pose.position.y/resolution)
 
-            print(start_x, start_y)
-            print(goal_x, goal_y)
+            # print(start_x, start_y)
+            # print(goal_x, goal_y)
 
             map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
             map_matr[goal_x - xmin, goal_y - ymin] = -np.int8(2)
