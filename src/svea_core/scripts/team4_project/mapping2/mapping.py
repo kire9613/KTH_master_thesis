@@ -154,7 +154,7 @@ class Mapping:
             range = scan.ranges[scan_index]
             if range > scan.range_min and range < scan.range_max/2 and angle < pi/4 and angle > -pi/4:
                 # coordinates in scan frame
-                x_scan_p = range * cos(angle)
+                x_scan_p = range * cos(angle) + 0.282
                 y_scan_p = range * sin(angle)
 
                 # rotational transformation of scan coordinates
