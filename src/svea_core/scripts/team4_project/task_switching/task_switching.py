@@ -134,8 +134,6 @@ def main():
 
     behaviour_tree = BehaviourTree()
     behaviour_tree.setup(timeout=10000)
-    with open('/home/oscar/tree.dot', 'w') as f:
-        f.write(pt.display.stringify_dot_tree(behaviour_tree.tree))
     rospy.loginfo('Launching Behaviour Tree')
     rospy.sleep(1)
     while not rospy.is_shutdown():
