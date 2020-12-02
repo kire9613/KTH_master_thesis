@@ -30,22 +30,22 @@ vehicle_name = ""
 target_velocity = 1# [m/s]
 dt = params.dt # frequency of the model updates
 
-xs = [14.47, 37.26]
+xs = [14.47, 37.06]
 ys = [1.60, 1.29]
 traj_x_init = np.linspace(xs[0], xs[1]).tolist()
 traj_y_init = np.linspace(ys[0], ys[1]).tolist()
-xs = [37.26,37.35]
+xs = [37.06,37.05]
 ys = [1.29,6.96]
 traj_x_init = np.append(traj_x_init,np.linspace(xs[0], xs[1]).tolist()[1:])
 traj_y_init = np.append(traj_y_init,np.linspace(ys[0], ys[1]).tolist()[1:])
-xs = [37.35,14.68]
+xs = [37.15,14.68]
 ys = [6.96,7.31]
 traj_x_init = np.append(traj_x_init,np.linspace(xs[0], xs[1]).tolist()[1:])
 traj_y_init = np.append(traj_y_init,np.linspace(ys[0], ys[1]).tolist()[1:])
 xs = [14.69,14.47]
 ys = [7.31,1.60]
 traj_x_init = np.append(traj_x_init,np.linspace(xs[0], xs[1]).tolist()[1:-1])
-traj_y_init = np.append(traj_y_init,np.linspace(ys[0], ys[1]).tolist()[1:-1])	
+traj_y_init = np.append(traj_y_init,np.linspace(ys[0], ys[1]).tolist()[1:-1])
 ###############################################################################
 
 ## INIT #######################################################################
@@ -100,7 +100,7 @@ class Node:
         for i in range(len(path.poses) - 1):
             self.traj_x.append(path.poses[i].pose.position.x)
             self.traj_y.append(path.poses[i].pose.position.y)
-        
+
     def run(self):
         svea = SVEAMPC(
             vehicle_name,
@@ -140,7 +140,7 @@ class Node:
             self.simulator.toggle_pause_simulation()
 
         # simualtion loop
-        
+
         svea.controller.target_velocity = target_velocity
         while not svea.is_finished and not rospy.is_shutdown():
             state = svea.wait_for_state()
@@ -148,7 +148,7 @@ class Node:
             #This step updates the global path
             svea.update_traj(self.traj_x, self.traj_y)
 
-            # compute control input 
+            # compute control input
             steering, velocity = svea.compute_control()
             svea.send_control(steering, velocity)
 
