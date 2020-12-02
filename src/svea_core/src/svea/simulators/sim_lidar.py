@@ -15,6 +15,10 @@ from visualization_msgs.msg import Marker
 
 from viz_utils import publish_lidar_points, publish_lidar_rays, publish_edges
 
+import tf2_ros
+import tf_conversions
+import geometry_msgs.msg
+
 __license__ = "MIT"
 __maintainer__ = "Javier Cerna, Frank Jiang"
 __email__ = "frankji@kth.se"
@@ -72,7 +76,8 @@ class SimLidar(object):
         self._pool = Pool(4) # worker pool for tasks that need a bit of help
 
         self._scan_msg = LaserScan()
-        self._scan_msg.header.stamp = rospy.Time.now()
+        # self._scan_msg.header.stamp = rospy.Time.now()
+        self._scan_msg.header.stamp = rospy.Time(0)
         self._scan_msg.header.frame_id = 'laser'
         self._scan_msg.angle_min = self.ANGLE_MIN
         self._scan_msg.angle_max = self.ANGLE_MAX
@@ -104,7 +109,7 @@ class SimLidar(object):
 
     def _start_publish(self):
         self._scan_pub = rospy.Publisher('/scan', LaserScan,
-                                         queue_size=1, tcp_nodelay=True)
+                                         queue_size=1, tcp_nodelay=False)
         self._viz_points_pub = rospy.Publisher(self._viz_points_topic,
                                                PointCloud,
                                                queue_size=1)
