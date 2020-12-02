@@ -27,7 +27,7 @@ param_name = "ZOH-good"
 params = parameters.get(param_name)
 
 vehicle_name = ""
-target_velocity = 1# [m/s]
+target_velocity = params.target_velocity# [m/s]
 dt = params.dt # frequency of the model updates
 
 # xs = [14.47, 37.06]
@@ -109,8 +109,9 @@ class Node:
             MPC,
             self.traj_x, self.traj_y,
             data_handler = self.DataHandler,
-            target_velocity=target_velocity,
-            dl = dt*target_velocity
+            target_velocity=params.target_velocity,
+            dl = dt*params.low_lim,
+            low_lim = params.low_lim,
         )
 
         ulb = [-1e2,-np.deg2rad(40)]
