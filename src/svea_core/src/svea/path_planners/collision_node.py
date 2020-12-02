@@ -23,6 +23,7 @@ from matrix_astar3 import AStarPlanner
 
 ## COLLISION NODE PARAMS ######################################################
 update_rate = 1
+timeout_rate = 0.1
 resolution = 0.05
 splice_tol = 0.5
 width=879
@@ -48,7 +49,7 @@ class Node:
 
         self.global_path = Path()
 
-        self.rate_timeout = rospy.Rate(0.1)
+        self.rate_timeout = rospy.Rate(timeout_rate)
 
         self.planner = None
 

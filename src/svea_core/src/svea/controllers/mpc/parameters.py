@@ -50,6 +50,9 @@ parameters = {
         solver_ = "osqp",
         dt = 0.1,
         horizon = 7,
+        TAU=0.1,
+        target_velocity = 1.5,
+        low_lim = 1.0,
     ),
 }
 

@@ -67,12 +67,13 @@ class Node:
 
         rospy.init_node('explore_node')
 
-        self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
+        # self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
+        self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
 
-        self.state_sub = rospy.Subscriber('/state', VehicleState, self.callback_state)
-        self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.callback_scan)
-        self.path_sub = rospy.Subscriber('/path_plan', Path, self.callback_path)
+        self.state_sub = rospy.Subscriber('state', VehicleState, self.callback_state)
+        self.scan_sub = rospy.Subscriber('scan', LaserScan, self.callback_scan)
+        self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
 
         self.scan = LaserScan()
         self.state = VehicleState()
@@ -84,6 +85,10 @@ class Node:
         self.path = Path()
 
         self.rate_timeout = rospy.Rate(1)
+
+    def callback_map(self, map):
+        self.map = map
+        self.map_matrix = np.reshape(map.data, (width, height), order='F')
 
     def callback_state(self, state):
         self.state = state
@@ -135,8 +140,8 @@ class Node:
         rate = rospy.Rate(update_rate)
 
         while not rospy.is_shutdown():
-            self.mapper.update_map(self.state, self.scan)
-            self.map_pub.publish(self.mapper.map)
+            # self.mapper.update_map(self.state, self.scan)
+            # self.map_pub.publish(self.mapper.map)
 
             map_slice = self.mapper.collision_check(self.path_lookup, self.index_lookup, self.path)
 
@@ -167,21 +172,22 @@ class MapExplore:
     def __init__(self):
         """
         """
-        self.map = OccupancyGrid()
-        # Fill in the header
-        self.map.header.stamp = rospy.Time.now()
-        self.map.header.frame_id = frame_id
-        # Fill in the info
-        self.map.info.resolution = resolution
-        self.map.info.width = width
-        self.map.info.height = height
-        q = tf.transformations.quaternion_from_euler(0, 0, yaw_org)
-        self.map.info.origin = Pose(Point(x_org, y_org, 0),
-                                Quaternion(q[0], q[1], q[2], q[3]))
-        # Fill in the map data rows = x, cols = y
-
         self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
-        self.map.data = np.transpose(self.map_matrix).reshape(-1)
+        # self.map = OccupancyGrid()
+        # # Fill in the header
+        # self.map.header.stamp = rospy.Time.now()
+        # self.map.header.frame_id = frame_id
+        # # Fill in the info
+        # self.map.info.resolution = resolution
+        # self.map.info.width = width
+        # self.map.info.height = height
+        # q = tf.transformations.quaternion_from_euler(0, 0, yaw_org)
+        # self.map.info.origin = Pose(Point(x_org, y_org, 0),
+        #                         Quaternion(q[0], q[1], q[2], q[3]))
+        # # Fill in the map data rows = x, cols = y
+
+        # self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
+        # self.map.data = np.transpose(self.map_matrix).reshape(-1)
 
         #self.listener = tf.TransformListener()
 
