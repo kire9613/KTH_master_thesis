@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-	@by Johan Hedin Team1
+    @by Johan Hedin Team1
 """
 # Python standard library
 import numpy as np
@@ -19,7 +19,7 @@ from rospy.numpy_msg import numpy_msg
 from svea_msgs.msg import VehicleState
 
 # OTHER
-from matrix_astar2 import AStarPlanner
+from matrix_astar3 import AStarPlanner
 
 ## COLLISION NODE PARAMS ######################################################
 update_rate = 1
@@ -32,127 +32,127 @@ oob_delimiter = max(width,height) + 1
 ###############################################################################
 
 class Node:
-	"""
-	asd
-	"""
-	def __init__(self):
+    """
+    asd
+    """
+    def __init__(self):
 
-		rospy.init_node('collision_node')
+        rospy.init_node('collision_node')
 
-		self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
+        self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
 
-		self.problem_sub = rospy.Subscriber('/problem_map', OccupancyGridUpdate, self.callback_problem)
+        self.problem_sub = rospy.Subscriber('/problem_map', OccupancyGridUpdate, self.callback_problem)
 
-		self.path_sub = rospy.Subscriber('/path_plan', Path, self.callback_path)
-		self.map_sub = rospy.Subscriber('/map', OccupancyGrid, self.callback_map)
+        self.path_sub = rospy.Subscriber('/path_plan', Path, self.callback_path)
+        self.map_sub = rospy.Subscriber('/map', OccupancyGrid, self.callback_map)
 
-		self.global_path = Path()
+        self.global_path = Path()
 
-		self.rate_timeout = rospy.Rate(0.1)
-		
-		self.planner = None
+        self.rate_timeout = rospy.Rate(0.1)
 
-	def run(self):
+        self.planner = None
 
-		rate = rospy.Rate(update_rate)
+    def run(self):
 
-		while not rospy.is_shutdown():
-			rate.sleep()
+        rate = rospy.Rate(update_rate)
 
-		rospy.spin()
+        while not rospy.is_shutdown():
+            rate.sleep()
 
-	def callback_path(self, path):
-		self.global_path = path
+        rospy.spin()
 
-	def callback_map(self, occ_map):
-		self.planner = AStarPlanner(np.asarray(occ_map.data))
+    def callback_path(self, path):
+        self.global_path = path
 
-	def callback_problem(self, problem_map):
+    def callback_map(self, occ_map):
+        self.planner = AStarPlanner(np.asarray(occ_map.data))
 
-		while self.planner == None:
-			self.rate_timeout.sleep()
+    def callback_problem(self, problem_map):
 
-		obstacles = []
+        while self.planner == None:
+            self.rate_timeout.sleep()
 
-		problem_matr = np.asarray(problem_map.data).reshape(problem_map.width, problem_map.height)
+        obstacles = []
 
-		for i in range(0, problem_map.width):
-			for j in range(0, problem_map.height):
-				if problem_matr[i,j] >= 75:
-					obstacles.append((problem_map.x + i, problem_map.y + j))
-				if problem_matr[i,j] == -np.int8(1):
-					sx = problem_map.x + i
-					sy = problem_map.y + j
-				if problem_matr[i,j] == -np.int8(2):
-					gx = problem_map.x + i
-					gy = problem_map.y + j
-		
-		print(sx,sy)
-		print(gx,gy)
+        problem_matr = np.asarray(problem_map.data).reshape(problem_map.width, problem_map.height)
 
-		y_list, x_list = self.planner.planning(obstacles, sx, sy, gx, gy)
+        for i in range(0, problem_map.width):
+            for j in range(0, problem_map.height):
+                if problem_matr[i,j] >= 75:
+                    obstacles.append((problem_map.x + i, problem_map.y + j))
+                if problem_matr[i,j] == -np.int8(1):
+                    sx = problem_map.x + i
+                    sy = problem_map.y + j
+                if problem_matr[i,j] == -np.int8(2):
+                    gx = problem_map.x + i
+                    gy = problem_map.y + j
 
-		for i in range(len(x_list)):
-			x_list[i] = x_list[i]*resolution
-			y_list[i] = y_list[i]*resolution
-		
-		x_new_global = []
-		y_new_global = []
+        print(sx,sy)
+        print(gx,gy)
 
-		n = len(self.global_path.poses)
-		print("Path length: {0}".format(n))
-		i = 0
-		while 1:
-			x = self.global_path.poses[i].pose.position.x
-			y = self.global_path.poses[i].pose.position.y
-			x_new_global.append(x)
-			y_new_global.append(y)
+        y_list, x_list = self.planner.planning(obstacles, sx, sy, gx, gy)
 
-			dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
+        for i in range(len(x_list)):
+            x_list[i] = x_list[i]*resolution
+            y_list[i] = y_list[i]*resolution
 
-			if dist < splice_tol:
-				x_new_global.extend(x_list)
-				y_new_global.extend(y_list)
-				break
-			i += 1
-		
-		i = n - 1
-		while 1:
-			x = self.global_path.poses[i].pose.position.x
-			y = self.global_path.poses[i].pose.position.y
+        x_new_global = []
+        y_new_global = []
 
-			dist = np.sqrt((x_list[len(x_list) - 1] - x)**2 + (y_list[len(y_list) - 1] - y)**2)
+        n = len(self.global_path.poses)
+        print("Path length: {0}".format(n))
+        i = 0
+        while 1:
+            x = self.global_path.poses[i].pose.position.x
+            y = self.global_path.poses[i].pose.position.y
+            x_new_global.append(x)
+            y_new_global.append(y)
 
-			if dist < splice_tol:
-				for j in range(i, n):
-					x_new_global.append(self.global_path.poses[j].pose.position.x)
-					y_new_global.append(self.global_path.poses[j].pose.position.y)
-				break
-			i -= 1
+            dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
 
-		new_path = lists_to_path(x_new_global, y_new_global)
-	
-		#new_path = lists_to_path(x_list, y_list)
+            if dist < splice_tol:
+                x_new_global.extend(x_list)
+                y_new_global.extend(y_list)
+                break
+            i += 1
 
-		self.solution_pub.publish(new_path)
-		self.rate_timeout.sleep()
+        i = n - 1
+        while 1:
+            x = self.global_path.poses[i].pose.position.x
+            y = self.global_path.poses[i].pose.position.y
+
+            dist = np.sqrt((x_list[len(x_list) - 1] - x)**2 + (y_list[len(y_list) - 1] - y)**2)
+
+            if dist < splice_tol:
+                for j in range(i, n):
+                    x_new_global.append(self.global_path.poses[j].pose.position.x)
+                    y_new_global.append(self.global_path.poses[j].pose.position.y)
+                break
+            i -= 1
+
+        new_path = lists_to_path(x_new_global, y_new_global)
+
+        #new_path = lists_to_path(x_list, y_list)
+
+        self.solution_pub.publish(new_path)
+        self.rate_timeout.sleep()
 
 def lists_to_path(x_list, y_list):
-	path = Path()
-	path.header.stamp = rospy.Time.now()
-	path.header.frame_id = 'map'
-	path.poses = []
-	for i in range(len(x_list)):
-		curr_pose = PoseStamped()
-		curr_pose.header.frame_id = 'map'
-		curr_pose.pose.position.x = float(x_list[i])
-		curr_pose.pose.position.y = float(y_list[i])
-		path.poses.append(curr_pose)
-	return path
+    path = Path()
+    path.header.stamp = rospy.Time.now()
+    path.header.frame_id = 'map'
+    path.poses = []
+    for i in range(len(x_list)):
+        curr_pose = PoseStamped()
+        curr_pose.header.frame_id = 'map'
+        curr_pose.pose.position.x = float(x_list[i])
+        curr_pose.pose.position.y = float(y_list[i])
+        path.poses.append(curr_pose)
+    return path
 
 if __name__ == '__main__':
-	try:
-		node = Node()
-		node.run()
-	except rospy.ROSInterruptException:
-		pass
+    try:
+        node = Node()
+        node.run()
+    except rospy.ROSInterruptException:
+        pass
