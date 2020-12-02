@@ -64,7 +64,7 @@ class SVEAMPC(SVEAPurePursuit):
         if low_lim == None:
             low_lim = target_speed/2
 
-        curv = np.array(ckappa)/max(ckappa)
+        curv = np.array(np.abs(ckappa))/abs(max(ckappa))
 
         # Set stop point
         for i in range(len(cx) - 1):
