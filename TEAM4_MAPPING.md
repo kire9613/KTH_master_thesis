@@ -1,7 +1,7 @@
-## Mapping the environment
+# Mapping the environment
 
-# Map updater
+## Map updater
 
-# Map provider
+## Map provider
 
-# Obstacle detection
+## Obstacle detection
