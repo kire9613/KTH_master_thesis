@@ -18,8 +18,8 @@ The behavior of the system is defined in a behavior tree. Using a behavior tree 
 Waypoints and RRT...
 
 #### Part 1 - Initialization
-When launching the behavior tree, the systems waits until all initialization processes is finished. This includes:
-* Waiting for global planner to be ready by ckecking if there exists any waypoints - *Next waypoint exists?*
+When launching the behavior tree, the system waits until all initialization processes are finished. This includes:
+* Waiting for global planner to be ready by checking if there exists any waypoints - *Next waypoint exists?*
 * Calculation of a local plan is done in *Replan path*
 When initialization is done the condition *Has initialized* is set to *True* by *Set initialized*.
 
