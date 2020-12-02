@@ -13,7 +13,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 from math import hypot, sqrt
-from sync_occupsancygrid import SyncOcc
+#from sync_occupsancygrid import SyncOcc
 
 from nav_msgs.msg import OccupancyGrid
 
@@ -65,7 +65,7 @@ class MAPP():
 
 def solution(car, start, target, ax):
 
-    global step_length, times, NodeList, countis
+    global step_length, NodeList, countis, Blacklist, tick
     done = False
 
 
@@ -80,6 +80,8 @@ def solution(car, start, target, ax):
     dist2 = -1
 
     NodeList = [start]
+    Blacklist = []
+    tick = 1
     
     count = 7000
     first_step = 10
@@ -109,7 +111,7 @@ def solution(car, start, target, ax):
         nearest_node, dist = GetNearestListNode(NodeList, random_point) # brings the best parent to the random point
     
         # hämtar ut bästa barnet
-        New_nod = get_best_child(car, nearest_node, random_point)
+        New_nod = get_best_child(car, nearest_node, random_point, ax)
         
         if New_nod: # Om den inte är nonetype
 
@@ -120,7 +122,7 @@ def solution(car, start, target, ax):
             ax.plot(New_nod.x, New_nod.y, 'o')
             plt.draw()
             plt.pause(0.0001)
-            done = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 0.9 else False
+            done = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 0.55 else False
             closedone = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 5 else False
             if closedone:
                 #print('JÄVLIGT NÄRA')
@@ -176,7 +178,7 @@ def safe_or_not(car, node):
         x_ = car.obs[n][0] # Mittpunkt
         y_ = car.obs[n][1]
         radius =  0.2 # ökar radien!
-
+        # this is okkkk
         band_low_x = x_ - radius # nedre xdelen av hindret
         band_upp_x = x_ + radius # övre xdelen av hindret
         band_low_y = y_ - radius # nedre ydelen av hindret
@@ -209,7 +211,8 @@ def safe_disc(node, mapp):
     return answer_is
 
 
-def get_best_child(car, nearest_node, rnd):
+def get_best_child(car, nearest_node, rnd, ax):
+    global tick
 
     dist_shortest = 10000
     curr_node = None
@@ -219,6 +222,7 @@ def get_best_child(car, nearest_node, rnd):
     thetakand = []
     phikand = []
     distkand = []
+    ddist = []
 
     for k in range(len(phi_val)):
         phi = phi_val[k]
@@ -249,9 +253,34 @@ def get_best_child(car, nearest_node, rnd):
             thetakand.append(theta)
             phikand.append(phi)
 
+    for i in range(len(Blacklist)):
+        x_list = Blacklist[i].x
+        y_list = Blacklist[i].y
+        tick += 1
+
+        for j in range(len(xkand)):
+            print('xkand =', xkand)
+            print('j =', j)
+           # if xkand: # because if empty I get a error that it cannot enter the next if 
+            if x_list == xkand[j] and y_list == ykand[j]:
+                distkand[j] = 1000
+               # xkand.pop(j)
+               # ykand.pop(j)
+               # j-=1
+                    
+
     # This is if none of the phi values are ok, then we need to choose another parent?
-    if not xkand: 
-       # NodeList.remove(nearest_node)
+    if distkand:
+        ddist = np.min(distkand)
+
+    if not xkand or ddist > 100:
+        NodeList.remove(nearest_node)
+        Blacklist.append(nearest_node)
+        tick += 1 
+       # print('Blacklist =', Blacklist)
+        ax.plot(nearest_node.x, nearest_node.y, 'k*')
+        plt.draw()
+        plt.pause(0.0001)
         return
     else:
         index_min = np.argmin(distkand)
@@ -287,21 +316,26 @@ def step(car, x, y, theta, phi, dt=0.01): # get from another function!
 
 def get_random_position(NodeList, dist1, dist2, target):
     global countis
+    global tick
+    print('tick =', tick)
    
-    if dist1 == dist2:
+    if dist1 == dist2 or tick > 4:
         print('I am stuck! searching randomly!')
         if countis == 2:
             rnd = [target.x, random.uniform(1, height * resolution)]
             random_p = Node(rnd[0], rnd[1])
             countis = 0
+            tick = 0
         elif countis == 1:
             rnd = [random.uniform(0, width * resolution), target.y]
             random_p = Node(rnd[0], rnd[1])
             countis += 1
+            tick = 0
         else:
             rnd = [random.uniform(0, width * resolution), random.uniform(1, height * resolution)]
             random_p = Node(rnd[0], rnd[1])
             countis += 1
+            tick = 0
     else:
         random_p = Node(target.x, target.y)
         countis = 0
