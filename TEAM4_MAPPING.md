@@ -1,9 +1,10 @@
 # Mapping the Environment
-The SVEA car perceive the surrounding environment using lidar scans. The information from the lidar is used to build up a map, used by the car to navigate, planing a path and avoiding obstacles.
+The SVEA car perceive the surrounding environment using lidar scans. The information from the lidar is used to build a map, which in turn is used by the car to navigate, i.e. for path planning and obstacle avoidance.
 
 The structure for handling the map is divided into two parts:
 * The map updater: Reading lidar scans and translating them to a map representation.
-* The map Provider: A help class used by nodes to manage the map.
+* The map provider: A help class used by nodes to manage the map.
+
 A more detailed description of the different parts is provided below.
 
 ## Map Updater
