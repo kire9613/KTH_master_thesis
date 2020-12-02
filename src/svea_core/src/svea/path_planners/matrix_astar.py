@@ -90,7 +90,7 @@ class AStarPlanner:
 
         for entry in obstacles:
             obstacle_map[entry] = np.uint8(1)
-            for r in range(1, 10):
+            for r in range(1, 3):
                     t = 0
                     while t <= 2*np.pi:
                         a = entry[0] + r*np.cos(t)
