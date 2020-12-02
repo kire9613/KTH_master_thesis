@@ -1,5 +1,11 @@
 # Path planning algorithms
-The car uses two separate path planning systems, one for global planning which is only run during initialization and another for local re-planning which is called continuously. 
+The car uses two separate path planning systems, one for global planning based on RRT which is only run during initialization, and another for local re-planning based on Hybrid A* which is called continuously when running the car.
+
+![alt text][planning_example]
+
+[planning_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/mapping_img.png "Path Planning"
+
+The image shows an example of how the planning processes is illustraded in rviz when running the system. The purple diamonds represent the waypoints that is returned from the global path planner. The yellow line from the car to the nearest waypoints shows the latest path provided by the local planner.
 
 ## Global path planner - RRT
 The ROS node *planner* is the node which handles the global path planning. It is called with the map provider described in [Mapping](https://github.com/KTH-SML/svea_starter/blob/team4_master/TEAM4_MAPPING.md "TEAM4_MAPPING") to get the updated map, a start position, and a goal position. When called, the node runs a RRT algorithm and returns a set of way-points from the start position to the goal position. The way-points are so that the lines connecting each way-point avoids obstacles in the map.  
