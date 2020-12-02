@@ -20,7 +20,7 @@ import team4_project.task_switching.tree_nodes as tn
 from team4_project.mapping2.updatemap import UpdateMap
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
-GOAL_LIST = [[5.13,3.69],[8.26, 13.1],[-0.638,5.62],[-3.89, -6.19]] # List of "goals" or waypoints for car to plan between initially
+GOAL_LIST = [[2.6,0.2],[10.4, 11.8],[5.92, 14.7],[-6.77,-3.51],[-4.17, -6.03]] # List of "goals" or waypoints for car to plan between initially
 
 def print_tree(t):
     print("\033[2J\033[H")
@@ -134,6 +134,8 @@ def main():
 
     behaviour_tree = BehaviourTree()
     behaviour_tree.setup(timeout=10000)
+    with open('/home/oscar/tree.dot', 'w') as f:
+        f.write(pt.display.stringify_dot_tree(behaviour_tree.tree))
     rospy.loginfo('Launching Behaviour Tree')
     rospy.sleep(1)
     while not rospy.is_shutdown():
