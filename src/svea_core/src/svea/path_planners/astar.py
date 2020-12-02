@@ -43,8 +43,11 @@ def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None
         for i in range(len(track)): # ranges over all obstacles in the map_file
             obstacle = track[i]
             for indexPt in range(len(track[i])-1):           
-                expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(1)).tolist()
-                expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(1)).tolist()
+                dist = numpy.linalg.norm(numpy.array(obstacle[indexPt])-numpy.array(obstacle[indexPt+1]))
+                expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(dist/obstacleResolution)).tolist()
+                expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(dist/obstacleResolution)).tolist()
+                #expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(1)).tolist()
+                #expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(1)).tolist()
 
     for i in range(len(track0)): # ranges over all obstacles in the map_file
         obstacle = track0[i]
@@ -150,7 +153,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
     Vr = [0] # cost list
     Vr_pathpter = [None] # pa
 
-    while len(Q) > 0:
+    while len(Q) > 0 and not rospy.is_shutdown():
         Q.sort(key=calculateHeuristic)
         currnode = Q[0] # pick the current node as the one w the best heur
         S.append(Q.pop(0))  ## adding the best node to the solved list

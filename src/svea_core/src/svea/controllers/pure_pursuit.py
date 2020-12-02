@@ -9,7 +9,7 @@ from svea.path_planners.mpc_map.ros_interface import ROSInterface as MapROSInter
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
-    Lfc = 0.4  # look-ahead distance
+    Lfc = 0.2#0.4  # look-ahead distance
     K_p = 1 #speed control propotional gain
     K_i = 2  #speed control integral gain
     K_d = 0.0  #speed control derivitive gain
@@ -17,10 +17,11 @@ class PurePursuitController(object):
     I = 0 # intialize I value (PID)
     L = 0.324  # [m] wheel base of vehicle
     max_velocity = 1
-    emergency_distance = 1 # [m] minimum distance until emergency_stop activated
-    mapping_distance = 1
+    emergency_distance = 0.5#1 # [m] minimum distance until emergency_stop activated
+    mapping_distance = 3 # distance of obstacles to map
     width = 0.2485
-    mapping_angle = 0.785
+    height = 0.586
+    mapping_angle = 1.57#0.785
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -39,6 +40,8 @@ class PurePursuitController(object):
         self.emg_angle_range = 0
         self.compute_angle()
         self.laser_scan = None
+        self.steering = 0
+        self.velocity = 0
         rospy.set_param('/team_5_floor2/lidar_obstacles',[])
 
     def compute_angle(self):
@@ -50,14 +53,14 @@ class PurePursuitController(object):
 
     def compute_control(self, state, target=None):
         if self.backed_up:
-            return 0,-0.6
+            return self.steering,-0.6
         elif self.emg_stop and not self.emg_traj_running:
             return 0,0
         
         else:
-            steering = self.compute_steering(state, target)
-            velocity = self.compute_velocity(state)
-            return steering, velocity
+            self.steering = self.compute_steering(state, target)
+            self.velocity = self.compute_velocity(state)
+            return self.steering, self.velocity
 
     def compute_steering(self, state, target=None):
         if target is None:
@@ -134,30 +137,83 @@ class PurePursuitController(object):
         self.laser_scan = laserScan
         if min(points) < self.emergency_distance:
             self.emg_stop = True
-
     def laser_mapping(self,state):
         
         laserScan = self.laser_scan
-        #print("mapping angle", self.mapping_angle)
-        #print("angle incr", laserScan.angle_increment)
-        #print("angle min", laserScan.angle_min)
-        # Compute index ranges for emergency stop scan
+
         min_index =  int(round((-self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
         max_index =  int(round((self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
 
-        points = laserScan.ranges[min_index:max_index]
+        # Find indices of laserscans that make up our obstacle
+        #indices = np.where(np.array(laserScan.ranges) < self.mapping_distance)
+        if min == max:
+            indices = np.where(np.array(laserScan.ranges[min_index]) < self.mapping_distance)
+        else: 
+            indices = np.where(np.array(laserScan.ranges[min_index:max_index]) < self.mapping_distance)
         
-        #print("list length",len(laserScan.ranges))
-        #print("min idx", min_index)
-        #print("max idx", max_index)
+        #Get svea's pose
+        svea_x = state[0]
+        svea_y = state[1]
+        yaw = state[2]
+
+        #Calculate lidar pose in map frame             
+        length = self.lidar_to_base 
+        lidar_coord = [svea_x+length*math.cos(yaw), svea_y+length*math.sin(yaw)]
+
+        #Mapping dynamic obstacles
+        idx_list = []
+        iobstacles_list = []
+        for idx in indices[0]:  
+            idx = idx + min_index
+            idx_list.append(idx)
+            #calculate angle to laser point
+            angle = laserScan.angle_min + idx*laserScan.angle_increment
+            #coordinate of the laser point/obstacle
+            lidar_range = laserScan.ranges[idx]
+            obs_coord = [lidar_coord[0]+lidar_range*math.cos(yaw+angle), lidar_coord[1]+lidar_range*math.sin(yaw+angle)]
+
+            # inflate points
+            dx = self.width/2*1.2 
+            dy = self.height/2*1.2
+            
+            inflated_obstacle =  [[dx,dy ],
+                                 [ + dx, - dy ], 
+                                 [ - dx, - dy ],
+                                 [ - dx, + dy ]]   
+            
+            rot = [[math.cos(-yaw),-math.sin(-yaw)],[math.sin(-yaw), math.cos(-yaw)]]                  
+            obs = np.matmul(rot,np.transpose(inflated_obstacle))
+            inflated_obstacle = [[float(obs[0][0]),float(obs[1][0])],[float(obs[0][1]),float(obs[1][1])],[float(obs[0][2]),float(obs[1][2])],[float(obs[0][3]),float(obs[1][3])]]                 
+            idx = 0
+            for coord in inflated_obstacle:
+                inflated_obstacle[idx][0] = coord[0] + obs_coord[0]
+                inflated_obstacle[idx][1] = coord[1] + obs_coord[1]
+                idx = idx + 1
+            # Update list of obstacles with the new obstacle 
+      
+            iobstacles_list.append(inflated_obstacle)
+        
+        try:
+            rospy.delete_param('/team_5_floor2/lidar_obstacles')
+        except KeyError:
+            print("value not set")
+        rospy.set_param('/team_5_floor2/lidar_obstacles',iobstacles_list)
+        self.publish_obstacles(iobstacles_list)
+
+    def laser_mapping_old(self,state):
+        
+        laserScan = self.laser_scan
+
+        min_index =  int(round((-self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
+        max_index =  int(round((self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
 
         # Find indices of laserscans that make up our obstacle
-        indices = np.where(np.array(laserScan.ranges) < self.mapping_distance)
-        #if min == max:
-        #    indices = np.where(np.array(laserScan.ranges[min_index]) < self.mapping_distance)
-        #else: 
-        #    indices = np.where(np.array(laserScan.ranges[min_index:max_index]) < self.mapping_distance)
-
+        #indices = np.where(np.array(laserScan.ranges) < self.mapping_distance)
+        if min == max:
+            indices = np.where(np.array(laserScan.ranges[min_index]) < self.mapping_distance)
+        else: 
+            indices = np.where(np.array(laserScan.ranges[min_index:max_index]) < self.mapping_distance)
+        
         #Get svea's pose
         svea_x = state[0]
         svea_y = state[1]
@@ -169,10 +225,12 @@ class PurePursuitController(object):
 
         #Mapping dynamic obstacles
         obs_points = []
+        idx_list = []
         for idx in indices[0]:  
+            idx = idx + min_index
+            idx_list.append(idx)
             #calculate angle to laser point
             angle = laserScan.angle_min + idx*laserScan.angle_increment
-
             #coordinate of the laser point/obstacle
             lidar_range = laserScan.ranges[idx]
             obs_coord = [lidar_coord[0]+lidar_range*math.cos(yaw+angle), lidar_coord[1]+lidar_range*math.sin(yaw+angle)]
@@ -189,7 +247,7 @@ class PurePursuitController(object):
         except KeyError:
             print("value not set")
         rospy.set_param('/team_5_floor2/lidar_obstacles',obstacles_list)
-        #self.publish_obstacles(obs_points)
+        self.publish_obstacles(obstacles_list)
 
     def publish_obstacles(self, obstacles_list):
         Interface = MapROSInterface()

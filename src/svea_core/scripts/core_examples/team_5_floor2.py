@@ -94,9 +94,9 @@ def main():
     emergency_settings = {
         "driving_distance": 0.1,
         "use_track": False,
-        "safety_distance": 0.16,
+        "safety_distance": 0.05, #0.2 was ok but a bit tight
         "subscribe_to_obstacles": True,
-        "grid_resolution": 0.05
+        "grid_resolution": 0.025
         }
     rospy.init_node('team_5_floor2')
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
@@ -158,12 +158,14 @@ def main():
         state = svea.wait_for_state()
   
         if istate == 0: # IDLE state - waits here untill emergency stop
-            #svea.controller.target_velocity = target_velocity
+            svea.controller.target_velocity = target_velocity
             if svea.controller.emg_stop:
+                svea.controller.target_velocity = target_velocity*0.5
                 print("state 1")
                 istate = 1
+                istate = 5 # testing backup
         elif istate == 1: # Emergency stop activated - mapping obstacles
-            if ros_interface.current_speed < 0.05:
+            if ros_interface.current_speed < 0.01:
                 svea.controller.laser_mapping(ros_interface.initial_state)
                 if use_mpc:
                     print("state 2")
@@ -174,6 +176,7 @@ def main():
                 else:
                     print("state 0")
                     istate = 0
+                
         elif istate == 2: # Replan with MPC
             if  ros_interface._current_target_state != [0,0] and ros_interface.initial_state != None:
                 svea.controller.set_emg_traj_running(True)   
@@ -203,7 +206,7 @@ def main():
                 ros_interface.compute_goal()
                 x0, y0, theta0 = ros_interface.initial_state
                 xt,yt,thetat = ros_interface.goal_state
-                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,False)# False
+                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)# False
                 g_traj_x.reverse()
                 g_traj_y.reverse()
                 
@@ -231,20 +234,30 @@ def main():
                 print("state 0")
                 
                 istate = 0
-        """ elif istate == 5: # Initializa backup
-            if backup_attempted: # dont try to backup again
-                print("Planning failed")
-                break
+        elif istate == 5: # Initializa backup
+            #if backup_attempted: # dont try to backup again
+            #    print("Planning failed")
+            #    break
             svea.controller.backed_up = True
-            timeout = 2
+            
             time_start = rospy.get_time()
-            print ("Backing up")
+            print("Back up pulse")
             istate = 6
-        elif istate == 6: # Backing up
+        elif istate == 6: # pulse signal for 0.5 s on, 0.5 s off
+            timeout = 0.5 
+            if rospy.get_time() - time_start > 0.5:
+                svea.controller.backed_up = False
+            if rospy.get_time() - time_start > 1:
+                svea.controller.backed_up = True
+                print ("Backing up")
+                istate = 7
+        elif istate == 7: # Backing up for 2s
+            timeout = 2
             if rospy.get_time() > time_start + timeout:
                 svea.controller.backed_up = False
                 backup_attempted = True
-                if use_mpc:
+                istate = 1
+                """if use_mpc:
                     print("state 2")
                     istate = 2
                 elif use_astar:
@@ -258,10 +271,10 @@ def main():
         steering, velocity = svea.compute_control()
 
         
-        last_time = rospy.get_time()
-        if (last_time - print_time)  > 1:
-            print("velocity",velocity)
-            print_time = last_time  
+        #last_time = rospy.get_time()
+        #if (last_time - print_time)  > 1:
+        #    print("velocity",velocity)
+        #    print_time = last_time  
 
         svea.send_control(steering, velocity)
 
