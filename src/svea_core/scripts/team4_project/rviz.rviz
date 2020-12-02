@@ -24,7 +24,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Raw LiDAR
+    SyncSource: Lidar Point Cloud
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -86,7 +86,7 @@ Visualization Manager:
       Draw Behind: true
       Enabled: true
       Name: Map
-      Topic: /custom_map
+      Topic: /infl_map
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -204,7 +204,7 @@ Visualization Manager:
       Marker Topic: /viz_lidar_rays
       Name: Lidar Rays
       Namespaces:
-        {}
+        "": true
       Queue Size: 1
       Value: true
     - Alpha: 1

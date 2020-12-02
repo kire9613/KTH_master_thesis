@@ -55,6 +55,8 @@ class EngineROS:
         # Init map publishers
         self.__map_pub = rospy.Publisher('/custom_map', OccupancyGrid, queue_size=1,
                                          latch=True)
+        self.__infl_pub = rospy.Publisher('/infl_map', OccupancyGrid, queue_size=1,
+                                         latch=True)
 
         self.__map_upd_pub = rospy.Publisher('/map_upd_map', OccupancyGrid, queue_size=1,
                                          latch=True)
@@ -91,8 +93,9 @@ class EngineROS:
 
         self.setup_ok = False
 
-        # publish map on /custom_map 
+        # publish map on /custom_map
         self.__map_pub.publish(self.__map)
+        self.__infl_pub.publish(self.__map)
 
         if (os.path.isfile(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt")):
             self.set_map_from_file()
@@ -101,7 +104,7 @@ class EngineROS:
             while not self.added_polygons:
                 rospy.sleep(1)
             self.__map_pub.publish(self.__map)
-            self.__map_upd_pub.publish(self.__map)
+            self.__infl_pub.publish(self.__map)
             rospy.sleep(5)
             self.write_map_to_file()
 
@@ -164,7 +167,7 @@ class EngineROS:
         self.__map = map
 
         self.__map_pub.publish(self.__map)
-        self.__map_upd_pub.publish(self.__map)
+        self.__infl_pub.publish(self.__map)
         rospy.sleep(5)
         self.setup_ok = True
         rospy.loginfo("Read map from file done.")
