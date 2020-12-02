@@ -7,6 +7,11 @@ The structure for handling the map is divided into two parts:
 
 A more detailed description of the different parts is provided below.
 
+![alt text][map_example]
+
+[map_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/mapping_img.png "Map example"
+
+
 ## Map Updater
 The ROS node *Mapper* is the node that reads the lidar scans, and translates the information into map updates. The environment is represented as a grid map where each tile in map is assigned a value, representing the following:
 * occupied space: 100
@@ -67,6 +72,10 @@ A node can get the map by calling the following functions:
 The class is initialized with two versions of the map, one normal and one inflated version. The default map is the map of floor 2, and the maps are represented as 2d Numpy arrays.
 
 Updates to the map are received by two subscribers listening to the topics *infl_map_updates* and *custom_map_updates*, receiving map updates that are inflated and not inflated respectively. The received updates are continuously added to the maps.  
+
+![alt text][infl_map_example]
+
+[infl_map_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/infl1.png "Inflated map example"
 
 ## Obstacle Detection
 To be done...
