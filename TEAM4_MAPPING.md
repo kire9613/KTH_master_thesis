@@ -21,25 +21,25 @@ The node uses the following topics:
 * */track/keep_out*: Reading polygon
 * */scan*: Getting car position
 * */state*: Getting lidar scans
-* *custom_map_updates*: Publishing map updates
-* *infl_map_updates*: Publishing inflated map updates
+* */custom_map_updates*: Publishing map updates
+* */infl_map_updates*: Publishing inflated map updates
 
-The Mapper node has two versions of the map, on normal and one inflated version. At initializationboth maps is initialized with the map of floor 2, and the polygons the car needs to stay inside respectively keep outside (read from topics */track/stay_in* and */track/keep_out*) is added to the maps. When initialization is done a message is published to */node_started/mapping* telling the task switching that the mapping node is ready.
+The Mapper node has two versions of the map, on normal and one inflated version. At initialization both maps are initialized with the map of floor 2, and the polygons the car needs to stay inside respectively keep outside (read from topics */track/stay_in* and */track/keep_out*) is added to the maps. When initialization is done a message is published to */node_started/mapping* informing the task switching that the mapping node is ready.
 
-As lidar scans and car position is received (from topics */scan* and */state*) from the car, the node starts to build an update to the map. The procedure is as follows:
+When receiving lidar scans and car position (from topics */scan* and */state*) from the car, the node starts to build an update to the map. The procedure is as follows:
 1. Receive lidar scan and car position on topics */scan* and */state*.
 2. Looping over the lidar scans, do:
   If scan is in lidar range and scan angle within angle limits:
-  - Calculate the map coordinate of the detected obstacle:
-      x_scan = range * cos(angle) * cos(robot_yaw) - range * sin(angle) * sin(robot_yaw)
-      y_scan = range * cos(angle) * sin(robot_yaw) + range * sin(angle) * cos(robot_yaw)
-      where range is the measured distance to obstacle and angle is the scan direction, given by the lidar scan. Further:
-      x_scan_map = x_scan - origin_x
-      y_scan_map = y_scan - origin_y
+  - Calculate the map coordinate of the detected obstacle:  
+      x_scan = range * cos(angle) * cos(robot_yaw) - range * sin(angle) * sin(robot_yaw)  
+      y_scan = range * cos(angle) * sin(robot_yaw) + range * sin(angle) * cos(robot_yaw)  
+      where range is the measured distance to obstacle and angle is the scan direction, given by the lidar scan. Further:  
+      x_scan_map = x_scan - origin_x  
+      y_scan_map = y_scan - origin_y  
       where origin_x, origin_y is origin of the map.
-  - Translate the map coordinate to index in the grid map:
-      x_index = int(x_scan_map/resolution)
-      y_index = int(y_scan_map/resolution)
+  - Translate the map coordinate to index in the grid map:  
+      x_index = int(x_scan_map/resolution)  
+      y_index = int(y_scan_map/resolution)  
       where resolution is the resolution of the map.
   - Add map indexes of obstacle to list of obstacles.
   - Add map indexes of tiles in map between obstacle and car position to list holding free space.
