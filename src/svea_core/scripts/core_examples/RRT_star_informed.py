@@ -17,6 +17,9 @@ import os
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as Rot
 import numpy as np
+import svea.models.bicycle
+
+MODEL = svea.models.bicycle.SimpleBicycleModel()
 
 dirname = os.path.dirname(__file__)
 svea_core = os.path.join(dirname)
@@ -43,9 +46,6 @@ class InformedRRTStar:
         self.node_list = None
 
     def informed_rrt_star_search(self, animation=True):
-
-
-
 
 
         self.node_list = [self.start]
@@ -82,13 +82,11 @@ class InformedRRTStar:
             n_ind = self.get_nearest_list_index(self.node_list, rnd)
             nearestNode = self.node_list[n_ind]
             # steer
-            theta = math.atan2(rnd[1] - nearestNode.y, rnd[0] - nearestNode.x)
-            newNode = self.get_new_node(theta, n_ind, nearestNode)
-            d = self.line_cost(nearestNode, newNode)
+            
+            newNode = self.get_new_node(rnd, n_ind, nearestNode)
 
-            noCollision = self.check_collision(nearestNode, theta, d)
 
-            if noCollision:
+            if newNode: # if its not None
                 nearInds = self.find_near_nodes(newNode)
                 newNode = self.choose_parent(newNode, nearInds)
 
@@ -206,14 +204,34 @@ class InformedRRTStar:
         minIndex = dList.index(min(dList))
         return minIndex
 
-    def get_new_node(self, theta, n_ind, nearestNode): # har ska vi begransa vinkeln!
-        newNode = copy.deepcopy(nearestNode)
 
+    def get_new_node(self, rnd, n_ind, nearestNode): # TODO har ska vi begransa vinkeln! 
+        
+        dist_shortest = 1000
+        phi_val = [-MODEL.DELTA_MAX, -MODEL.DELTA_MAX/2, 0, MODEL.DELTA_MAX/2, MODEL.DELTA_MAX]
+
+
+
+
+        for i in theta
+
+        newNode = copy.deepcopy(nearestNode)
+        newNode = step(theta)
         newNode.x += self.expand_dis * math.cos(theta)
         newNode.y += self.expand_dis * math.sin(theta)
-
         newNode.cost += self.expand_dis
         newNode.parent = n_ind
+        d = self.line_cost(nearestNode, newNode)
+        noCollision = self.check_collision(nearestNode, theta, d)
+            
+        dist = sqrt((x - rnd.x) ** 2 + (y - rnd.y) ** 2)
+        if dist < dist_shortest and noCollision:
+
+            dist_shortest = dist
+
+            curr_node = Node(x, y, phi, theta, (nearest_node.time + step_length * 0.01), nearest_node)
+            #print('Safe and shortest distance =', curr_node.x, curr_node.y)
+
         return newNode
 
     def is_near_goal(self, node):
@@ -317,7 +335,8 @@ class InformedRRTStar:
         t = np.arange(0, 2 * math.pi + 0.1, 0.1)
         x = [a * math.cos(it) for it in t]
         y = [b * math.sin(it) for it in t]
-        rot = Rot.from_euler('z', -angle).as_matrix()[0:2, 0:2]
+        rot = [[np.cos(-angle), -np.sin(-angle)],[np.sin(-angle), np.cos(-angle)]]
+      #  rot = Rot.from_euler('z', -angle).as_matrix()[0:2, 0:2]
         fx = np.matmul(rot,np.array([x, y]))
         px = np.array(fx[0, :] + cx).flatten()
         py = np.array(fx[1, :] + cy).flatten()

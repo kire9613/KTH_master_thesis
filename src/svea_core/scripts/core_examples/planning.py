@@ -13,16 +13,10 @@ import pickle
 import matplotlib.pyplot as plt
 
 from math import hypot, sqrt
-#from map.occupancy_grid import *
 from sync_occupsancygrid import SyncOcc
-#from map.ros_interface import ROSInterface as MapROSInterface
+
 from nav_msgs.msg import OccupancyGrid
 
-
-dirname = os.path.dirname(__file__)
-svea_core = os.path.join(dirname, '../../')
-map_name = "floor2_rot" # change this for different maps
-file_path = svea_core + 'scripts/core_examples/' + map_name + ".pickle"
 
 import svea.models.bicycle
 
@@ -34,14 +28,6 @@ frame_id = "map"
 resolution = 0.05 # The map resolution [m/cell]
 width = 879 
 height = 171
-#origin = [-17.581444, -22.876441]
-x = 13.5
-y = 1.54
-targetx = 36.3
-targety = 1.44
-fig, ax = plt.subplots(1)
-plt.ion()
-plt.show()
 
 class Node():
 
@@ -64,8 +50,6 @@ class MAPP():
         self.width = width
         self.height = height
         self.map_matrix = np.full((width, height), np.inf)
-        self.xt = targetx # xtarget
-        self.yt = targety # ytarget
 
     
 
@@ -79,66 +63,54 @@ class MAPP():
 		rospy.spin()
 
 
-def solution(car):
+def solution(car, start, target, ax):
 
-    global step_length, times, NodeList, countis, TTR_set
+    global step_length, times, NodeList, countis
     done = False
-    
-    pkl_file = open(file_path, 'rb')
-    obsticle = pickle.load(pkl_file)
-    ob_array =  np.array(obsticle.data)
 
-    MAPP.map_matrix = np.reshape(ob_array,(width, height), order='F')
-
-    obslist = get_obs(MAPP.map_matrix)
-
-    car.obs = obslist
 
     i = 0
-    x = 13.5
-    y = 1.54
-    timestart = 0
-    phistart = 0
-    thetastart = 0
-    step_length = 20
+#   x = 13.5
+#    y = 1.54
+   # timestart = 0
+   # phistart = 0
+   # thetastart = 0
+    step_length = 30
     countis = 0
+    dist2 = -1
 
-    start = Node(x, y, phistart, thetastart, timestart)
     NodeList = [start]
     
-    count = 2000
+    count = 7000
     first_step = 10
 
     # one big step in the beginning.
 
     for i in range(first_step):
-    #    x, y, theta__ = step(car, x, y, thetastart, phistart)
-        x = x + np.cos(phistart)*0.1
-        y = y + np.sin(phistart)*0.1
-        theta__ = thetastart 
-    curr_node = Node(x, y, phistart, theta__, (start.time + first_step * 0.01), start)
+        x = start.x + np.cos(start.phi)*0.1
+        y = start.y + np.sin(start.phi)*0.1
+        theta__ = start.theta
+
+
+    curr_node = Node(x, y, start.phi, theta__, (start.time + first_step * 0.01), start)
     NodeList.append(curr_node)
 
- #   print('here is first in nodelist')
- #   print((start.x, start.y))
- #   print('here is first curr_node')
- #   print((curr_node.x, curr_node.y))
 
-
-    #
 
     for j in range(count):
 
         # THETA = BILENSVINKEL GENTE SYSTEMET
-      #  print('here is random p')
-        random_point = get_random_position(car)
-     #   print(random_point.x, random_point.y)
-        nearest_node = GetNearestListNode(NodeList, random_point) # brings the best parent to the random point
-    #    print('here is nearest node')
-    #    print(nearest_node.x, nearest_node.y)
+        
+        closest_to_target1, dist1 = GetNearestListNode(NodeList, target)
+        
+        random_point = get_random_position(NodeList, dist1, dist2, target)
+        dist2 = dist1
+     
+        nearest_node, dist = GetNearestListNode(NodeList, random_point) # brings the best parent to the random point
+    
         # hämtar ut bästa barnet
         New_nod = get_best_child(car, nearest_node, random_point)
-
+        
         if New_nod: # Om den inte är nonetype
 
             xn = New_nod.x
@@ -147,52 +119,45 @@ def solution(car):
 
             ax.plot(New_nod.x, New_nod.y, 'o')
             plt.draw()
-            plt.plot(x, y, "xr")
-            plt.plot(targetx, targety, "xr")
-            plt.axis([10, 40, -2, 10])
-            plt.grid(True)
             plt.pause(0.0001)
-            done = True if ((targetx - xn) ** 2 + (targety - yn) ** 2) ** 0.5 < 0.5 else False
-            closedone = True if ((targetx - xn) ** 2 + (targety - yn) ** 2) ** 0.5 < 5 else False
+            done = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 0.9 else False
+            closedone = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 5 else False
             if closedone:
-                print('JÄVLIGT NÄRA')
+                #print('JÄVLIGT NÄRA')
                 pass
 
         if done:
             break
-# Perhaps dont need this one! 
-    X, Y = gets_path(NodeList[-1])
-#    print(type(NodeList))
-#    print(NodeList[0].x)
-    #return [i.x for i in NodeList], [i.y for i in NodeList]
-    return X, Y
+
+    X, Y, THETA = gets_path(NodeList[-1])
+
+    return X, Y, THETA
 
 def gets_path(barn): 
 
     X = []
     Y = []
-    tid = []
+    THETA = []
+
     while barn.parent != None:
 
-        for i in range(step_length):
-            X.append(barn.x)
-            Y.append(barn.y)
-            tid.append(round(barn.time, 3))
-            barn.time -= 0.01
+        X.append(barn.x)
+        Y.append(barn.y)
+        THETA.append(barn.theta)
+
         barn = barn.parent
-    tid.append(0)
-    tid.reverse()
+
     X.reverse()
     Y.reverse()
+    THETA.reverse()
 
-    return X, Y
+    return X, Y, THETA
 
 # Denna tar fram  noden som är närmast randompunkten jag tagit fram
 def GetNearestListNode(nodeList, rnd):
    
     mindist = 10000
-#    print('here is nodelist 0')
-#    print((nodeList[1].x, nodeList[1].y))
+
     for i in range(len(nodeList)):
         x_list = nodeList[i].x
         y_list = nodeList[i].y
@@ -202,26 +167,7 @@ def GetNearestListNode(nodeList, rnd):
         if dist <= mindist:
             mindist = dist
             j = i
-    return nodeList[j]
-
-
-# functions that lists all nodes with obsticles from the matrix that says a value == 100 if obstacle
-def get_obs(obs_matrix): 
-    obslist = []
-    for n in range(200, 878):
-        for m in range(0, 170):
-            value = obs_matrix[n, m]
-
-            if value > 10:
-                obslist.append([n*0.05, m*0.05])
-                ax.plot(n*0.05, m*0.05, 'x')
-                #plt.draw()
-                #plt.pause(0.0001)
-                #hold(True)
-    return obslist
-
-
-    
+    return nodeList[j], dist
 
 def safe_or_not(car, node):
     answer_is = True
@@ -229,28 +175,38 @@ def safe_or_not(car, node):
     for n in range(len(car.obs)):
         x_ = car.obs[n][0] # Mittpunkt
         y_ = car.obs[n][1]
-        radius = 0.5 # ökar radien!
+        radius =  0.2 # ökar radien!
 
         band_low_x = x_ - radius # nedre xdelen av hindret
         band_upp_x = x_ + radius # övre xdelen av hindret
-        band_low_y = y_ - radius # nedre ydelen av hindretssssssss
+        band_low_y = y_ - radius # nedre ydelen av hindret
         band_upp_y = y_ + radius # övre ydelen av hindret
 
         # Kollar om nära ett hinder
         if (node.x <= band_upp_x) and (node.x >= band_low_x) and (node.y >= band_low_y) and (node.y <= band_upp_y):
             answer_is = False
-            #print('close to hinder!')
             break
 
         # Kollar om nära en vägg
-        if (node.x <= 0) or (node.x >= width ) or (node.y <= 0) or (node.y >= height):
-            answer_is = False
-          #  print('close to wall!')
-            break
-
+        #if (node.x <= car.xlb) or (node.x >= car.xub ) or (node.y <= car.ylb) or (node.y >= car.yub):
+        #    answer_is = False
+        #    break
     return answer_is
 
+def safe_disc(node, mapp):
 
+    answer_is = True 
+
+    xdisc = np.floor(node.x/(resolution))
+    ydisc = np.floor(node.y/(resolution))
+
+    ans = mapp[int(xdisc), int(ydisc)] 
+
+    if ans > 10:
+        answer_is = False
+        print('not safe!!')
+
+    return answer_is
 
 
 def get_best_child(car, nearest_node, rnd):
@@ -258,6 +214,12 @@ def get_best_child(car, nearest_node, rnd):
     dist_shortest = 10000
     curr_node = None
     phi_val = [-MODEL.DELTA_MAX, -MODEL.DELTA_MAX/2, 0, MODEL.DELTA_MAX/2, MODEL.DELTA_MAX]
+    xkand = []
+    ykand = []
+    thetakand = []
+    phikand = []
+    distkand = []
+
     for k in range(len(phi_val)):
         phi = phi_val[k]
         x = nearest_node.x
@@ -266,36 +228,50 @@ def get_best_child(car, nearest_node, rnd):
 
         for i in range(step_length):
 
-            #print('before step =',(x, y))
-            x, y, theta = step(car, x, y, theta, phi)
-            #print('after step =',(xny, yny))
+
+            x, y, theta = step(car, x, y, theta, phi)           
             check = Node(x,y)
 
+            #safe = safe_disc(check, car.matrix)
             safe = safe_or_not(car, check)
 
             if not safe:
-            #    print('not safe!!!!')
+
                 break
-            #else:
-            #    print('SAFEEEEE')
+
         dist = sqrt((x - rnd.x) ** 2 + (y - rnd.y) ** 2)
         if dist < dist_shortest and safe:
 
+            distkand.append(dist)
             dist_shortest = dist
-
-            curr_node = Node(x, y, phi, theta, (nearest_node.time + step_length * 0.01), nearest_node)
-            #print('Safe and shortest distance =', curr_node.x, curr_node.y)
-
+            xkand.append(x)
+            ykand.append(y)
+            thetakand.append(theta)
+            phikand.append(phi)
 
     # This is if none of the phi values are ok, then we need to choose another parent?
-    if curr_node == None: 
-        NodeList.remove(nearest_node)
+    if not xkand: 
+       # NodeList.remove(nearest_node)
         return
+    else:
+        index_min = np.argmin(distkand)
+        x = xkand[index_min]
+        y = ykand[index_min]
+        theta = thetakand[index_min]
+        phi = phikand[index_min]
+
+        del xkand[:]
+        del ykand[:]
+        del thetakand[:]
+        del phikand[:]
+
+        curr_node = Node(x, y, phi, theta, (nearest_node.time + step_length * 0.01), nearest_node)
+
 
     return curr_node
 
 
-def step(car, x, y, theta, phi, dt=0.02): # get from another function! 
+def step(car, x, y, theta, phi, dt=0.01): # get from another function! 
 
     dx     = np.cos(theta)
     dy     = np.sin(theta)
@@ -309,17 +285,26 @@ def step(car, x, y, theta, phi, dt=0.02): # get from another function!
     return xn, yn, thetan
 
 
-def get_random_position(car):
+def get_random_position(NodeList, dist1, dist2, target):
     global countis
-    countis += 1
-
-    if countis < 3:
-
-        rnd = [random.uniform(0, width * resolution -0.5), random.uniform(1, height * resolution -0.5)]
-        random_p = Node(rnd[0], rnd[1])
-
+   
+    if dist1 == dist2:
+        print('I am stuck! searching randomly!')
+        if countis == 2:
+            rnd = [target.x, random.uniform(1, height * resolution)]
+            random_p = Node(rnd[0], rnd[1])
+            countis = 0
+        elif countis == 1:
+            rnd = [random.uniform(0, width * resolution), target.y]
+            random_p = Node(rnd[0], rnd[1])
+            countis += 1
+        else:
+            rnd = [random.uniform(0, width * resolution), random.uniform(1, height * resolution)]
+            random_p = Node(rnd[0], rnd[1])
+            countis += 1
     else:
-        random_p = Node(targetx, targety)
+        random_p = Node(target.x, target.y)
         countis = 0
 
     return random_p
+
