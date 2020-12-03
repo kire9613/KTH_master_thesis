@@ -21,6 +21,7 @@
 
     <machine name="oscar" address="oscar-project.local" user="oscar" env-loader="/home/oscar/svea_starter/remote-env.sh"/>
     <machine name="adam" address="mrmixit-Predator-PH317-52.local" user="mrmixit" env-loader="/home/mrmixit/Project/svea_starter/remote-env.sh"/>
+    <machine name="caroline" address="caroline-HP-Pavilion-Notebook.local" user="caroline" env-loader="/home/caroline/EL2425/svea_starter"/>
 
     <group if="$(eval is_sim == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/scripts/team4_project/rviz.rviz" />
