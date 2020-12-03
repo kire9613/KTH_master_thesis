@@ -8,7 +8,7 @@ The velocity controller is a PI controller with anti windup shown in the block d
 
 ![equation](https://latex.codecogs.com/svg.latex?u_t%20%3D%20K_pe_t%20+%20%5Cfrac%7BK_i%7D%7Bq-1%7De_t%20+%20%5Cfrac%7BT%7D%7Bq-1%7D%28u%5Es_t%20-%20u_t%29)
 
-or as
+or by expanding the operator as
 
 ![equation](https://latex.codecogs.com/svg.svg?u_%7Bt+1%7D%20%3D%20u_t%20+%20K_pe_%7Bt+1%7D%20+%20%28K_i-K_p%29e_t%20+%20%281-T%29u_t%20+%20Tu%5Es_t)
 
