@@ -15,7 +15,7 @@ class PurePursuitController(object):
     #K_i = 1.0  #TODO speed control integral gain
     #K_d = -0.1  #TODO speed control derivitive gain
     K_p = 1  #TODO speed control propotional gain
-    K_i = 0.02  #TODO speed control integral gain
+    K_i = 0.1  #TODO speed control integral gain
     K_d = 0  #TODO speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
     threshold = 0.2
@@ -156,9 +156,11 @@ class PurePursuitController(object):
         if target_distance < self.threshold and self.flag_halfway:
             self.is_finished = True
             rospy.loginfo_throttle(1000,"The Average speed was: {}".format(np.mean(self.hist_v)))
-            t = np.linspace(0,len(self.hist_v)-1,len(self.hist_v))
+
+            #t = np.linspace(0,len(self.hist_v)-1,len(self.hist_v))
             #plt.plot(t,self.hist_v,'r--',t,self.pid_hist,'b--')
             #plt.show(block=False)
+
             
         """dx_to_target = self.traj_x[-1] - state.x
         dy_to_target = self.traj_y[-1] - state.y

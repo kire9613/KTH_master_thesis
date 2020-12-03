@@ -57,14 +57,18 @@ find_package(catkin REQUIRED COMPONENTS
    lli_emergency.msg
    VehicleState.msg
    emergency_break.msg
+   slow_down.msg
+   map_pixel_coordinates.msg
+   CoordinateArray.msg
+   next_traj.msg
  )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+   FILES
+   PathEstimator.srv
+   ControlMessage.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
