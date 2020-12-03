@@ -9,7 +9,7 @@ A more detailed description of the different parts is provided below.
 
 ![alt text][map_example]
 
-[map_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/mapping_img.png "Map example"
+[map_example]: figures/mapping_img.png "Map example"
 
 
 ## Map Updater
@@ -75,7 +75,7 @@ Updates to the map are received by two subscribers listening to the topics *infl
 
 ![alt text][infl_map_example]
 
-[infl_map_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/infl1.png "Inflated map example"
+[infl_map_example]: figures/infl1.png "Inflated map example"
 
 ## Obstacle Detection
 To be done...

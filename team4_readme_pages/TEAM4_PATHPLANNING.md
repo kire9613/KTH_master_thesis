@@ -3,12 +3,12 @@ The car uses two separate path planning systems, one for global planning based o
 
 ![alt text][planning_example]
 
-[planning_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/mapping_img.png "Path Planning"
+[planning_example]: figures/mapping_img.png "Path Planning"
 
 The image shows an example of how the planning processes is illustraded in rviz when running the system. The purple diamonds represent the waypoints that is returned from the global path planner. The yellow line from the car to the nearest waypoints shows the latest path provided by the local planner.
 
 ## Global path planner - RRT
-The ROS node *planner* is the node which handles the global path planning. It is called with the map provider described in [Mapping](https://github.com/KTH-SML/svea_starter/blob/team4_master/TEAM4_MAPPING.md "TEAM4_MAPPING") to get the updated map, a start position, and a goal position. When called, the node runs a RRT algorithm and returns a set of way-points from the start position to the goal position. The way-points are so that the lines connecting each way-point avoids obstacles in the map.  
+The ROS node *planner* is the node which handles the global path planning. It is called with the map provider described in [Mapping](TEAM4_MAPPING.md "TEAM4_MAPPING") to get the updated map, a start position, and a goal position. When called, the node runs a RRT algorithm and returns a set of way-points from the start position to the goal position. The way-points are so that the lines connecting each way-point avoids obstacles in the map.  
 
 ### RRT
 The RRT algorithm used takes a start position (x0,y0) and a goal position (xT,yT) as input. The algorithm works as follows:
@@ -35,7 +35,7 @@ The path smoothing is used to reduce the number of unnecessary way-points, this 
 The sampling is biased so that the sampled point is the goal point every tenth sample, and a point close to the goal every tenth sample. This increases the likelihood that the RRT finds a short path between the start and goal position.
 
 ## Local path planner - Hybrid A*
-A local planner is used to plan a local path close to the car. This is done continously, giving a plan from the car position to a target waypoint, selected from the list of waypoints given by the global planner. Calling the local planner as often as possible works as obstacle avoidance, since the local planner is fed the updated map. 
+A local planner is used to plan a local path close to the car. This is done continously, giving a plan from the car position to a target waypoint, selected from the list of waypoints given by the global planner. Calling the local planner as often as possible works as obstacle avoidance, since the local planner is fed the updated map.
 
 The local planning is based on hybrid A* which includes a model of the SVEA car. We includ costs for being far away from the goal point, for turning, and for being close to obstacles in the map. This helps provide a reasonably straight path from start to goal which keeps some additional distance to obstacles if possible.
 
@@ -66,7 +66,7 @@ The server can be preempted, this aborts the process running Hybrid A*.
 
 ![alt text][astar_example]
 
-[astar_example]: https://github.com/KTH-SML/svea_starter/blob/team4_master/astar_img.png "AStar Planning"
+[astar_example]: figures/astar_img.png "AStar Planning"
 
 The Hybrid A* algorithm takes a start position (x0,y0) and a goal position (xT,yT) as input. We build a priority queue by testing certain control inputs and use a model of the SVEA to predict what the next pose will be. The algorithm works as follows:
 ```
@@ -77,13 +77,13 @@ The Hybrid A* algorithm takes a start position (x0,y0) and a goal position (xT,y
 5.    For each steering angle in ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4]:
 6.        Get a new node by taking 10 steps using the vehicle model, velocity 1 m/s and steering angle, for each step, check of current location is safe.
 7.        If trajectory safe:
-8.            Add node to Q with defined cost 
+8.            Add node to Q with defined cost
 9.        Else:
 10.           Discard node
 11.       Check if we hav reached (xT,yT), if True: return path
 ```
 
 * A location is considered as safe if the value of the map at that location is not representing occupied space, polygon space or c-space.
-* The cost assigned to a node is defined as: 
-  
+* The cost assigned to a node is defined as:
+
   cost = parent_cost + {1 if steering angle = 0, else 1.5} + 1.5 / (distance_to_obstacle^2) + 3 * distance_to_goal
