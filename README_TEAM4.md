@@ -3,6 +3,13 @@
 ## Short description
 
 ## Requirements
+Before running the code for the first time run the commands
+```
+pip install py-trees==0.6.5
+sudo apt install python-rtree python-scipy
+echo 'export PYTHONPATH="$PYTHONPATH:$(rospack find svea_core)/scripts"' >> ~/.bashrc
+source ~/.bashrc
+```
 
 ## Running the code
 
