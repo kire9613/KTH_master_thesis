@@ -22,7 +22,7 @@ from team4_project.mapping2.updatemap import UpdateMap
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 #q2
 #GOAL_LIST = [[2.6,0.2],[10.4, 11.8],[5.92, 14.7],[-6.77,-3.51],[-4.17, -6.03]]
-GOAL_LIST = [[1.23,-1.97],[6.61,6.02],[4.73,13.1],[-0.77,5.01],[-3.33,-6.73]] # List of "goals" or waypoints for car to plan between initially
+GOAL_LIST = [[5.92,14.7]]#[[1.23,-1.97],[6.61,6.02],[4.73,13.1],[-0.77,5.01],[-3.33,-6.73]] # List of "goals" or waypoints for car to plan between initially
 #q1 start pos: '17.9, 3.54, 3.1, 0'
 #GOAL_LIST = [[11.9,3.64],[1.86,4],[-7.22,4.86],[-13.6,2.66],[-4.61,0.558],[3.32,-0.942],[11.9,-2.6],[12.3,2.7],[1.86,4.05]] # List of "goals" or waypoints for car to plan between initially
 
@@ -115,40 +115,24 @@ def main():
     vis_waypoint_msg = PointCloud()
     vis_waypoint_msg.header.frame_id = 'map'
 
-    # for i in range(len(GOAL_LIST)):
-    #     if i == 0: # If first waypoint, plan from start to waypoint
-    #         path = get_path([start_state.x, start_state.y], GOAL_LIST[i]) #[-5.36, -1.66] [5.94, 14.5]
-    #         path = list(reversed(path))
-    #     else: # Else, plan from previous waypoint to next
-    #         path = get_path(GOAL_LIST[i-1], GOAL_LIST[i])
-    #         path = list(reversed(path))
-    #         del path[0]
-    #
-    #     for p in path:
-    #         tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
-    #         vis_point = Point32()
-    #         vis_point.x = p.pose.position.x
-    #         vis_point.y = p.pose.position.y
-    #         vis_waypoint_msg.points.append(vis_point)
-    #
-    # waypoint_vis.publish(vis_waypoint_msg)
+    for i in range(len(GOAL_LIST)):
+        if i == 0: # If first waypoint, plan from start to waypoint
+            path = get_path([start_state.x, start_state.y], GOAL_LIST[i]) #[-5.36, -1.66] [5.94, 14.5]
+            path = list(reversed(path))
+        else: # Else, plan from previous waypoint to next
+            path = get_path(GOAL_LIST[i-1], GOAL_LIST[i])
+            path = list(reversed(path))
+            del path[0]
 
-    mwp = [(-3.15,-8.39),(-0.7,-4.86),(1.91,-0.97),(5.57,4.46),(7.69,7.71),(10.2,11.6),(6.02,14.8),(2.83,10.4),(-0.82,4.86),(-3.8,0.51),(-7.15,-4.42),(-2.5,-7.5),(0.32,-3.26)]
-    path = []
-    for wp in mwp:
-        tn.waypoints.append(np.array([wp[0], wp[1]]))
-        pose = PoseStamped()
-        pose.header.frame_id = "map"
-        pose.pose.orientation.w = 1
-        pose.pose.position.x = wp[0]
-        pose.pose.position.y = wp[1]
-        path.append(pose)
-        vis_point = Point32()
-        vis_point.x = wp[0]
-        vis_point.y = wp[1]
-        vis_waypoint_msg.points.append(vis_point)
-
+        for p in path:
+            tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+            vis_point = Point32()
+            vis_point.x = p.pose.position.x
+            vis_point.y = p.pose.position.y
+            vis_waypoint_msg.points.append(vis_point)
+    
     waypoint_vis.publish(vis_waypoint_msg)
+
 
     behaviour_tree = BehaviourTree()
     behaviour_tree.setup(timeout=10000)
