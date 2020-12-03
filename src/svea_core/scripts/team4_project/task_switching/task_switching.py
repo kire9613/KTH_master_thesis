@@ -114,21 +114,38 @@ def main():
     vis_waypoint_msg = PointCloud()
     vis_waypoint_msg.header.frame_id = 'map'
 
-    for i in range(len(GOAL_LIST)):
-        if i == 0: # If first waypoint, plan from start to waypoint
-            path = get_path([start_state.x, start_state.y], GOAL_LIST[i]) #[-5.36, -1.66] [5.94, 14.5]
-            path = list(reversed(path))
-        else: # Else, plan from previous waypoint to next
-            path = get_path(GOAL_LIST[i-1], GOAL_LIST[i])
-            path = list(reversed(path))
-            del path[0]
+    # for i in range(len(GOAL_LIST)):
+    #     if i == 0: # If first waypoint, plan from start to waypoint
+    #         path = get_path([start_state.x, start_state.y], GOAL_LIST[i]) #[-5.36, -1.66] [5.94, 14.5]
+    #         path = list(reversed(path))
+    #     else: # Else, plan from previous waypoint to next
+    #         path = get_path(GOAL_LIST[i-1], GOAL_LIST[i])
+    #         path = list(reversed(path))
+    #         del path[0]
+    #
+    #     for p in path:
+    #         tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+    #         vis_point = Point32()
+    #         vis_point.x = p.pose.position.x
+    #         vis_point.y = p.pose.position.y
+    #         vis_waypoint_msg.points.append(vis_point)
+    #
+    # waypoint_vis.publish(vis_waypoint_msg)
 
-        for p in path:
-            tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
-            vis_point = Point32()
-            vis_point.x = p.pose.position.x
-            vis_point.y = p.pose.position.y
-            vis_waypoint_msg.points.append(vis_point)
+    mwp = [(-3.15,-8.39),(-0.7,-4.86),(1.91,-0.97),(5.57,4.46),(7.69,7.71),(10.2,11.6),(6.02,14.8),(2.83,10.4),(-0.82,4.86),(-3.8,0.51),(-7.15,-4.42),(-2.5,-7.5),(0.32,-3.26)]
+    path = []
+    for wp in mwp:
+        tn.waypoints.append(np.array([wp[0], wp[1]]))
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.pose.orientation.w = 1
+        pose.pose.position.x = wp[0]
+        pose.pose.position.y = wp[1]
+        path.append(pose)
+        vis_point = Point32()
+        vis_point.x = wp[0]
+        vis_point.y = wp[1]
+        vis_waypoint_msg.points.append(vis_point)
 
     waypoint_vis.publish(vis_waypoint_msg)
 
