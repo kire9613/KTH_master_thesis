@@ -15,6 +15,8 @@ from map_msgs.msg import OccupancyGridUpdate
 from nav_msgs.msg import Path
 from rospy.numpy_msg import numpy_msg
 
+import svea.pyastar.pyastar
+
 # SVEA
 from svea_msgs.msg import VehicleState
 
