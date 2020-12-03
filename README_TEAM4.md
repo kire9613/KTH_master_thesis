@@ -3,19 +3,28 @@
 ## Short description
 
 ## Requirements
+Before running the code for the first time run the commands
+```
+pip install py-trees==0.6.5
+sudo apt install python-rtree python-scipy
+echo 'export PYTHONPATH="$PYTHONPATH:$(rospack find svea_core)/scripts"' >> ~/.bashrc
+source ~/.bashrc
+```
 
 ## Running the code
 
-To run the code on the car, you need to start three different programs. First, launch our code on the vehicle with:
+First make sure the system is set up to run on hardware. Edit `svea_starter/src/svea_core/scripts/team4_project/team4.launch` and make sure `is_sim` is set to `false`. The system is configured to distribute the ROS nodes over multiple machines. Either add your computer(s) to the list of machines and select what nodes are launched on them, or remove the `machine=` part on all `node` tags to run everything on the SVEA.
+
+To run the code, you need to start three different programs. First, launch our code on the vehicle with:
 
 ```
 roslaunch svea_core team4.launch
 ```
-Then, on either the car or your own computer, having done ´source svea_starter/utilities/export_ros_ip.sh´ first, run:
+Then, on either the car or your own computer, having done `source svea_starter/utilities/export_ros_ip.sh` first, run:
 ```
 rosrun svea_core start_pause.py
 ```
-You also need to run rviz on your computer with:
+If running on hardware, you also need to run rviz manually on your computer with:
 ```
 rviz -d svea_starter/src/svea_core/scripts/team4_project/rviz.rviz
 ```
