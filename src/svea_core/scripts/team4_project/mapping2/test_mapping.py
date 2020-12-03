@@ -15,15 +15,15 @@ def main():
     map_frame_id = "map"
     map_resolution = 0.05
     # q2
-    map_width = 721
-    map_height = 880
-    map_origin_x = -17.581444
-    map_origin_y = -22.876441
+    #map_width = 721
+    #map_height = 880
+    #map_origin_x = -17.581444
+    #map_origin_y = -22.876441
     #q1
-    # map_width = 1269
-    # map_height = 567
-    # map_origin_x = -30.55
-    # map_origin_y = -11.4
+    map_width = 1269
+    map_height = 567
+    map_origin_x = -30.55
+    map_origin_y = -11.4
 
     map_origin_yaw = 0
     inflate_radius = 5
