@@ -21,8 +21,8 @@ from team4_project.mapping2.updatemap import UpdateMap
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 #q2
-#GOAL_LIST = [[2.6,0.2],[10.4, 11.8],[5.92, 14.7],[-6.77,-3.51],[-4.17, -6.03]]
-GOAL_LIST = [[5.92,14.7]]#[[1.23,-1.97],[6.61,6.02],[4.73,13.1],[-0.77,5.01],[-3.33,-6.73]] # List of "goals" or waypoints for car to plan between initially
+GOAL_LIST = [[2.6,0.2],[10.4, 11.8],[5.92, 14.7],[-6.77,-3.51],[-4.17, -6.03]]
+#GOAL_LIST = [[1.23,-1.97],[6.61,6.02],[4.73,13.1],[-0.77,5.01],[-3.33,-6.73]] # List of "goals" or waypoints for car to plan between initially
 #q1 start pos: '17.9, 3.54, 3.1, 0'
 #GOAL_LIST = [[11.9,3.64],[1.86,4],[-7.22,4.86],[-13.6,2.66],[-4.61,0.558],[3.32,-0.942],[11.9,-2.6],[12.3,2.7],[1.86,4.05]] # List of "goals" or waypoints for car to plan between initially
 
@@ -130,7 +130,7 @@ def main():
             vis_point.x = p.pose.position.x
             vis_point.y = p.pose.position.y
             vis_waypoint_msg.points.append(vis_point)
-    
+
     waypoint_vis.publish(vis_waypoint_msg)
 
 

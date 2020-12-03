@@ -156,15 +156,15 @@ def updateNeighbors(obs, openSet, closedSet, n):
 
         # Create a matrix of all indices that correspond to
         # any kind of non-free space
-        # occupied_pos = np.concatenate(np.where(map_slice >= 100)).reshape((2, -1))
-        # if np.prod(occupied_pos.shape) > 0:
-        #     # Add a cost that is a function of the distance to the closest
-        #     # non-free cell
-        #     distance = np.min(np.linalg.norm(occupied_pos - node_pos_in_slice, axis=0))
-        #     # Avoid division by zero
-        #     if distance == 0.0:
-        #         distance = 0.001
-        #     cost += 1.5/distance**2
+        occupied_pos = np.concatenate(np.where(map_slice >= 100)).reshape((2, -1))
+        if np.prod(occupied_pos.shape) > 0:
+            # Add a cost that is a function of the distance to the closest
+            # non-free cell
+            distance = np.min(np.linalg.norm(occupied_pos - node_pos_in_slice, axis=0))
+            # Avoid division by zero
+            if distance == 0.0:
+                distance = 0.001
+            cost += 1.5/distance**2
 
         nn = Node(thetan, xn, yn, n.cost+cost, n, angle)
 
