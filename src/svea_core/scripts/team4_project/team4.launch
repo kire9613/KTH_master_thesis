@@ -21,8 +21,8 @@
 
     <machine name="oscar" address="oscar-project.local" user="oscar" env-loader="/home/oscar/svea_starter/remote-env.sh"/>
     <machine name="adam" address="mrmixit-Predator-PH317-52.local" user="mrmixit" env-loader="/home/mrmixit/Project/svea_starter/remote-env.sh"/>
-    <machine name="caroline" address="caroline-HP-Pavilion-Notebook.local" user="caroline" env-loader="/home/caroline/EL2425/svea_starter"/>
-    <machine name="ylva" address="Harrison.local" user="ylva" env-loader="/home/ylva/el2425/svea_starter"/>
+    <machine name="caroline" address="caroline-HP-Pavilion-Notebook.local" user="caroline" env-loader="/home/caroline/EL2425/svea_starter/remote-env.sh"/>
+    <machine name="ylva" address="Harrison.local" user="ylva" env-loader="/home/ylva/el2425/svea_starter/remote-env.sh"/>
         
 
     <group if="$(eval is_sim == true)">
