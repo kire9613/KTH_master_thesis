@@ -10,7 +10,7 @@ The velocity controller is a PI controller with anti windup shown in the block d
 
 or by expanding the operator as
 
-![equation](https://latex.codecogs.com/svg.svg?u_%7Bt+1%7D%20%3D%20u_t%20+%20K_pe_%7Bt+1%7D%20+%20%28K_i-K_p%29e_t%20+%20%281-T%29u_t%20+%20Tu%5Es_t)
+![equation](https://latex.codecogs.com/svg.svg?u_%7Bt+1%7D%20%3D%20K_pe_%7Bt+1%7D%20+%20%28K_i-K_p%29e_t%20+%20%281-T%29u_t%20+%20Tu%5Es_t)
 
 The benefit of using this form of anti-windup instead of simply disabling the integral part once it has passed a threshold is that the controller determines by itself when anti windup has to be enabled. If the threshold is applied manually there might be feasible references that the system can not track since the threshold has been put too tight.
 
