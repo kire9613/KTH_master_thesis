@@ -2,7 +2,7 @@
 The system uses a separate controller for controlling velocity, and a separate controller for controlling steering angle to follow the path.
 
 ## Velocity Control
-![Velocity controller block diagram](controller_diagram.svg "Velocity controller")
+![Velocity controller block diagram](figures/controller_diagram.svg "Velocity controller")
 
 The velocity controller is a PI controller with anti windup shown in the block diagram above. The anti windup was added to handle that the ECS on the SVEA saturates the control signal, and that the control can be overridden with the remote. Using the time shift operator ![equation](https://latex.codecogs.com/svg.latex?%5Cinline%20qx_t%3Dx_%7Bt+1%7D), the controller can be written
 
