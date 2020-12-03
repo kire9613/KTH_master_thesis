@@ -35,7 +35,7 @@
         <param name="use_rviz" value="$(arg use_rviz)"/>
         <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
         <param name="is_sim" value="$(arg is_sim)"/>
-	      <param name="use_lidar" value="$(arg use_lidar)"/>
+	<param name="use_lidar" value="$(arg use_lidar)"/>
     </node>
 
     <group if="$(eval is_sim == false)">
