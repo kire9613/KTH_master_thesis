@@ -26,9 +26,9 @@ static_map: true
 ##END VOXEL STUFF
 #
 transform_tolerance: 0.8
-obstacle_range: 5.0
+obstacle_range: 3.0
 #max_obstacle_height: 2.0
-raytrace_range: 5.0
+raytrace_range: 3.0
 #footprint: [[-0.325, -0.325], [-0.325, 0.325], [0.325, 0.325], [0.46, 0.0], [0.325, -0.325]]
 robot_radius: 0.1
 #footprint_padding: 0.01

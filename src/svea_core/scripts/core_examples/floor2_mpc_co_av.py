@@ -23,7 +23,8 @@ __status__ = "Development"
 """
 
 ## SIMULATION PARAMS ##########################################################
-param_name = "ZOH-good"
+param_name = "simulation"
+# param_name = "ZOH-good"
 params = parameters.get(param_name)
 
 vehicle_name = ""

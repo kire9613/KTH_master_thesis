@@ -42,6 +42,8 @@ class SimLidar(object):
 
     ANGLE_MIN = radians(-135.0) # start angle of scan [rad]
     ANGLE_MAX = radians(135.0) # end angle of the scan [rad]
+    ANGLE_MIN = radians(-45.0) # start angle of scan [rad]
+    ANGLE_MAX = radians(45.0) # end angle of the scan [rad]
     # INCREMENT = radians(0.25) # angular distance between measurements [rad]
     INCREMENT = radians(2) # angular distance between measurements [rad]
     TIME_INCREMENT = 0.00002 # time between each beam measurement [s]

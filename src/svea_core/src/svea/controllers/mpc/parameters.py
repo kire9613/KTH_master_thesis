@@ -54,6 +54,18 @@ parameters = {
         target_velocity = 1.5,
         low_lim = 1.0,
     ),
+    "simulation": Params(
+        P=np.diag([10, 10, 0.01, 500]),
+        Q=np.diag([1, 1, 1e-12, 1000]),
+        R=np.diag([1,1]),
+        model_type = "linear",
+        solver_ = "osqp",
+        dt = 0.1,
+        horizon = 5,
+        TAU=0.1,
+        target_velocity = 1.5,
+        low_lim = 1.0,
+    ),
 }
 
 def main():

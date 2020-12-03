@@ -84,8 +84,8 @@ class Node:
 
         x_list = (path[:,0]+problem_map.x)*resolution
         y_list = (path[:,1]+problem_map.y)*resolution
-        print(x_list)
-        print(y_list)
+        # print(x_list)
+        # print(y_list)
 
         # TODO: OLD CODE speed this up later...
 
@@ -93,17 +93,15 @@ class Node:
         y_new_global = []
 
         n = len(self.global_path.poses)
-        print("Path length: {0}".format(n))
+        # print("Path length: {0}".format(n))
         i = 0
         while 1:
             x = self.global_path.poses[i].pose.position.x
             y = self.global_path.poses[i].pose.position.y
             x_new_global.append(x)
             y_new_global.append(y)
-            print(x)
 
             dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
-            print(dist)
 
             if dist < splice_tol:
                 x_new_global.extend(x_list)
