@@ -19,7 +19,7 @@ from rospy.numpy_msg import numpy_msg
 from svea_msgs.msg import VehicleState
 
 # OTHER
-from matrix_astar import AStarPlanner
+from matrix_astar3 import AStarPlanner
 
 ## COLLISION NODE PARAMS ######################################################
 update_rate = 1
