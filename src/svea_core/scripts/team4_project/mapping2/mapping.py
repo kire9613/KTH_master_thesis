@@ -152,7 +152,7 @@ class Mapping:
         while scan_index < num_measures:
             # angle
             range = scan.ranges[scan_index]
-            if range > scan.range_min and range < scan.range_max/2 and angle < pi/4 and angle > -pi/4:
+            if range > scan.range_min and range < scan.range_max/2 and angle < pi/2 and angle > -pi/2:
                 # coordinates in scan frame
                 x_scan_p = range * cos(angle) + 0.282
                 y_scan_p = range * sin(angle)
