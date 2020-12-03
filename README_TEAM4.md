@@ -18,7 +18,7 @@ To run the code on the car, you need to start three different programs. First, l
 ```
 roslaunch svea_core team4.launch
 ```
-Then, on either the car or your own computer, having done ´source svea_starter/utilities/export_ros_ip.sh´ first, run:
+Then, on either the car or your own computer, having done `source svea_starter/utilities/export_ros_ip.sh` first, run:
 ```
 rosrun svea_core start_pause.py
 ```
