@@ -16,10 +16,10 @@
     -->
 
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
-    <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
+    <rosparam command="load" file="$(find svea_core)/resources/params/track_q2.yaml" />
     <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" />
     <arg name="start_pt" default= '-5.47, -12.0, 0.8978652, 0'/>
-    
+
     <machine name="oscar" address="oscar-project.local" user="oscar" env-loader="/home/oscar/svea_starter/remote-env.sh"/>
     <machine name="adam" address="mrmixit-Predator-PH317-52.local" user="mrmixit" env-loader="/home/mrmixit/Project/svea_starter/remote-env.sh"/>
 
