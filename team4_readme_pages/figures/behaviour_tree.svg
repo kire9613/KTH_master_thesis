@@ -27,7 +27,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -51,9 +51,9 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:zoom="0.47752093"
-     inkscape:cx="1826.3418"
-     inkscape:cy="788.96564"
+     inkscape:zoom="1.3506331"
+     inkscape:cx="1132.7091"
+     inkscape:cy="307.85977"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -709,7 +709,7 @@
        id="text269"
        font-size="11.00"
        y="-87.199997"
-       x="1331.7552">Remove waypoint</text>
+       x="1331.7552">Adjust waypoint</text>
   </g>
   <g
      class="edge"
