@@ -10,7 +10,7 @@ traj_lock = Lock()
 class PurePursuitController(object):
 
     k = 0.6       # look forward gain
-    Lfc = 0.4     # look-ahead distance
+    Lfc = 0.22    # look-ahead distance
     K_p = 2.0     # Coefficient for P-part of PI
     K_i = 0.0025    # Coefficient for I-part of PI
     T = 0.25         # Anti-windup Coefficient
