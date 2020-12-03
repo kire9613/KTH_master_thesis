@@ -24,7 +24,7 @@ Then, on either the car or your own computer, having done `source svea_starter/u
 ```
 rosrun svea_core start_pause.py
 ```
-You also need to run rviz on your computer with:
+If running on hardware, you also need to run rviz manually on your computer with:
 ```
 rviz -d svea_starter/src/svea_core/scripts/team4_project/rviz.rviz
 ```
