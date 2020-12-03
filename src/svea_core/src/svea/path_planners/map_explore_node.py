@@ -95,6 +95,7 @@ class Node:
         # print("got new map update!")
         self.map = map
         self.mapper.map_matrix[map.x:map.x+map.width,map.y:map.y+map.height] = np.reshape(map.data, (map.width, map.height), order='F')
+        # print(self.map.data)
         # plt.imshow(self.mapper.map_matrix.T)
         # plt.show()
 
