@@ -148,7 +148,7 @@ if __name__ == "__main__":
     """ Init exploration action service client name: get_next_goal (node: /explore), msg type: irob_assignment_1/GetNextGoalAction """
     astar_client = actionlib.SimpleActionClient('AStar_server', team4_msgs.msg.AStarAction) # client = actionlib.SimpleActionClient('ActionName', Topic)
     astar_client.wait_for_server()
-    
+
     get_path()
 
     rospy.spin()

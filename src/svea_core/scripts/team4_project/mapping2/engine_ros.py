@@ -49,6 +49,10 @@ class EngineROS:
 
         self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
         self.__map = rospy.wait_for_message('/map', OccupancyGrid)
+        m = rospy.wait_for_message('/map', OccupancyGrid)
+        print(m.header)
+        print(m.info)
+
         #self.__infl_map = None
         #self.__map_sub = rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
 
