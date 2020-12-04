@@ -93,7 +93,7 @@ def param_init():
 def main():
     emergency_settings = {
         "driving_distance": 0.1,
-        "use_track": False,
+        "use_track": True,
         "safety_distance": 0.05, #0.2 was ok but a bit tight
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
