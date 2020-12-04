@@ -3,46 +3,43 @@ Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math, rospy
 import numpy as np
-from pprint import pprint
 from sensor_msgs.msg import LaserScan
 from svea.path_planners.mpc_map.ros_interface import ROSInterface as MapROSInterface
 class PurePursuitController(object):
 
-    k = 0.6  # look forward gain
-    Lfc = 0.2#0.4  # look-ahead distance
+    k = 0.6 # look forward gain
+    Lfc = 0.2 # look-ahead distance
     K_p = 1 #speed control propotional gain
-    K_i = 2  #speed control integral gain
-    K_d = 0.0  #speed control derivitive gain
+    K_i = 2 #speed control integral gain
+    K_d = 0.0 #speed control derivitive gain
     P = 0 # initilize P value (PID)
     I = 0 # intialize I value (PID)
-    L = 0.324  # [m] wheel base of vehicle
-    max_velocity = 1
-    emergency_distance = 0.5#1 # [m] minimum distance until emergency_stop activated
+    L = 0.324 # [m] wheel base of vehicle
+    max_velocity = 1 # maximum velocity of svea [m/s]
+    emergency_distance = 0.5 # [m] minimum distance until emergency_stop activated
     mapping_distance = 3 # distance of obstacles to map
-    width = 0.2485
-    height = 0.586
-    mapping_angle = 1.57#0.785
+    width = 0.2485 # width of svea
+    height = 0.586 # length of svea
+    mapping_angle = 1.57 # +-[rad] map everything within this angle to obstacle map
+    lidar_to_base = 0.3 #svea position is measured at rear axis, but lasar at front axis 
 
     def __init__(self, vehicle_name=''):
-        self.traj_x = []
-        self.traj_y = []
-        self.target = None
-        # initialize with 0 velocity
+        self.traj_x = [] # planned x trajectory for svea
+        self.traj_y = [] # planned y trajectory for svea
+        self.target = None #
         self.target_velocity = 0.0
-        self.last_index = 0
         self.is_finished = False
         self.emg_stop = False
         self.emg_traj_running = False
-        self.last_time = 0.0
-        self.print_time = 0.0
-        self.lidar_to_base = 0.3  #svea position is measured at rear axis, but lasar at front axis 
-        self.backed_up = False
-        self.emg_angle_range = 0
-        self.compute_angle()
-        self.laser_scan = None
-        self.steering = 0
-        self.velocity = 0
-        rospy.set_param('/team_5_floor2/lidar_obstacles',[])
+        self.last_time = 0.0 # time stamp
+        self.print_time = 0.0 # time stamp
+        self.backing_up = False # True when car is backing up
+        self.emg_angle_range = 0 # Angle range used for emergency stop / obstacle detection
+        self.compute_angle() # computes angle range for emergency stop
+        self.laser_scan = None # data from laser scan
+        self.steering = 0 # Steering output from PID
+        self.velocity = 0 # velocity output from PID
+        rospy.set_param('/team_5_floor2/lidar_obstacles',[]) # parameter to keep obstacles
 
     def compute_angle(self):
         self.emg_angle_range = np.arctan2((self.width + 0.1),(2*self.emergency_distance))
@@ -52,7 +49,7 @@ class PurePursuitController(object):
         self.emg_traj_running = running 
 
     def compute_control(self, state, target=None):
-        if self.backed_up:
+        if self.backing_up:
             return self.steering,-0.6
         elif self.emg_stop and not self.emg_traj_running:
             return 0,0
@@ -122,7 +119,7 @@ class PurePursuitController(object):
             ind += 1
 
         # terminating condition
-        if dist < 0.1 and not self.backed_up:
+        if dist < 0.1 and not self.backing_up:
             self.is_finished = True
 
         return ind, dist
@@ -137,6 +134,7 @@ class PurePursuitController(object):
         self.laser_scan = laserScan
         if min(points) < self.emergency_distance:
             self.emg_stop = True
+
     def laser_mapping(self,state):
         
         laserScan = self.laser_scan
@@ -144,8 +142,7 @@ class PurePursuitController(object):
         min_index =  int(round((-self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
         max_index =  int(round((self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
 
-        # Find indices of laserscans that make up our obstacle
-        #indices = np.where(np.array(laserScan.ranges) < self.mapping_distance)
+        # Find indices of laserscans that make obstacle
         if min == max:
             indices = np.where(np.array(laserScan.ranges[min_index]) < self.mapping_distance)
         else: 
@@ -160,7 +157,7 @@ class PurePursuitController(object):
         length = self.lidar_to_base 
         lidar_coord = [svea_x+length*math.cos(yaw), svea_y+length*math.sin(yaw)]
 
-        #Mapping dynamic obstacles
+        #Mapping obstacles
         idx_list = []
         iobstacles_list = []
         for idx in indices[0]:  
@@ -180,7 +177,7 @@ class PurePursuitController(object):
                                  [ + dx, - dy ], 
                                  [ - dx, - dy ],
                                  [ - dx, + dy ]]   
-            
+            # Make polygons the size of svea car
             rot = [[math.cos(yaw),-math.sin(yaw)],[math.sin(yaw), math.cos(yaw)]]                  
             obs = np.matmul(rot,np.transpose(inflated_obstacle))
             inflated_obstacle = [[float(obs[0][0]),float(obs[1][0])],[float(obs[0][1]),float(obs[1][1])],[float(obs[0][2]),float(obs[1][2])],[float(obs[0][3]),float(obs[1][3])]]                 
@@ -189,18 +186,18 @@ class PurePursuitController(object):
                 inflated_obstacle[idx][0] = coord[0] + obs_coord[0]
                 inflated_obstacle[idx][1] = coord[1] + obs_coord[1]
                 idx = idx + 1
+
             # Update list of obstacles with the new obstacle 
-      
-            iobstacles_list.append(inflated_obstacle)
-        
+            iobstacles_list.append(inflated_obstacle)      
         try:
             rospy.delete_param('/team_5_floor2/lidar_obstacles')
         except KeyError:
             print("value not set")
         rospy.set_param('/team_5_floor2/lidar_obstacles',iobstacles_list)
+
         self.publish_obstacles(iobstacles_list)
 
-    def laser_mapping_old(self,state):
+    def laser_mapping_points(self,state): # REMOVE LATER if not used!!!!
         
         laserScan = self.laser_scan
 
@@ -208,7 +205,6 @@ class PurePursuitController(object):
         max_index =  int(round((self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
 
         # Find indices of laserscans that make up our obstacle
-        #indices = np.where(np.array(laserScan.ranges) < self.mapping_distance)
         if min == max:
             indices = np.where(np.array(laserScan.ranges[min_index]) < self.mapping_distance)
         else: 
@@ -238,9 +234,7 @@ class PurePursuitController(object):
 
         # Update list of obstacles with the new obstacle 
         
-        obstacles_list = []# rospy.get_param('/team_5_floor2/lidar_obstacles')
-        #self.publish_obstacles(obstacles_list)
-        #rospy.sleep(4)
+        obstacles_list = []
         obstacles_list.append(obs_points)
         try:
             rospy.delete_param('/team_5_floor2/lidar_obstacles')
@@ -252,12 +246,6 @@ class PurePursuitController(object):
     def publish_obstacles(self, obstacles_list):
         Interface = MapROSInterface()
         Interface.publish(obstacles_list)
-
-    def print_every_second(self, message, data):
-                # print once per second
-        if (self.last_time - self.print_time)  > 1:
-            print(message, data)
-            self.print_time = self.last_time
 
     def reset_isfinished(self):
             self.is_finished = False

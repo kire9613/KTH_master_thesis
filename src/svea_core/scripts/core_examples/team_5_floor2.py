@@ -1,29 +1,23 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-import yaml
 
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
 from svea_msgs.msg import VehicleState as VehicleStateMsg
 from svea.localizers import LocalizationInterface
 from svea.controllers.pure_pursuit import PurePursuitController
-from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
+from svea.data import TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
-from svea_msgs.msg import VehicleState as VSM
 from svea.path_planners.astar import *
-from geometry_msgs.msg import PoseWithCovarianceStamped
 from svea.track import Track
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, PointStamped
 from nav_msgs.msg import Path
-from svea.path_planners.mpc_map.occupancy_grid import OccupancyGrid
-from svea.path_planners.mpc_map.ros_interface import ROSInterface as MapROSInterface
-from svea.path_planners.mpc_planner.main_planner import Planner
 from svea.path_planners.mpc_planner.ros_interface import ROSInterface
 from svea.path_planners.mpc_planner.t5_mpc_functions import *
-#from svea.path_planners.astar import ControlState
+
 __team__ = "Team 5"
 __maintainers__ ="Bianca Otake, Holmfridur Elvarsdottir, Johanna Andersson, Marcus Norgren"
 __status__ ="Development"
@@ -36,8 +30,6 @@ dt = 0.01 # frequency of the model updates
 
 ## PLANNER PARAMS ##########################################################
 g_traj_x, g_traj_y = [],[]
-timer1 = 0.0 # s
-timer2 = 0.0 # s
 ## INIT #######################################################################
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ############################################################################### 
@@ -91,25 +83,27 @@ def param_init():
     return start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc
 
 def main():
+    rospy.init_node('team_5_floor2')
+
+    # Initialize parameters
     emergency_settings = {
         "driving_distance": 0.1,
-        "use_track": True,
-        "safety_distance": 0.05, #0.2 was ok but a bit tight
+        "use_track": False,
+        "safety_distance": 0.05,
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
         "success_threshold": 0.5
         }
-    rospy.init_node('team_5_floor2')
-    start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
-    running_emg_traj = False
-    backup_attempted = False
+
     istate = 0
-    print_time = 0
+    replan_counter = 0
+    # Get ros parameters from launch file
+    start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
+    
     # extract trajectory
     traj_x, traj_y = extract_trajectory(use_astar)
     traj_theta = compute_angles(traj_x,traj_y)
   
-    
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
@@ -140,18 +134,17 @@ def main():
     else: 
         rospy.wait_for_message('/initialpose',PoseWithCovarianceStamped)
 
-    initialized = False
-
     # initialize ros interface
     ros_interface = ROSInterface(traj_x,traj_y)
     ros_interface.set_goal_angles(traj_theta)
+
     # Subscribe to initial state
     rospy.Subscriber('/state', VehicleStateMsg, ros_interface.cb_initial_state)  # noqa
-    # (!) subscribe to Astar position
+    # Subscribe to Astar position
     rospy.Subscriber('/target', PointStamped, ros_interface.cb_target_state)
     # simualtion loop
     svea.controller.target_velocity = target_velocity
-    #Can maybe be exchanged once we have Frank's emergency stop
+
     rospy.Subscriber('/scan', LaserScan,svea.controller.emergency_stop)
 
     while (not svea.is_finished and not rospy.is_shutdown()) or svea.controller.emg_traj_running:
@@ -162,9 +155,8 @@ def main():
             svea.controller.target_velocity = target_velocity
             if svea.controller.emg_stop:
                 svea.controller.target_velocity = target_velocity*0.5
-                print("state 1")
-                istate = 1
-                istate = 5 # testing backup
+                print("state 5")
+                istate = 5 # go to backing up
         elif istate == 1: # Emergency stop activated - mapping obstacles
             if ros_interface.current_speed < 0.01:
                 svea.controller.laser_mapping(ros_interface.initial_state)
@@ -181,25 +173,23 @@ def main():
         elif istate == 2: # Replan with MPC
             if  ros_interface._current_target_state != [0,0] and ros_interface.initial_state != None:
                 svea.controller.set_emg_traj_running(True)   
-                timer1 = rospy.get_time()
-                print("trigger! Replan is true")
                 g_traj_x, g_traj_y, success = run_mpc_planner(ros_interface)
-                
-                print('Plan ready!', len(g_traj_x))
-                #rospy.Subscriber('/planner/mpc_path', Path, mpc_path_cb)
-                #Update trajectory
-                print("MPC Trajectory:")
-                print("traj_x",g_traj_x)
-                print("traj_y",g_traj_y)
+                print("MPC Replanning Trajectory:")
                 if success:
-                    svea.update_traj(g_traj_x, g_traj_y)
+                    print("traj_x",g_traj_x)
+                    print("traj_y",g_traj_y)
                     print("state 4")
+                    svea.update_traj(g_traj_x, g_traj_y)
                     istate = 4
                 else: # do something here if fails
-                    svea.controller.set_emg_traj_running(False)  
-                    print("Planning Failed")
-                    break
-                    #istate = 0   
+                    replan_counter = replan_counter + 1
+                    svea.controller.set_emg_traj_running(False)
+                    if replan_counter >= 2:
+                        print("Replanned twice and failed!")
+                        break  
+                    else:
+                        print("Planning Failed - Replan with Astar")
+                        istate = 3
                   
         elif istate == 3: # Replan with Astar
             if  ros_interface._current_target_state != [0,0]  and ros_interface.initial_state != None:
@@ -215,65 +205,50 @@ def main():
                     print("state 4")
                     istate = 4
                 else: # do something here if fails
-                    # matplot lib
-                    generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)
+                    replan_counter = replan_counter + 1
                     svea.controller.set_emg_traj_running(False)  
-                    print("Planning Failed - map again")
-                    istate = 1
+                    if replan_counter >= 2:
+                        print("Replanned twice and failed!")
+                        break  
+                    else:
+                        print("Planning Failed - Replan with MPC")
+                        istate = 2
+
         elif istate == 4: # Follow replanned path
-           # svea.controller.target_velocity = 0.5
+            replan_counter = 0 
             if  svea.is_finished:
                 svea.controller.emg_stop = False
-                #backup_attempted = False
                 svea.reset_isfinished() # sets is_finished to false
                 # extract trajectory
-                print("Switching back to Astar")
+                print("Switching back to global path")
                 svea.update_traj(traj_x, traj_y)
                 svea.controller.set_emg_traj_running(False) 
-                print("state 0")
-                
+                print("state 0")   
                 istate = 0
         elif istate == 5: # Initializa backup
-            #if backup_attempted: # dont try to backup again
-            #    print("Planning failed")
-            #    break
-            svea.controller.backed_up = True
-            
+
+            svea.controller.backing_up = True     
             time_start = rospy.get_time()
             print("Back up pulse")
             istate = 6
         elif istate == 6: # pulse signal for 0.5 s on, 0.5 s off
             timeout = 0.5 
             if rospy.get_time() - time_start > 0.5:
-                svea.controller.backed_up = False
+                svea.controller.backing_up = False
             if rospy.get_time() - time_start > 1:
-                svea.controller.backed_up = True
+                svea.controller.backing_up = True
                 print ("Backing up")
                 istate = 7
         elif istate == 7: # Backing up for 2s
             timeout = 2
             if rospy.get_time() > time_start + timeout:
-                svea.controller.backed_up = False
-                backup_attempted = True
-                istate = 1
-                """if use_mpc:
-                    print("state 2")
-                    istate = 2
-                elif use_astar:
-                    print("state 3")
-                    istate = 3
-                else:
-                    print("state 0")
-                    istate = 0 """
+                svea.controller.backing_up = False
+                istate = 1 # Go to obstacle mapping
+                print("state 1")
+                print("Mapping obstacles")
                 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
-
-        
-        #last_time = rospy.get_time()
-        #if (last_time - print_time)  > 1:
-        #    print("velocity",velocity)
-        #    print_time = last_time  
 
         svea.send_control(steering, velocity)
 
@@ -283,7 +258,7 @@ def main():
         else:
             rospy.loginfo_throttle(1, state)
         toc = rospy.get_time() # stop timer
-        #rospy.loginfo("Scan time %f", toc-tic) # disabled emergency brake
+        #rospy.loginfo("Scan time %f", toc-tic) # scan time of while loop
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")
