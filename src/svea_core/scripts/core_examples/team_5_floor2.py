@@ -50,11 +50,11 @@ def extract_trajectory(use_astar):
             "driving_distance": 0.25,
             "use_track": True,
             "safety_distance": 0.4,
-            "grid_resolution": 0.075
+            "grid_resolution": 0.075,
+            "success_threshold": 0.5
+
             }
         traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)
-        traj_x.reverse()
-        traj_y.reverse()
     else:
         xs = [-7.4 , -2.33, 10.3, 5.9, -7.2]
         ys = [-15.3,  -7.09, 11.4, 14.8, -4.2]
@@ -96,7 +96,8 @@ def main():
         "use_track": False,
         "safety_distance": 0.05, #0.2 was ok but a bit tight
         "subscribe_to_obstacles": True,
-        "grid_resolution": 0.025
+        "grid_resolution": 0.025,
+        "success_threshold": 0.4
         }
     rospy.init_node('team_5_floor2')
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
@@ -207,8 +208,6 @@ def main():
                 x0, y0, theta0 = ros_interface.initial_state
                 xt,yt,thetat = ros_interface.goal_state
                 g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)# False
-                g_traj_x.reverse()
-                g_traj_y.reverse()
                 
                 print("Astar Replanning Trajectory:")
                 if success:

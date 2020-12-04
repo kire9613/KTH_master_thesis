@@ -11,17 +11,14 @@ import rospy
 def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None):
     ###########################################################################
     # define parameters and initialize variables: #
+
     obstacleResolution = 0.05 # [m]
 
     # create lists that contain x,y coordinates of obstacles
     expanded_obstacle_list_x = []
     expanded_obstacle_list_y = []
-    # define target and initial coordinates of trajectory, and initial angle
 
-
-    ###########################################################################
-
-    # find path to obstacles
+    # find path to obstacles file
     astarPath = os.path.dirname(os.path.abspath(__file__))
 
     #file = open(astarPath + '/aStarPlannerObstacles.yaml') # track with the corridor as obstacles
@@ -46,8 +43,6 @@ def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None
                 dist = numpy.linalg.norm(numpy.array(obstacle[indexPt])-numpy.array(obstacle[indexPt+1]))
                 expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(dist/obstacleResolution)).tolist()
                 expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(dist/obstacleResolution)).tolist()
-                #expanded_obstacle_list_x += numpy.linspace(obstacle[indexPt][0],obstacle[indexPt+1][0],int(1)).tolist()
-                #expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(1)).tolist()
 
     for i in range(len(track0)): # ranges over all obstacles in the map_file
         obstacle = track0[i]
@@ -57,9 +52,9 @@ def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None
             expanded_obstacle_list_y += numpy.linspace(obstacle[indexPt][1],obstacle[indexPt+1][1],int(dist/obstacleResolution)).tolist()
     assert(len(expanded_obstacle_list_x) == len(expanded_obstacle_list_y))
 
-    # call A_star planner to generate trajectory based on the extracted and
-    # modified obstacles
+    # call A_star planner to generate trajectory based on the extracted and modified obstacles
     xtraj,ytraj,success = A_star(xt,yt,x0,y0,theta0,expanded_obstacle_list_x,expanded_obstacle_list_y, astar_settings)
+
     if plotBool:
         fig1, (ax1,ax2) = plt.subplots(nrows=1, ncols=2)
         ax1.set_title('Generated A* Path')
@@ -72,6 +67,7 @@ def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None
         ax2.set_xlabel("grid index")
         ax2.imshow(numpy.rot90(grid))
         plt.show()
+        
     return xtraj,ytraj,success
 
 def calculateHeuristic(elem):
@@ -136,32 +132,39 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
         dl = settings["grid_resolution"]
     else:
         dl = 0.075
-    xub, xlb = max(list_obs_x),min(list_obs_x)
-    yub, ylb = max(list_obs_y),min(list_obs_y)
+
+    if "success_threshold" not in settings:
+        settings["success_threshold"] = 0.4
+
+    #retrieve max/min coordinates of obstacles and 1 meter additional space in all directions.    
+    xub, xlb = max(list_obs_x) + 1, min(list_obs_x) -1
+    yub, ylb = max(list_obs_y) + 1, min(list_obs_y) -1
     # initialize grid to keep track of explored coordinates
     grid = numpy.ones([int((xub-xlb + 1)/dl),int((yub-ylb + 1)/dl)]) # 1 = not visited
+
+    #initialize list for A* solution 
     xtraj =[]
     ytraj = []
+    # initialize success boolean
     success = False
-    #### PARAMS #####
 
     #### A* algorithm: ####
 
     S = [] # explored list
-    S0 = gridpt(settings,x0,y0,theta0,xt,yt)
+    S0 = gridpt(settings,x0,y0,theta0,xt,yt) # initial node
     Q = [[S0,S0.heuristic,0,None,None]] # expansion queue
     Vr = [0] # cost list
-    Vr_pathpter = [None] # pa
+    Vr_pathpter = [None] # path pointer 
 
     while len(Q) > 0 and not rospy.is_shutdown():
-        Q.sort(key=calculateHeuristic)
-        currnode = Q[0] # pick the current node as the one w the best heur
-        S.append(Q.pop(0))  ## adding the best node to the solved list
+        Q.sort(key=calculateHeuristic) # sort the list of nodes according to heuristic value
+        currnode = Q[0] # pick the current node as the one w the best heuristic
+        S.append(Q.pop(0))  # adding the best node to the solved list
         currnode[0].generate_children(settings,list_obs_x,list_obs_y)
         children_nodes  = currnode[0].children
         print "\r number of expanded nodes: ", len(S),
-        if len(children_nodes) > 0:
-            for index in range(len(children_nodes)): ###### bygg om!!!!!1 children_nodes[index]
+        if len(children_nodes) > 0: # append children to queue
+            for index in range(len(children_nodes)): 
                 Q.append([children_nodes[index][0], children_nodes[index][0].heuristic,numpy.inf,None,[]])  # 0:node object, 1:heursitic, 2:Vr, 3:Pointer
                 Qchild = Q[-1]
                 children_nodes[index][0].parent = currnode[0]
@@ -171,29 +174,30 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
                     Q[Q.index(Qchild)][2] = currnode[2] + 0.01 + abs(steering_angle)*0.03 # cost to reach from start
                     Q[Q.index(Qchild)][3] = currnode[0]    # update pointer to mother-node
                     Q[Q.index(Qchild)][4] = children_nodes[index][1] # heuristic cost from child to goal
-        if S[-1][0].heuristic <= 0.4: # if we're close to the target --> stop
+        if S[-1][0].heuristic <= settings["success_threshold"]: # if we're close to the target --> stop
             success = True
             print('\n target found!')
             endnode = S[-1][0]
-            xtraj.append(endnode.x)
-            ytraj.append(endnode.y)
+            xtraj.insert(0,endnode.x)
+            ytraj.insert(0,endnode.y)
             while endnode.parent != None: # trace back in history and find total trajectory
-                xtraj.append(endnode.x)
-                ytraj.append(endnode.y)
+                xtraj.insert(0,endnode.x)
+                ytraj.insert(0,endnode.y)
                 endnode = endnode.parent
             break
     if len(xtraj) == 0:
         print('\n could not find trajectory... try other settings?')      
     return xtraj,ytraj,success
 
-def __main__():
+def __main__(): 
     xt, yt = -3.46, -6.93
     x0, y0, theta0 =  -6.88312864304, -14.3582000732, 0.8978652
     settings = {
-        "driving_distance": 0.2,
+        "driving_distance": 0.25,
         "use_track": True,
         "safety_distance": 0.45,
-        "grid_resolution": 0.055
+        "grid_resolution": 0.075,
+        "success_threshold": 0.5
         }
 
     return generateTrajectory(settings,x0,y0,theta0,xt,yt,True)
