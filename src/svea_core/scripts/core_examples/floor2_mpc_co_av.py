@@ -102,9 +102,10 @@ class Node:
     def callback_traj(self,path):
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
+        self.svea.update_traj(self.traj_x, self.traj_y)
 
     def run(self):
-        svea = SVEAMPC(
+        self.svea = SVEAMPC(
             vehicle_name,
             LocalizationInterface,
             MPC,
@@ -120,7 +121,7 @@ class Node:
         xlb = [-np.inf]*3+[-1]
         xub = [ np.inf]*3+[3.6]
 
-        svea.controller.build_solver(
+        self.svea.controller.build_solver(
             dt,
             Q=params.Q,
             R=params.R,
@@ -136,7 +137,7 @@ class Node:
             TAU = params.TAU,
             N_IND_SEARCH = params.N_IND_SEARCH,
         )
-        svea.start(wait=True)
+        self.svea.start(wait=True)
 
         if self.is_sim:
             # start simulation
@@ -144,20 +145,20 @@ class Node:
 
         # simualtion loop
 
-        svea.controller.target_velocity = target_velocity
-        while not svea.is_finished and not rospy.is_shutdown():
-            state = svea.wait_for_state()
+        self.svea.controller.target_velocity = target_velocity
+        while not self.svea.is_finished and not rospy.is_shutdown():
+            state = self.svea.wait_for_state()
 
             #This step updates the global path
-            svea.update_traj(self.traj_x, self.traj_y)
+            # svea.update_traj(self.traj_x, self.traj_y)
 
             # compute control input
-            steering, velocity = svea.compute_control()
-            svea.send_control(steering, velocity)
+            steering, velocity = self.svea.compute_control()
+            self.svea.send_control(steering, velocity)
 
             # visualize data
             if self.use_matplotlib or self.use_rviz:
-                svea.visualize_data()
+                self.svea.visualize_data()
             else:
                 rospy.loginfo_throttle(1, state)
 
