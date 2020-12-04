@@ -100,7 +100,6 @@ def main():
                 value = grid[point[1], point[0]]
                 # If vlue is not free space or unknown
                 if not (value == 0 or value == -1):
-                    rospy.loginfo("GridMap value at collision: %d" % value)
                     collision_point = grid_to_world(map_update.get_map_info(), point)
 
                     collision_msg.collision = True
