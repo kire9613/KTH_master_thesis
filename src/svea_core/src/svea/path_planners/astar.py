@@ -136,6 +136,9 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
     if "success_threshold" not in settings:
         settings["success_threshold"] = 0.4
 
+    if "maximum_expansion" not in settings:
+        settings["maximum_expansion"] = 4000
+
     #retrieve max/min coordinates of obstacles and 1 meter additional space in all directions.    
     xub, xlb = max(list_obs_x) + 1, min(list_obs_x) -1
     yub, ylb = max(list_obs_y) + 1, min(list_obs_y) -1
@@ -163,6 +166,9 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
         currnode[0].generate_children(settings,list_obs_x,list_obs_y)
         children_nodes  = currnode[0].children
         print "\r number of expanded nodes: ", len(S),
+        if len(S) > settings["maximum_expansion"]:
+            print("\r  A* failiure: too many nodes expanded")
+            break
         if len(children_nodes) > 0: # append children to queue
             for index in range(len(children_nodes)): 
                 Q.append([children_nodes[index][0], children_nodes[index][0].heuristic,numpy.inf,None,[]])  # 0:node object, 1:heursitic, 2:Vr, 3:Pointer
