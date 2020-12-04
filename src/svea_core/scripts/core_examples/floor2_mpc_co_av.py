@@ -11,6 +11,7 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Path
+from std_msgs.msg import Bool
 
 from svea.svea_managers.mpc_path_following_sveas import SVEAMPC
 from svea.controllers.mpc.mpc import MPC
@@ -81,7 +82,7 @@ class Node:
 
         #This subscriber and its callback function is the local planner
         traj_upd_sub = rospy.Subscriber('/trajectory_updates', Path, self.callback_traj)
-
+        collision_sub = rospy.Subscriber('/collision', Bool, self.callback_collision)
         # select data handler based on the ros params
         if self.use_rviz:
             self.DataHandler = RVIZPathHandler
@@ -96,6 +97,9 @@ class Node:
             model_for_sim = SimpleBicycleModel(start_pt)
             self.simulator = SimSVEA(vehicle_name, model_for_sim,
                                 dt=dt, start_paused=True, run_lidar=self.run_lidar).start()
+
+        self.collision = False
+
         self.traj_x = traj_x_init
         self.traj_y = traj_y_init
 
@@ -103,6 +107,10 @@ class Node:
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
         self.svea.update_traj(self.traj_x, self.traj_y)
+
+    def callback_collision(self, data):
+        print(data.data)
+        self.collision = data.data
 
     def run(self):
         self.svea = SVEAMPC(
@@ -153,8 +161,9 @@ class Node:
             # svea.update_traj(self.traj_x, self.traj_y)
 
             # compute control input
-            steering, velocity = self.svea.compute_control()
-            self.svea.send_control(steering, velocity)
+            if not self.collision:
+                steering, velocity = self.svea.compute_control()
+                self.svea.send_control(steering, velocity)
 
             # visualize data
             if self.use_matplotlib or self.use_rviz:
