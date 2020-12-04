@@ -173,15 +173,15 @@ class PurePursuitController(object):
             obs_coord = [lidar_coord[0]+lidar_range*math.cos(yaw+angle), lidar_coord[1]+lidar_range*math.sin(yaw+angle)]
 
             # inflate points
-            dx = self.width/2*1.2 
-            dy = self.height/2*1.2
+            dy = self.width/2
+            dx = self.height/2
             
             inflated_obstacle =  [[dx,dy ],
                                  [ + dx, - dy ], 
                                  [ - dx, - dy ],
                                  [ - dx, + dy ]]   
             
-            rot = [[math.cos(-yaw),-math.sin(-yaw)],[math.sin(-yaw), math.cos(-yaw)]]                  
+            rot = [[math.cos(yaw),-math.sin(yaw)],[math.sin(yaw), math.cos(yaw)]]                  
             obs = np.matmul(rot,np.transpose(inflated_obstacle))
             inflated_obstacle = [[float(obs[0][0]),float(obs[1][0])],[float(obs[0][1]),float(obs[1][1])],[float(obs[0][2]),float(obs[1][2])],[float(obs[0][3]),float(obs[1][3])]]                 
             idx = 0

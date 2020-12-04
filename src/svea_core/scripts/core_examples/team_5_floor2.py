@@ -97,7 +97,7 @@ def main():
         "safety_distance": 0.05, #0.2 was ok but a bit tight
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
-        "success_threshold": 0.4
+        "success_threshold": 0.5
         }
     rospy.init_node('team_5_floor2')
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
