@@ -108,7 +108,11 @@ class Track(object):
             self._stay_in = rospy.get_param(stay_in)
         else:
             track = rospy.search_param('track')
-            self._stay_in = rospy.get_param(track)[0]
+            if track is not None:
+                self._stay_in = rospy.get_param(track)[0]
+            else:
+                rospy.logwarn("Neither `stay_in` or `track` parameter is set")
+                self._stay_in = []
 
     def _get_keep_out_from_parameters(self):
         keep_out = rospy.search_param('keep_out')
@@ -116,7 +120,11 @@ class Track(object):
             self._keep_out = rospy.get_param(keep_out)
         else:
             track = rospy.search_param('track')
-            self._keep_out = rospy.get_param(track)[1]
+            if track is not None:
+                self._keep_out = rospy.get_param(track)[1]
+            else:
+                rospy.logwarn("Neither `keep_out` or `track` parameter is set")
+                self._keep_out = []
 
     @property
     def stay_in(self):
@@ -140,8 +148,9 @@ def list_to_polygon(node_list, z=0.1):
 
 def close_polygon(polygon_list):
     polygon_list = deepcopy(polygon_list)
-    if polygon_list[0] != polygon_list[-1]:
-        polygon_list.append(polygon_list[0])
+    if polygon_list:
+        if polygon_list[0] != polygon_list[-1]:
+            polygon_list.append(polygon_list[0])
     return polygon_list
 
 
