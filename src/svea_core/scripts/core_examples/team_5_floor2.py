@@ -43,7 +43,7 @@ def extract_trajectory(use_astar):
             "use_track": True,
             "safety_distance": 0.4,
             "grid_resolution": 0.075,
-            "success_threshold": 0.5
+            "success_threshold": 0.6
 
             }
         traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)

@@ -116,8 +116,9 @@ class gridpt(object):
             status = False
           else:
             for i in range(len(list_obs_x)):
-              if math.sqrt((child[0]-list_obs_x[i])**2+(child[1]-list_obs_y[i])**2) <safety_dist:
-                grid[gridx,gridy] = 0.5
+              if math.sqrt((child[0]-list_obs_x[i])**2+(child[1]-list_obs_y[i])**2) <safety_dist or math.sqrt((child[0] +  0.3*math.cos(child[-2])-list_obs_x[i])**2 + (child[1] +  0.3*math.sin(child[-2])-list_obs_y[i])**2) <safety_dist:
+                if math.sqrt((child[0]-list_obs_x[i])**2+(child[1]-list_obs_y[i])**2) <safety_dist:
+                    grid[gridx,gridy] = 0.5
                 status = False
                 break
           if status != False:
@@ -203,7 +204,7 @@ def __main__():
         "use_track": True,
         "safety_distance": 0.45,
         "grid_resolution": 0.075,
-        "success_threshold": 0.5
+        "success_threshold": 0.6
         }
 
     return generateTrajectory(settings,x0,y0,theta0,xt,yt,True)
