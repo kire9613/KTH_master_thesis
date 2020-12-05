@@ -92,7 +92,8 @@ def main():
         "safety_distance": 0.05,
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
-        "success_threshold": 0.5
+        "success_threshold": 0.5,
+        "maximum_expansion": 2000
         }
 
     istate = 0
@@ -155,10 +156,11 @@ def main():
         if istate == 0: # IDLE state - waits here untill emergency stop
             svea.controller.target_velocity = target_velocity
             if svea.controller.emg_stop:
-                svea.controller.target_velocity = target_velocity*0.5
+                
                 print("state 1")
                 istate = 1 
         elif istate == 1: # Emergency stop activated - mapping obstacles
+            svea.controller.target_velocity = target_velocity*0.5
             if ros_interface.current_speed < 0.01:
                 svea.controller.laser_mapping(ros_interface.initial_state)
                 if use_mpc:
@@ -201,7 +203,7 @@ def main():
                 ros_interface.compute_goal()
                 x0, y0, theta0 = ros_interface.initial_state
                 xt,yt,thetat = ros_interface.goal_state
-                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)# False
+                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,False)# False
                 
                 print("Astar Replanning Trajectory:")
                 if success:
@@ -217,9 +219,9 @@ def main():
                     if replan_counter >= 2:
                         print("Replanned twice and failed!")
                         break  
-                    else:
-                        print("Planning Failed - Replan with MPC")
-                        istate = 2
+                    #else:
+                    #    print("Planning Failed - Replan with MPC")
+                    #    istate = 2
 
         elif istate == 4: # Follow replanned path
             svea.controller.emergency_distance = 0.25
@@ -236,6 +238,7 @@ def main():
                 print("state 0")   
                 istate = 0
         elif istate == 5: # Initialize backup
+            svea.controller.target_velocity = target_velocity
             backup_attempted = True
             svea.controller.backing_up = True     
             time_start = rospy.get_time()

@@ -17,7 +17,7 @@ class PurePursuitController(object):
     L = 0.324 # [m] wheel base of vehicle
     max_velocity = 1 # maximum velocity of svea [m/s]
     emergency_distance = 1.0 # [m] minimum distance until emergency_stop activated
-    mapping_distance = 3 # distance of obstacles to map
+    mapping_distance = 1 # distance of obstacles to map
     width = 0.2485 # width of svea
     height = 0.586 # length of svea
     mapping_angle = 1.57 # +-[rad] map everything within this angle to obstacle map
