@@ -34,27 +34,33 @@ g_traj_x, g_traj_y = [],[]
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ############################################################################### 
 
-def extract_trajectory(use_astar):
-    if use_astar:
-        xt, yt = -3.46, -6.93
-        x0, y0, theta0 =  -6.88312864304, -14.3582000732, 0.8978652
+def extract_trajectory(use_astar, use_q1):
+    if use_q1: # suitable coordinates for circle around lap
+        xt, yt = 20,2
+        x0, y0, theta0 =  0,0,0
         settings = {
-            "driving_distance": 0.25,
-            "use_track": True,
-            "safety_distance": 0.4,
-            "grid_resolution": 0.075,
-            "success_threshold": 0.5
-
-            }
-        traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)
+        "driving_distance": 0.25,
+        "use_track": True,
+        "safety_distance": 0.3,
+        "grid_resolution": 0.1,
+        "success_threshold": 1.5,
+        "intermediate_point": True,
+        "use_q1": True
+        }
     else:
-        xs = [-7.4 , -2.33, 10.3, 5.9, -7.2]
-        ys = [-15.3,  -7.09, 11.4, 14.8, -4.2]
-        traj_x = []
-        traj_y = []
-        for i in range(0,len(xs)-1):
-            traj_x += np.linspace(xs[i], xs[i+1]).tolist()
-            traj_y += np.linspace(ys[i], ys[i+1]).tolist()
+        xt, yt = 8.44, 13
+        x0, y0, theta0 =  -2.73, -7.3, 0.8978652
+        settings = {
+        "driving_distance": 0.25,
+        "use_track": True,
+        "safety_distance": 0.4,
+        "grid_resolution": 0.1,
+        "success_threshold": 1,
+        "intermediate_point": True,
+        "use_q1": False
+        }
+    traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,True)
+
     return traj_x, traj_y
 
 def param_init():
@@ -67,6 +73,7 @@ def param_init():
     use_matplotlib_param = rospy.search_param('use_matplotlib')
     use_astar_param = rospy.search_param('use_astar')
     use_mpc_param = rospy.search_param('use_mpc')
+    use_q1_param = rospy.search_param('use_q1')
     
     start_pt = rospy.get_param(start_pt_param, default_init_pt)
     if isinstance(start_pt, str):
@@ -79,13 +86,21 @@ def param_init():
     use_matplotlib = rospy.get_param(use_matplotlib_param, False)
     use_astar = rospy.get_param(use_astar_param, True)
     use_mpc = rospy.get_param(use_mpc_param, True)
+    use_q1 = rospy.get_param(use_q1_param, True)
     
-    return start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc
+    return start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc, use_q1
 
 def main():
     rospy.init_node('team_5_floor2')
 
     # Initialize parameters
+    istate = 0
+    replan_counter = 0
+
+    # Get ros parameters from launch file
+    start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc,  use_q1 = param_init()
+
+    # A* emergency settings 
     emergency_settings = {
         "driving_distance": 0.1,
         "use_track": False,
@@ -93,17 +108,12 @@ def main():
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
         "success_threshold": 0.5,
-        "maximum_expansion": 2000
+        "intermediate_point": False,
+        "use_q1": use_q1
         }
-
-    istate = 0
-    replan_counter = 0
-    backup_attempted = False
-    # Get ros parameters from launch file
-    start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
     
     # extract trajectory
-    traj_x, traj_y = extract_trajectory(use_astar)
+    traj_x, traj_y = extract_trajectory(use_astar, use_q1)
     traj_theta = compute_angles(traj_x,traj_y)
   
     # select data handler based on the ros params
