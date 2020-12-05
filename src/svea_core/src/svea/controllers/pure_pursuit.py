@@ -17,7 +17,7 @@ class PurePursuitController(object):
     L = 0.324 # [m] wheel base of vehicle
     max_velocity = 1 # maximum velocity of svea [m/s]
     emergency_distance = 1.0 # [m] minimum distance until emergency_stop activated
-    mapping_distance = 1 # distance of obstacles to map
+    mapping_distance = 2 # distance of obstacles to map
     width = 0.2485 # width of svea
     height = 0.586 # length of svea
     mapping_angle = 1.57 # +-[rad] map everything within this angle to obstacle map
@@ -50,8 +50,8 @@ class PurePursuitController(object):
 
     def compute_control(self, state, target=None):
         if self.backing_up:
-            return self.steering,-0.6
-        elif self.emg_stop and not self.emg_traj_running:
+            return 0,-0.6
+        elif self.emg_stop:
             return 0,0
         
         else:
@@ -171,7 +171,7 @@ class PurePursuitController(object):
 
             # inflate points
             dy = self.width/2
-            dx = self.height/2
+            dx = self.width/2# self.height/2
             
             inflated_obstacle =  [[dx,dy ],
                                  [ + dx, - dy ], 

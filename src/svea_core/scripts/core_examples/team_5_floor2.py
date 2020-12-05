@@ -183,6 +183,8 @@ def main():
                     print("traj_y",g_traj_y)
                     print("state 4")
                     svea.update_traj(g_traj_x, g_traj_y)
+                    svea.controller.emergency_distance = 0.25
+                    svea.controller.emg_stop = False
                     istate = 4
                 elif not backup_attempted:
                     istate = 5
@@ -207,6 +209,8 @@ def main():
                 
                 print("Astar Replanning Trajectory:")
                 if success:
+                    svea.controller.emergency_distance = 0.25
+                    svea.controller.emg_stop = False
                     svea.update_traj(g_traj_x, g_traj_y)
                     print("state 4")
                     istate = 4
@@ -224,8 +228,9 @@ def main():
                     #    istate = 2
 
         elif istate == 4: # Follow replanned path
-            svea.controller.emergency_distance = 0.25
-            svea.controller.emg_stop = False
+            if svea.controller.emg_stop:
+                print("emg stop in replan")
+                istate = 1 
             replan_counter = 0 
             backup_attempted = False
             if  svea.is_finished:
