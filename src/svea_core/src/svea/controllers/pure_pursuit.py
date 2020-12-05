@@ -16,7 +16,7 @@ class PurePursuitController(object):
     I = 0 # intialize I value (PID)
     L = 0.324 # [m] wheel base of vehicle
     max_velocity = 1 # maximum velocity of svea [m/s]
-    emergency_distance = 0.5 # [m] minimum distance until emergency_stop activated
+    emergency_distance = 1.0 # [m] minimum distance until emergency_stop activated
     mapping_distance = 3 # distance of obstacles to map
     width = 0.2485 # width of svea
     height = 0.586 # length of svea

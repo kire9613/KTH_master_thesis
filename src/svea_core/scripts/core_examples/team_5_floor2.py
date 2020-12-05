@@ -97,6 +97,7 @@ def main():
 
     istate = 0
     replan_counter = 0
+    backup_attempted = False
     # Get ros parameters from launch file
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc = param_init()
     
@@ -155,8 +156,8 @@ def main():
             svea.controller.target_velocity = target_velocity
             if svea.controller.emg_stop:
                 svea.controller.target_velocity = target_velocity*0.5
-                print("state 5")
-                istate = 5 # go to backing up
+                print("state 1")
+                istate = 1 
         elif istate == 1: # Emergency stop activated - mapping obstacles
             if ros_interface.current_speed < 0.01:
                 svea.controller.laser_mapping(ros_interface.initial_state)
@@ -181,6 +182,9 @@ def main():
                     print("state 4")
                     svea.update_traj(g_traj_x, g_traj_y)
                     istate = 4
+                elif not backup_attempted:
+                    istate = 5
+                    print("Backing up")
                 else: # do something here if fails
                     replan_counter = replan_counter + 1
                     svea.controller.set_emg_traj_running(False)
@@ -204,6 +208,9 @@ def main():
                     svea.update_traj(g_traj_x, g_traj_y)
                     print("state 4")
                     istate = 4
+                elif not backup_attempted:
+                    istate = 5
+                    print("Backing up")
                 else: # do something here if fails
                     replan_counter = replan_counter + 1
                     svea.controller.set_emg_traj_running(False)  
@@ -215,9 +222,12 @@ def main():
                         istate = 2
 
         elif istate == 4: # Follow replanned path
+            svea.controller.emergency_distance = 0.25
+            svea.controller.emg_stop = False
             replan_counter = 0 
+            backup_attempted = False
             if  svea.is_finished:
-                svea.controller.emg_stop = False
+                svea.controller.emergency_distance = 1.0
                 svea.reset_isfinished() # sets is_finished to false
                 # extract trajectory
                 print("Switching back to global path")
@@ -225,8 +235,8 @@ def main():
                 svea.controller.set_emg_traj_running(False) 
                 print("state 0")   
                 istate = 0
-        elif istate == 5: # Initializa backup
-
+        elif istate == 5: # Initialize backup
+            backup_attempted = True
             svea.controller.backing_up = True     
             time_start = rospy.get_time()
             print("Back up pulse")
@@ -243,10 +253,33 @@ def main():
             timeout = 2
             if rospy.get_time() > time_start + timeout:
                 svea.controller.backing_up = False
-                istate = 1 # Go to obstacle mapping
+                istate = 1 # Go to back to obstacle mapping
                 print("state 1")
                 print("Mapping obstacles")
+        elif istate == 8: # Astar replanning for shorter periods
+            if  svea.is_finished:
+                svea.controller.target_velocity = 0
+                svea.reset_isfinished()
+                if ros_interface.current_speed < 0.01:
+                    svea.controller.laser_mapping(ros_interface.initial_state)
+                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)# False
+                print("Astar Replanning Trajectory again:")
+                if success:
+                    svea.update_traj(g_traj_x, g_traj_y)
+                    print("state 4")
+                    istate = 4
+                else: # do something here if fails
+                    replan_counter = replan_counter + 1
+                    svea.controller.set_emg_traj_running(False)  
+                    if replan_counter >= 2:
+                        print("Replanned twice and failed!")
+                        break  
+                    else:
+                        print("Planning Failed - Replan with MPC")
+                        istate = 2
+
                 
+
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
 
