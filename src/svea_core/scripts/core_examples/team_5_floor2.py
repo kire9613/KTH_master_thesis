@@ -108,9 +108,15 @@ def main():
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
         "success_threshold": 0.5,
+<<<<<<< HEAD
         "intermediate_point": False,
         "use_q1": use_q1,
         "maximum_expansion": 1000
+=======
+        "maximum_expansion": 1000,
+        "intermediate_point": False,
+        "use_q1": use_q1
+>>>>>>> deb4f2b... A* adaptions for Q1 racing track
         }
     
     # extract trajectory
