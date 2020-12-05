@@ -5,7 +5,7 @@ import numpy as np
 import math
 from svea_msgs.msg import map_pixel_coordinates
 from nav_msgs.msg import OccupancyGrid
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 # import skimage.measure #install with: python -m pip install -U scikit-image
 
 
@@ -50,6 +50,9 @@ rescaling_factor = 2#2#4
 #for publishing
 pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=10)
 
+
+
+
 def block_reduce(image, block_size, func=np.sum, cval=0, func_kwargs=None):
     #taken from source: https://github.com/scikit-image/scikit-image/tree/ea7a828c67765d4e24c2d561efa4e8e047b6772e
     if len(block_size) != image.ndim:
@@ -91,11 +94,18 @@ def view_as_blocks(arr_in, block_shape):
     arr_out = np.lib.stride_tricks.as_strided(arr_in, shape=new_shape, strides=new_strides)
     return arr_out
 
-def add_maps(static_map, map_list):
-    total_map_list = sum(map_list)
-    total_map = np.add(static_map, total_map_list)
+
+
+
+
+
+
+
+def add_maps(map_list):
+    total_map = sum(map_list)
     total_map = np.clip(total_map, a_min = None, a_max = 100, out = total_map)
     return total_map
+
 
 def rescale_map(map_in, resolution_in, rescaling_factor):
     if rescaling_factor == 1:
@@ -153,12 +163,14 @@ class Map_logic():
         resolution = static_map_in.info.resolution
         height = static_map_in.info.height
         width = static_map_in.info.width
-        static_map = np.reshape(static_map_in.data, (height, width))
         static_map_in_info_origin_position_x = static_map_in.info.origin.position.x
         static_map_in_info_origin_position_y = static_map_in.info.origin.position.y
 
-        #rescale static map and update infos
-        [self.static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
+        #shape, rescale and inflate the static map and update infos
+        static_map = np.reshape(static_map_in.data, (height, width))
+        [static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
+        self.static_map = inflate_map(static_map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value)
+
         [self.height, self.width] = np.shape(self.static_map)
         self.flag = True
 
@@ -197,16 +209,24 @@ class Map_logic():
                     self.map_list.pop(0)
 
                 #what to send/publish to the pathplaner
-                total_map = add_maps(self.static_map, self.map_list)
+                total_obstacle_map = add_maps(self.map_list)
 
                 """
-                plt.imshow(np.flip(total_map))
+                plt.imshow(np.flip(total_obstacle_map))
                 plt.colorbar()
                 plt.show()
                 """
 
-                self.inflated_map.data = inflate_map(total_map, car_radius_in_meters, self.resolution, occupied_space_threshold, inflation_space_value)
+                inflated_obstacle_map = inflate_map(total_obstacle_map, car_radius_in_meters, self.resolution, occupied_space_threshold, inflation_space_value)
+                
+                """
+                plt.imshow(np.flip(inflated_obstacle_map))
+                plt.colorbar()
+                plt.show()
+                """
 
+                self.inflated_map.data = add_maps([self.static_map, inflated_obstacle_map])
+                
                 """
                 plt.imshow(np.flip(self.inflated_map.data))
                 plt.colorbar()
