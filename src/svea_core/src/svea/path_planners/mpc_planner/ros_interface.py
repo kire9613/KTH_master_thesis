@@ -29,6 +29,7 @@ class ROSInterface(object):
         self.x_traj = x_traj
         self.y_traj = y_traj
         self.current_speed = 0
+        self.path_index = 0
         #self.path_publisher = rospy.Publisher('~path', Path, queue_size=1)
         
     def set_goal_angles(self, angles):
@@ -120,9 +121,10 @@ class ROSInterface(object):
             if self.x_traj[i] == self._current_target_state[0]:
                 print("index found")
                 path_index = i
+                self.path_index = i
                 break
             else: #index not found, might need to fix this further (!)
-                path_index = 0
+                path_index = self.path_index
 
         if path_index == 0:
             print("index not found")
@@ -187,57 +189,6 @@ class ROSInterface(object):
             self._has_endpoint_changed = True
         else:
             self._has_endpoint_changed = False
-            #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
-
-    #def _cb_goal_state(self): # original
-    def cb_goal_state(self, msg):
-        """Callback to get the goal state from a ROS message
-        :param msg: ROS message
-        :type msg: ROS message
-        """
-        
-        old_goal_state = self.goal_state
-
-        current_path_poses = msg.poses
-
-        """if self._current_target_state == None:
-            self._current_target_state = current_path_poses[0]"""
-
-        for x_pose in current_path_poses:
-            if x_pose.pose.position.x == self._current_target_state[0]:
-                path_index = current_path_poses.index(x_pose)
-                break
-            else: #index not found, might need to fix this further (!)
-                path_index = 0
-
-        step_ahead = 10 #step ahead but not too far 
-        if step_ahead + path_index > len(current_path_poses):
-            goal_index = len(current_path_poses) - 1 
-        else:
-            goal_index = step_ahead + path_index
-
-        x, y = [getattr(msg.poses[goal_index].pose.position, coord) for coord in ('x','y')]
-        
-        # check if index is valid otherwise get final value
-        if len(self.goal_angles) > goal_index:
-            yaw = self.goal_angles[goal_index]
-        else:
-            yaw = self.goal_angles[len(self.goal_angles)-1]
-        self.goal_state = [x, y, yaw]
-        
-        # set goal state from chosen position on map: find neareast feasible point on Astar-path or manually?
-        # self.goal_state = [self.xt,self.yt,self.thetat] # original
-
-        kwargs = {
-            'first_node': old_goal_state,
-            'second_node': self.goal_state,
-            'distance_tolerance': self.distance_tolerance,
-            'angle_tolerance': self.angle_tolerance
-        }
-
-        if not are_nodes_close_enough(**kwargs):
-            self._has_endpoint_changed = True
-        #else:
             #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
 
     def get_planner_parameters(self, planner_algorithm=None):

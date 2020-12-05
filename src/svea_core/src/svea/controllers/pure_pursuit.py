@@ -134,7 +134,7 @@ class PurePursuitController(object):
         self.laser_scan = laserScan
         if min(points) < self.emergency_distance:
             self.emg_stop = True
-
+        
     def laser_mapping(self,state):
         
         laserScan = self.laser_scan

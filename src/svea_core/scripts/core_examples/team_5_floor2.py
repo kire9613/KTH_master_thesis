@@ -89,7 +89,7 @@ def main():
     emergency_settings = {
         "driving_distance": 0.1,
         "use_track": False,
-        "safety_distance": 0.05,
+        "safety_distance": 0.10,
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
         "success_threshold": 0.5,
@@ -202,10 +202,11 @@ def main():
         elif istate == 3: # Replan with Astar
             if  ros_interface._current_target_state != [0,0]  and ros_interface.initial_state != None:
                 svea.controller.set_emg_traj_running(True)
+                rospy.wait_for_message('/target',PointStamped)
                 ros_interface.compute_goal()
                 x0, y0, theta0 = ros_interface.initial_state
                 xt,yt,thetat = ros_interface.goal_state
-                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,False)# False
+                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)# False
                 
                 print("Astar Replanning Trajectory:")
                 if success:
@@ -229,11 +230,13 @@ def main():
 
         elif istate == 4: # Follow replanned path
             if svea.controller.emg_stop:
+		svea.update_traj(traj_x,traj_y)
                 print("emg stop in replan")
-                istate = 1 
-            replan_counter = 0 
-            backup_attempted = False
+                istate = 5 
+             
             if  svea.is_finished:
+                replan_counter = 0
+                backup_attempted = False
                 svea.controller.emergency_distance = 1.0
                 svea.reset_isfinished() # sets is_finished to false
                 # extract trajectory
