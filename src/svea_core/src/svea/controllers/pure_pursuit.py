@@ -17,7 +17,7 @@ class PurePursuitController(object):
     L = 0.324 # [m] wheel base of vehicle
     max_velocity = 1 # maximum velocity of svea [m/s]
     emergency_distance = 1.0 # [m] minimum distance until emergency_stop activated
-    mapping_distance = 2 # distance of obstacles to map
+    mapping_distance = 5 # distance of obstacles to map
     width = 0.2485 # width of svea
     height = 0.586 # length of svea
     mapping_angle = 1.57 # +-[rad] map everything within this angle to obstacle map
@@ -42,7 +42,7 @@ class PurePursuitController(object):
         rospy.set_param('/team_5_floor2/lidar_obstacles',[]) # parameter to keep obstacles
 
     def compute_angle(self):
-        self.emg_angle_range = np.arctan2((self.width + 0.1),(2*self.emergency_distance))
+        self.emg_angle_range = np.arctan2((self.width + 0.3),(2*self.emergency_distance))
         print("emergency angle in rad", self.emg_angle_range)
 
     def set_emg_traj_running(self,running):

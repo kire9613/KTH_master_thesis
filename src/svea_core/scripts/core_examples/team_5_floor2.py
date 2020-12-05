@@ -102,14 +102,15 @@ def main():
 
     # A* emergency settings 
     emergency_settings = {
-        "driving_distance": 0.1,
+        "driving_distance": 0.3,
         "use_track": False,
         "safety_distance": 0.10,
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
         "success_threshold": 0.5,
         "intermediate_point": False,
-        "use_q1": use_q1
+        "use_q1": use_q1,
+        "maximum_expansion": 1000
         }
     
     # extract trajectory
@@ -240,7 +241,11 @@ def main():
 
         elif istate == 4: # Follow replanned path
             if svea.controller.emg_stop:
+<<<<<<< HEAD
 		svea.update_traj(traj_x,traj_y)
+=======
+                svea.update_traj(traj_x, traj_y)
+>>>>>>> 6204d06... small tuning changes to enhance performance
                 print("emg stop in replan")
                 istate = 5 
              
