@@ -26,8 +26,8 @@ update_rate = 5 # [Hz]
 
 frame_id = "map" 
 resolution = 0.05 # The map resolution [m/cell]
-width = 879 
-height = 171
+width = 1269 #879 
+height = 567 #171
 
 class Node():
 
@@ -122,7 +122,7 @@ def solution(car, start, target, ax):
             ax.plot(New_nod.x, New_nod.y, 'o')
             plt.draw()
             plt.pause(0.0001)
-            done = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 0.55 else False
+            done = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 0.65 else False
             closedone = True if ((target.x - xn) ** 2 + (target.y - yn) ** 2) ** 0.5 < 5 else False
             if closedone:
                 #print('JÄVLIGT NÄRA')
@@ -317,7 +317,7 @@ def step(car, x, y, theta, phi, dt=0.01): # get from another function!
 def get_random_position(NodeList, dist1, dist2, target):
     global countis
     global tick
-    print('tick =', tick)
+    #print('tick =', tick)
    
     if dist1 == dist2 or tick > 4:
         print('I am stuck! searching randomly!')
