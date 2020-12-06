@@ -75,7 +75,7 @@ class Node:
 
         # self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
-        
+
         self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap_updates', OccupancyGridUpdate, self.callback_map_updates)
         # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
         self.state_sub = rospy.Subscriber('state', VehicleState, self.callback_state)
@@ -114,6 +114,7 @@ class Node:
         self.scan = scan
 
     def callback_path(self, path):
+        # Only run eact time a new global path comes in.
         self.path = path
         self.path_lookup = np.zeros((width,height), dtype=np.uint8)
         self.index_lookup = np.zeros((width,height), dtype=np.uint16)
@@ -283,26 +284,17 @@ class MapExplore:
 
         matr = self.map_matrix*path_lookup
 
-        collisions = np.where(matr >= 75)
+        collisions = np.where(matr >= 90)
 
         if collisions[0].size != 0:
             self.collision_pub.publish(Bool(True))
             orig_x = collisions[0][0]
             orig_y = collisions[1][0]
 
-            xmin = orig_x - plan_width/2
-            xmax = orig_x + plan_width/2
-            ymin = orig_y - plan_height/2
-            ymax = orig_y + plan_height/2
-
-            if xmin < 0:
-                xmin = 0
-            if xmax >= width:
-                xmax = width
-            if ymin < 0:
-                ymin = 0
-            if ymax >= height:
-                ymax = height
+            xmin = np.clip(orig_x - plan_width/2,0,width)
+            xmax = np.clip(orig_x + plan_width/2,0,width)
+            ymin = np.clip(orig_y - plan_height/2,0,height)
+            ymax = np.clip(orig_y + plan_height/2,0,height)
 
             final_width = xmax - xmin - 1
             final_height = ymax - ymin - 1
@@ -313,7 +305,7 @@ class MapExplore:
             # print(ymin, ymax)
 
             # print(orig_x,orig_y)
-            print("Intersected path")
+            rospy.loginfo("Intersected path found!")
 
             obs_ind = index_lookup[orig_x, orig_y]
 
@@ -321,6 +313,7 @@ class MapExplore:
             start_y = np.int16(path.poses[obs_ind - 5].pose.position.y/resolution)
             goal_x = np.int16(path.poses[obs_ind + 5].pose.position.x/resolution)
             goal_y = np.int16(path.poses[obs_ind + 5].pose.position.y/resolution)
+
 
             # print(start_x, start_y)
             # print(goal_x, goal_y)
