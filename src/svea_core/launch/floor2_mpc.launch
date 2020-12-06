@@ -3,12 +3,13 @@
 
     <!-- <arg name="start_pt" default= '-2.33, -7.09, 0.8978652, 0.0'/> -->
     <!-- <arg name="start_pt" default= '0.535, -2.9267, -2.25, 0.0'/> -->
-    <arg name="start_pt" default= '14.535, 1.4267, 0.8978652, 0.0'/>
+    <arg name="start_pt" default= '11.04, 12.03, 0.00, 0.0'/>
+    <!--arg name="start_pt" default= '14.535, 1.4267, 0.8978652, 0.0'/> -->
     <arg name="use_rviz" default="true"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="true"/>
     <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/floor2.yaml" /> -->
-    <arg name="map_file" default="$(find svea_core)/resources/maps/gimp/floor2_rot.yaml" />
+    <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" />
     <arg name="run_lidar" default="true"/>
 
     <group if="$(eval use_rviz == true)">
@@ -16,9 +17,8 @@
     </group>
 
     <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
-    <!-- <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" /> -->
-    <rosparam command="load" file="$(find svea_core)/resources/params/obstacles_rot.yaml" />
-    <rosparam command="load" file="$(find svea_core)/resources/params/track.yaml" />
+    <!--rosparam command="load" file="$(find svea_core)/resources/param/obstacles_q1.yaml" />-->
+    <rosparam command="load" file="$(find svea_core)/resources/params/race_track.yaml" />
 
     <node pkg="svea_core" type="floor2_mpc_co_av.py" name="floor2_team1" output="screen">
         <param name="start_pt" value="$(arg start_pt)"/>
@@ -40,6 +40,7 @@
     <!-- <param name="/use_sim_time" value="true"/> -->
 
     <!-- Publishes the voxel grid to rviz for display -->
+    
     <node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer">
       <remap from="voxel_grid" to="costmap/voxel_grid"/>
     </node>
@@ -51,7 +52,6 @@
 
     <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" />
     <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
-    <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" />    
-
+    <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" />  
 
 </launch>
