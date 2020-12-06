@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+
 import rospy
 import numpy as np
 
@@ -154,6 +156,13 @@ class Node:
         # simualtion loop
 
         self.svea.controller.target_velocity = target_velocity
+        self.svea.pid.target_velocity = target_velocity/2
+        self.svea.pid.k = 0.6  # look forward gain
+        self.svea.pid.Lfc = 0.4  # look-ahead distance
+        self.svea.pid.K_p = 1.0  # speed control propotional gain
+        self.svea.pid.K_i = 0.2  # speed control integral gain
+        self.svea.pid.K_d = 0.0  # speed control derivitive gain
+        self.svea.pid.L = 0.324  # [m] wheel base of vehicle
         while not self.svea.is_finished and not rospy.is_shutdown():
             state = self.svea.wait_for_state()
 
@@ -161,9 +170,11 @@ class Node:
             # svea.update_traj(self.traj_x, self.traj_y)
 
             # compute control input
-            if not self.collision:
-                # steering, velocity = self.svea.compute_control()
+            if self.collision:
                 steering, velocity = self.svea.compute_pid_control()
+                self.svea.send_control(steering, velocity)
+            else:
+                steering, velocity = self.svea.compute_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data
