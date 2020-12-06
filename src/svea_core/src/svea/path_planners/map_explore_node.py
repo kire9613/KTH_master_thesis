@@ -71,19 +71,24 @@ class Node:
     def __init__(self):
 
         rospy.init_node('explore_node')
-        self.mapper = MapExplore()
+
+        self.window = 3 # m, the window size for collision check
+        self.state_sub = rospy.Subscriber('state', VehicleState, self.callback_state)
+        self.state = VehicleState()
+        # self.mapper = MapExplore()
+        self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
+        self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
 
         # self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
 
-        self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap_updates', OccupancyGridUpdate, self.callback_map_updates)
+        # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap_updates', OccupancyGridUpdate, self.callback_map_updates)
         # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
-        self.state_sub = rospy.Subscriber('state', VehicleState, self.callback_state)
+        self.rolling_map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_rolling_map)
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.callback_scan)
         self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
 
         self.scan = LaserScan()
-        self.state = VehicleState()
 
 
         self.path_lookup = np.zeros((width,height))
@@ -95,7 +100,7 @@ class Node:
     def callback_map_updates(self, map):
         # print("got new map update!")
         self.map = map
-        self.mapper.map_matrix[map.x:map.x+map.width,map.y:map.y+map.height] = np.reshape(map.data, (map.width, map.height), order='F')
+        self.map_matrix[map.x:map.x+map.width,map.y:map.y+map.height] = np.reshape(map.data, (map.width, map.height), order='F')
         # print(self.map.data)
         # plt.imshow(self.mapper.map_matrix.T)
         # plt.show()
@@ -103,9 +108,16 @@ class Node:
     def callback_map(self, map):
         # print("got new map")
         self.map = map
-        self.mapper.map_matrix = np.reshape(map.data, (width, height), order='F')
+        self.map_matrix = np.reshape(map.data, (width, height), order='F')
         # plt.imshow(self.map_matrix.T)
         # plt.show()
+
+    def callback_rolling_map(self, map):
+        # print("got new map")
+        self.map = map
+        self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
+        plt.imshow(self.map_matrix.T)
+        plt.show()
 
     def callback_state(self, state):
         self.state = state
@@ -156,6 +168,75 @@ class Node:
         # plt.imshow(self.path_lookup.T)
         # plt.show()
 
+    def collision_check(self, path_lookup, index_lookup, path):
+
+        map_slice = None
+
+        plan_width = 120
+        plan_height = 120
+
+        # If rolling window is not set to true
+        # window = int(floor(self.window/resolution))
+
+        # x_ind = int(floor(self.state.x/resolution))
+        # y_ind = int(floor(self.state.y/resolution))
+        # xmin = np.clip(x_ind-window,0,width-1)
+        # xmax = np.clip(x_ind+window,0,width-1)
+        # ymin = np.clip(y_ind-window,0,height-1)
+        # ymax = np.clip(y_ind+window,0,height-1)
+
+        # close_path = np.zeros((width,height))
+        # close_path[xmin:xmax,ymin:ymax] = path_lookup[xmin:xmax,ymin:ymax]
+
+        matr = self.map_matrix*path_lookup
+
+        collisions = np.where(matr >= 90)
+
+        if collisions[0].size != 0:
+            self.collision_pub.publish(Bool(True))
+            orig_x = collisions[0][0]
+            orig_y = collisions[1][0]
+
+            xmin = np.clip(orig_x - plan_width/2,0,width)
+            xmax = np.clip(orig_x + plan_width/2,0,width)
+            ymin = np.clip(orig_y - plan_height/2,0,height)
+            ymax = np.clip(orig_y + plan_height/2,0,height)
+
+            final_width = xmax - xmin - 1
+            final_height = ymax - ymin - 1
+
+            map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
+
+            # print(xmin, xmax)
+            # print(ymin, ymax)
+
+            # print(orig_x,orig_y)
+            rospy.loginfo("Intersected path found!")
+
+            obs_ind = index_lookup[orig_x, orig_y]
+
+            start_x = np.int16(path.poses[obs_ind - 5].pose.position.x/resolution)
+            start_y = np.int16(path.poses[obs_ind - 5].pose.position.y/resolution)
+            goal_x = np.int16(path.poses[obs_ind + 5].pose.position.x/resolution)
+            goal_y = np.int16(path.poses[obs_ind + 5].pose.position.y/resolution)
+
+            # print(start_x, start_y)
+            # print(goal_x, goal_y)
+
+            map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
+            map_matr[goal_x - xmin, goal_y - ymin] = -np.int8(2)
+
+            map_slice = OccupancyGridUpdate()
+            map_slice.header.stamp = rospy.Time.now()
+            map_slice.header.frame_id = frame_id
+            map_slice.x = xmin
+            map_slice.y = ymin
+            map_slice.width = final_width
+            map_slice.height = final_height
+            map_slice.data = map_matr.reshape(-1)
+
+        return map_slice
+
     def run(self):
         rate = rospy.Rate(update_rate)
 
@@ -163,7 +244,7 @@ class Node:
             # self.mapper.update_map(self.state, self.scan)
             # self.map_pub.publish(self.mapper.map)
 
-            map_slice = self.mapper.collision_check(self.path_lookup, self.index_lookup, self.path)
+            map_slice = self.collision_check(self.path_lookup, self.index_lookup, self.path)
 
             if map_slice != None:
                 self.problem_pub.publish(map_slice)
@@ -192,8 +273,6 @@ class MapExplore:
     def __init__(self):
         """
         """
-        self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
-        self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
         # self.map = OccupancyGrid()
         # # Fill in the header
         # self.map.header.stamp = rospy.Time.now()
@@ -275,62 +354,6 @@ class MapExplore:
 
         self.map.data = np.transpose(self.map_matrix).reshape(-1)
 
-    def collision_check(self, path_lookup, index_lookup, path):
-
-        map_slice = None
-
-        plan_width = 120
-        plan_height = 120
-
-        matr = self.map_matrix*path_lookup
-
-        collisions = np.where(matr >= 90)
-
-        if collisions[0].size != 0:
-            self.collision_pub.publish(Bool(True))
-            orig_x = collisions[0][0]
-            orig_y = collisions[1][0]
-
-            xmin = np.clip(orig_x - plan_width/2,0,width)
-            xmax = np.clip(orig_x + plan_width/2,0,width)
-            ymin = np.clip(orig_y - plan_height/2,0,height)
-            ymax = np.clip(orig_y + plan_height/2,0,height)
-
-            final_width = xmax - xmin - 1
-            final_height = ymax - ymin - 1
-
-            map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
-
-            # print(xmin, xmax)
-            # print(ymin, ymax)
-
-            # print(orig_x,orig_y)
-            rospy.loginfo("Intersected path found!")
-
-            obs_ind = index_lookup[orig_x, orig_y]
-
-            start_x = np.int16(path.poses[obs_ind - 5].pose.position.x/resolution)
-            start_y = np.int16(path.poses[obs_ind - 5].pose.position.y/resolution)
-            goal_x = np.int16(path.poses[obs_ind + 5].pose.position.x/resolution)
-            goal_y = np.int16(path.poses[obs_ind + 5].pose.position.y/resolution)
-
-
-            # print(start_x, start_y)
-            # print(goal_x, goal_y)
-
-            map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
-            map_matr[goal_x - xmin, goal_y - ymin] = -np.int8(2)
-
-            map_slice = OccupancyGridUpdate()
-            map_slice.header.stamp = rospy.Time.now()
-            map_slice.header.frame_id = frame_id
-            map_slice.x = xmin
-            map_slice.y = ymin
-            map_slice.width = final_width
-            map_slice.height = final_height
-            map_slice.data = map_matr.reshape(-1)
-
-        return map_slice
 
     def reset_map(self):
         self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
