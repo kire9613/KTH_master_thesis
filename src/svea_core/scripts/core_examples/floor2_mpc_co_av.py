@@ -24,8 +24,8 @@ __status__ = "Development"
 """
 
 ## SIMULATION PARAMS ##########################################################
-param_name = "simulation"
-# param_name = "ZOH-good"
+# param_name = "simulation"
+param_name = "ZOH-good"
 params = parameters.get(param_name)
 
 vehicle_name = ""
@@ -109,7 +109,7 @@ class Node:
         self.svea.update_traj(self.traj_x, self.traj_y)
 
     def callback_collision(self, data):
-        print(data.data)
+        # print(data.data)
         self.collision = data.data
 
     def run(self):
@@ -162,7 +162,8 @@ class Node:
 
             # compute control input
             if not self.collision:
-                steering, velocity = self.svea.compute_control()
+                # steering, velocity = self.svea.compute_control()
+                steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data

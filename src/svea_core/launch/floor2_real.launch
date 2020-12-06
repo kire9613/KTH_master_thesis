@@ -50,18 +50,26 @@
     </node>
     </group>
 
+    <!-- <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="screen" > -->
+    <!--     <!-1- <remap from="scan" to="scan" /> -1-> -->
+    <!--     <remap from="map" to="costmap_node/costmap/costmap" /> -->
+    <!--     <param name="odom_frame" value="odom" /> -->
+    <!--     <param name="base_frame" value="base_link" /> -->
+    <!-- </node> -->
+
     <!-- Publishes the voxel grid to rviz for display -->
-    <node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer">
-      <remap from="voxel_grid" to="costmap/voxel_grid"/>
-    </node>
+    <!-- <node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer"> -->
+    <!--   <remap from="voxel_grid" to="costmap/voxel_grid"/> -->
+    <!-- </node> -->
+
     <!-- Run the costmap node -->
     <node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" >
       <rosparam file="$(find svea_core)/launch/costmap_params.yaml" command="load" ns="costmap" />
     </node>
 
-    <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" />
-    <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
-    <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" />    
+    <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
+    <!-- <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" /> -->
+    <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
 
 
 </launch>

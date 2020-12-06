@@ -14,6 +14,8 @@ from path_following_sveas import SVEAPurePursuit
 from svea.data import TrajDataHandler
 from svea_archetypes import SVEAManager
 
+from svea.controllers.pure_pursuit import PurePursuitController
+
 class SVEAMPC(SVEAPurePursuit):
     """docstring for SVEAMPC"""
 
@@ -22,12 +24,14 @@ class SVEAMPC(SVEAPurePursuit):
                  target_velocity=1.0,
                  low_lim=0.5,
                  dl=0.1,
+                 pid=PurePursuitController,
         ):
 
         SVEAManager.__init__(self, vehicle_name, localizer, controller,
                                    data_handler = data_handler)
 
         self.controller = controller(vehicle_name,target_velocity,low_lim,dl)
+        self.pid = pid(vehicle_name)
 
         self.update_traj(traj_x, traj_y)
 
@@ -55,6 +59,8 @@ class SVEAMPC(SVEAPurePursuit):
         self.controller.sp = self.calc_speed_profile(
             cx,cy,cyaw,ckappa,self.controller.target_velocity,self.controller.low_lim
         )
+        self.pid.traj_x = cx
+        self.pid.traj_y = cy
 
     def calc_speed_profile(self, cx, cy, cyaw, ckappa, target_speed, low_lim=None):
 
@@ -88,3 +94,23 @@ class SVEAMPC(SVEAPurePursuit):
         speed_profile[-1] = 0.0
 
         return speed_profile
+
+    def compute_pid_control(self, state=None):
+        """Compute control for path-following using pure-pursuit
+
+        :param state: State used to compute control; if no state is
+                      given as an argument, self.state is automatically
+                      used instead, defaults to None
+        :type state: VehicleState, or None
+
+        :return: Computed steering and velocity inputs from pure-pursuit
+                 algorithm
+        :rtype: float, float
+        """
+        if state is None:
+            steering, velocity = self.pid.compute_control(self.state)
+            self.data_handler.update_target(self.controller.target)
+        else:
+            steering, velocity = self.pid.compute_control(state)
+            self.data_handler.update_target(self.controller.target)
+        return steering, velocity
