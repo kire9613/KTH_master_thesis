@@ -109,8 +109,8 @@ class SVEAMPC(SVEAPurePursuit):
         """
         if state is None:
             steering, velocity = self.pid.compute_control(self.state)
-            self.data_handler.update_target(self.controller.target)
+            self.data_handler.update_target(self.pid.target)
         else:
             steering, velocity = self.pid.compute_control(state)
-            self.data_handler.update_target(self.controller.target)
+            self.data_handler.update_target(self.pid.target)
         return steering, velocity
