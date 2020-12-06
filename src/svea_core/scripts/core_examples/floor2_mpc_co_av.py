@@ -11,6 +11,7 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Path
+from std_msgs.msg import Bool
 
 from svea.svea_managers.mpc_path_following_sveas import SVEAMPC
 from svea.controllers.mpc.mpc import MPC
@@ -23,7 +24,8 @@ __status__ = "Development"
 """
 
 ## SIMULATION PARAMS ##########################################################
-param_name = "ZOH-good"
+param_name = "simulation"
+# param_name = "ZOH-good"
 params = parameters.get(param_name)
 
 vehicle_name = ""
@@ -80,7 +82,7 @@ class Node:
 
         #This subscriber and its callback function is the local planner
         traj_upd_sub = rospy.Subscriber('/trajectory_updates', Path, self.callback_traj)
-
+        collision_sub = rospy.Subscriber('/collision', Bool, self.callback_collision)
         # select data handler based on the ros params
         if self.use_rviz:
             self.DataHandler = RVIZPathHandler
@@ -95,15 +97,23 @@ class Node:
             model_for_sim = SimpleBicycleModel(start_pt)
             self.simulator = SimSVEA(vehicle_name, model_for_sim,
                                 dt=dt, start_paused=True, run_lidar=self.run_lidar).start()
+
+        self.collision = False
+
         self.traj_x = traj_x_init
         self.traj_y = traj_y_init
 
     def callback_traj(self,path):
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
+        self.svea.update_traj(self.traj_x, self.traj_y)
+
+    def callback_collision(self, data):
+        print(data.data)
+        self.collision = data.data
 
     def run(self):
-        svea = SVEAMPC(
+        self.svea = SVEAMPC(
             vehicle_name,
             LocalizationInterface,
             MPC,
@@ -119,7 +129,7 @@ class Node:
         xlb = [-np.inf]*3+[-1]
         xub = [ np.inf]*3+[3.6]
 
-        svea.controller.build_solver(
+        self.svea.controller.build_solver(
             dt,
             Q=params.Q,
             R=params.R,
@@ -135,7 +145,7 @@ class Node:
             TAU = params.TAU,
             N_IND_SEARCH = params.N_IND_SEARCH,
         )
-        svea.start(wait=True)
+        self.svea.start(wait=True)
 
         if self.is_sim:
             # start simulation
@@ -143,20 +153,21 @@ class Node:
 
         # simualtion loop
 
-        svea.controller.target_velocity = target_velocity
-        while not svea.is_finished and not rospy.is_shutdown():
-            state = svea.wait_for_state()
+        self.svea.controller.target_velocity = target_velocity
+        while not self.svea.is_finished and not rospy.is_shutdown():
+            state = self.svea.wait_for_state()
 
             #This step updates the global path
-            svea.update_traj(self.traj_x, self.traj_y)
+            # svea.update_traj(self.traj_x, self.traj_y)
 
             # compute control input
-            steering, velocity = svea.compute_control()
-            svea.send_control(steering, velocity)
+            if not self.collision:
+                steering, velocity = self.svea.compute_control()
+                self.svea.send_control(steering, velocity)
 
             # visualize data
             if self.use_matplotlib or self.use_rviz:
-                svea.visualize_data()
+                self.svea.visualize_data()
             else:
                 rospy.loginfo_throttle(1, state)
 

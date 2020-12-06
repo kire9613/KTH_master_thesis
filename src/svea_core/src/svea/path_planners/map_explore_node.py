@@ -25,6 +25,7 @@ from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
 from map_msgs.msg import OccupancyGridUpdate
 from nav_msgs.msg import Path
+from std_msgs.msg import Bool
 
 # SVEA
 from svea_msgs.msg import VehicleState
@@ -74,7 +75,7 @@ class Node:
 
         # self.map_pub = rospy.Publisher('explored_map', OccupancyGrid, queue_size=1, latch=True)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
-
+        
         self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap_updates', OccupancyGridUpdate, self.callback_map_updates)
         # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
         self.state_sub = rospy.Subscriber('state', VehicleState, self.callback_state)
@@ -95,6 +96,7 @@ class Node:
         # print("got new map update!")
         self.map = map
         self.mapper.map_matrix[map.x:map.x+map.width,map.y:map.y+map.height] = np.reshape(map.data, (map.width, map.height), order='F')
+        # print(self.map.data)
         # plt.imshow(self.mapper.map_matrix.T)
         # plt.show()
 
@@ -190,6 +192,7 @@ class MapExplore:
         """
         """
         self.map_matrix = np.full((width, height), unknown_space, dtype=np.int8)
+        self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
         # self.map = OccupancyGrid()
         # # Fill in the header
         # self.map.header.stamp = rospy.Time.now()
@@ -283,6 +286,7 @@ class MapExplore:
         collisions = np.where(matr >= 75)
 
         if collisions[0].size != 0:
+            self.collision_pub.publish(Bool(True))
             orig_x = collisions[0][0]
             orig_y = collisions[1][0]
 
@@ -310,6 +314,7 @@ class MapExplore:
 
             # print(orig_x,orig_y)
             print("Intersected path")
+
             obs_ind = index_lookup[orig_x, orig_y]
 
             start_x = np.int16(path.poses[obs_ind - 5].pose.position.x/resolution)

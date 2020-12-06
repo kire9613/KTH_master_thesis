@@ -27,6 +27,8 @@ from visualization_msgs.msg import Marker
 
 import math
 
+import rospy
+
 class MPC(object):
     def __init__(self, vehicle_name='',target_velocity=0.0,low_lim=0.0,dl=0.1):
         self.traj_x = []
@@ -351,7 +353,8 @@ class MPC(object):
         status          = self.solver.stats()['return_status']
         optvar          = self.opt_var(sol['x'])
 
-        # print(status)
+        if status!="Solve_Succeeded":
+            rospy.logwarn(status)
 
 
         solve_time+=time.time()

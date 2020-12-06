@@ -49,9 +49,8 @@ parameters = {
         model_type = "linear",
         solver_ = "osqp",
         dt = 0.1,
-        horizon = 5,
-        TAU=0.4,
-        target_velocity = 1.5,
+        horizon = 7,
+        target_velocity = 2.0,
         low_lim = 1.0,
     ),
 }
