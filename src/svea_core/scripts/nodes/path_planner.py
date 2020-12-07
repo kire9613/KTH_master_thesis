@@ -37,8 +37,8 @@ class Path_logic():
         self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 10)
         self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=10)
         self.look_ahead = 60 #60 # how many pixels forward the path should be estimated 
-        self.threshold_distance = 10 #15 trigger A* when distance to obstacle is less than a threshold
-        self.threshold_wait = 15 #7 wait until car turns around obstacle and check if new obstacles are hidden
+        self.threshold_distance = 20 #15 trigger A* when distance to obstacle is less than a threshold
+        self.threshold_wait = 1 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
         self.current_path = next_traj()
@@ -127,7 +127,7 @@ class Path_logic():
                     self.pub.publish(slow_down_msg)
                     break
                 
-                """traj_x = []
+                traj_x = []
                 traj_y = []
                 #plot estimated path
                 for i in range(len(new_path.estimated_path_x)-1):
@@ -135,7 +135,7 @@ class Path_logic():
                     traj_y.append(np.linspace(new_path.estimated_path_y[i], new_path.estimated_path_y[i+1]).tolist())
                 # #Makes the nested lists into a one dimensional array.
                 new_path.estimated_path_x = [val for sublist in traj_x for val in sublist]
-                new_path.estimated_path_y = [val for sublist in traj_y for val in sublist]"""
+                new_path.estimated_path_y = [val for sublist in traj_y for val in sublist]
 
                 self.A_star_activated = True                      
 

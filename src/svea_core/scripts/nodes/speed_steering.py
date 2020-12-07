@@ -45,7 +45,7 @@ class Controller:
         self.last_time = rospy.get_time()
         self.Lfc = 0.4
         self.L = 0.324
-        self.k = 0.1
+        self.k = 0.3
 
     
     def set_state(self, state_msg):

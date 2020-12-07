@@ -35,14 +35,14 @@ from svea.track import Track
 """
 
 #for dynamical memory
-length_of_memory_list = 4 #10 #how many maps to remember, to high makes it not able to forget stuff that might have been caused by noise in the reading, to small might make it update to often
+length_of_memory_list = 1 #10 #how many maps to remember, to high makes it not able to forget stuff that might have been caused by noise in the reading, to small might make it update to often
 
 #for the lidar
-count_of_scans_until_publish = 140 #5 #preferably small so it sends the values faster and can update faster
+count_of_scans_until_publish = 150 #5 #preferably small so it sends the values faster and can update faster 45, 100
 
 #for the inflation
 car_radius_in_meters = 0.4 #meters
-occupied_space_threshold = 15#35
+occupied_space_threshold = 5#35
 inflation_space_value = 125 #int8 max is 127...
 
 #For rescaling
@@ -152,10 +152,10 @@ def publisher(map):
 class Map_logic():
     def __init__(self):
         self.lidar_step_counter = 0
-        self.dynamical_uppdate_counter = 0 # not realy nessesary but good to have to save image series      
+        #self.dynamical_uppdate_counter = 0 # not realy nessesary but good to have to save image series      
         #for dynamic memory
         self.map_list = []
-        self.flag = False
+        self.map_available = False
         #To add track limitations to the map
         track = Track()
         self.keep_out = track.keep_out
@@ -251,7 +251,7 @@ class Map_logic():
             self.static_map = inflate_map(static_map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value)
             #self.static_map = self.static_map + track_map
             [self.height, self.width] = np.shape(self.static_map)
-            self.flag = True
+            self.map_available = True
 
             #prepare the inflated_map
             self.inflated_map.info.resolution = self.resolution
@@ -263,7 +263,10 @@ class Map_logic():
 
 
     def update_obstical_map(self, msg):
-        if self.flag:
+        #print("Ttttttt")
+        #start_time = rospy.get_rostime()
+        #print(msg.map_pixel_coordinates_x[5], msg.map_pixel_coordinates_y[5])
+        if self.map_available:
             if self.lidar_step_counter == 0:
                 self.obstacle_map = np.zeros((self.height, self.width))
 
@@ -271,9 +274,7 @@ class Map_logic():
             xs = msg.map_pixel_coordinates_x
             ys = msg.map_pixel_coordinates_y
             
-            n = len(xs)
-            
-            for i in range(n):
+            for i in range(len(xs)):
                 x = int(xs[i]/rescaling_factor) #convert the lidar readingst to resolution of intrest
                 y = int(ys[i]/rescaling_factor)
                 
@@ -288,13 +289,13 @@ class Map_logic():
             if self.lidar_step_counter == count_of_scans_until_publish: #135 = full scan, count_of_scans_until_publish times
 
                 #dynamical memory
-                self.dynamical_uppdate_counter += 1
-                self.map_list.append(self.obstacle_map.copy()) #remember
-                if len(self.map_list) > length_of_memory_list: #forget
-                    self.map_list.pop(0)
+                #self.dynamical_uppdate_counter += 1
+                #self.map_list.append(self.obstacle_map.copy()) #remember    TODO: DON'T NEED TO COPY
+                #if len(self.map_list) > length_of_memory_list: #forget
+                #    self.map_list.pop(0)
 
                 #what to send/publish to the pathplaner
-                total_obstacle_map = add_maps(self.map_list)
+                #total_obstacle_map = add_maps(self.map_list)
 
                 """
                 im = plt.imshow(np.flip(total_obstacle_map))
@@ -304,7 +305,7 @@ class Map_logic():
                 plt.clf()
                 """
 
-                inflated_obstacle_map = inflate_map(total_obstacle_map, car_radius_in_meters, self.resolution, occupied_space_threshold, inflation_space_value)
+                inflated_obstacle_map = inflate_map(self.obstacle_map, car_radius_in_meters, self.resolution, occupied_space_threshold, inflation_space_value)
 
                 """
                 plt.imshow(np.flip(inflated_obstacle_map))
@@ -326,6 +327,9 @@ class Map_logic():
                 plt.pause(0.05)
                 plt.clf()
                 """
+                #print(msg.map_pixel_coordinates_x[5], msg.map_pixel_coordinates_y[5])
+                #stop_time = rospy.get_rostime()
+                #print(stop_time - start_time)
                 publisher(self.inflated_map)
 
                 #restart the counter for the lidars steps

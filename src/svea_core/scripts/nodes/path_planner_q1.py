@@ -15,8 +15,8 @@ from svea_msgs.msg import slow_down
 
 number_of_laps = 2
 
-xs = [0.0, 1.4, 4.1, 6.4,  8.8, 18.1, 19.5, 18.6, 6.9, 4.8, 2.8, 1.0, -13.1, -13.9, -14.1, -13.5, -8.2, -7.5, -6.1, -4.6, 0.0]
-ys = [0.0, 0.0, 2.0, 1.7, -0.3, -1.2, 1.1,   3.5, 4.8, 6.8, 6.9, 5.2,  5.65,   4.94,  1.9,  1.1,   0.7,  3.2,  3.3,  0.8, 0.0]
+xs = [0.0, 1.4, 4.1, 6.4,  8.8, 18.1, 19.5, 18.6, 6.9, 4.8, 2.7, 1.0, -13.1, -13.9, -14.1, -13.5, -8.2, -7.3, -6.5, -4.6, 0.0]
+ys = [0.0, 0.0, 2.0, 1.7, -0.3, -1.2, 1.1,   3.5, 4.8, 6.8, 7.2, 5.2,  5.65,   4.94,  1.9,  1.1,   0.7,  3.6,  3.7,  0.8, 0.0]
 
 class Path_logic():
     def __init__(self):
@@ -35,8 +35,8 @@ class Path_logic():
         self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 10)
         self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=10)
         self.look_ahead = 60 #60 # how many pixels forward the path should be estimated 
-        self.threshold_distance = 20 #15 trigger A* when distance to obstacle is less than a threshold
-        self.threshold_wait = 15 #7 wait until car turns around obstacle and check if new obstacles are hidden
+        self.threshold_distance = 15 #15 trigger A* when distance to obstacle is less than a threshold
+        self.threshold_wait = 1 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
         self.current_path = next_traj()
