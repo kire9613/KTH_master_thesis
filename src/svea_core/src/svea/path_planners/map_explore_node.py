@@ -24,7 +24,6 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Bool
 
 # SVEA
-from svea_msgs.msg import VehicleState
 
 import matplotlib.pyplot as plt
 
@@ -42,8 +41,6 @@ class Node:
         rospy.init_node('explore_node')
 
         self.window = 3 # m, the window size for collision check
-        self.state_sub = rospy.Subscriber('state', VehicleState, self.callback_state)
-        self.state = VehicleState()
 
         self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
@@ -52,7 +49,6 @@ class Node:
         # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
         # self.rolling_map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_rolling_map)
         self.glb_map_sub = rospy.Subscriber('map', OccupancyGrid, self.callback_glb_map)
-        self.scan_sub = rospy.Subscriber('scan', LaserScan, self.callback_scan)
         self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
 
         self.scan = LaserScan()
@@ -169,7 +165,7 @@ class Node:
 
         matr = self.map_matrix*self.path_lookup
 
-        collisions = np.where(matr >= 90)
+        collisions = np.where(matr >= 75)
 
         if collisions[0].size != 0:
             self.collision_pub.publish(Bool(True))
