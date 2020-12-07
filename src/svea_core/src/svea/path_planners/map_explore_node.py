@@ -158,23 +158,25 @@ class Node:
                 #self.mapper.add_to_map(cell[0],cell[1],path_val)
                 self.path_lookup[ray[l,0], ray[l,1]] = 1
                 self.index_lookup[ray[l,0], ray[l,1]] = i
-                # for r in range(1, 2):
-                #     t = 0
-                #     while t <= 2*np.pi:
-                #         a = ray[l,0] + r*np.cos(t)
-                #         b = ray[l,1] + r*np.sin(t)
-                #         a = int(a)
-                #         b = int(b)
-                #         if self.is_in_bounds(a,b):
-                #             self.path_lookup[(a,b)] = 1
-                #             self.index_lookup[(a,b)] = i
-                #         t = t + np.pi/32
+                """
+                for r in range(1, 2):
+                    t = 0
+                    while t <= 2*np.pi:
+                        a = ray[l,0] + r*np.cos(t)
+                        b = ray[l,1] + r*np.sin(t)
+                        a = int(a)
+                        b = int(b)
+                        if self.is_in_bounds(a,b):
+                            self.path_lookup[(a,b)] = 1
+                            self.index_lookup[(a,b)] = i
+                        t = t + np.pi/32"
+                """
                 l += 1
 
             self.path_lookup[int_x_end, int_y_end] = 1
             self.index_lookup[int_x_end, int_y_end] = len(path.poses) - 1
-        # plt.imshow(self.path_lookup.T,origin="lower")
-        # plt.show()
+        #plt.imshow(self.path_lookup.T,origin="lower")
+        #plt.show()
 
     def collision_check(self):
 
@@ -198,7 +200,7 @@ class Node:
 
         matr = self.map_matrix*self.path_lookup
 
-        collisions = np.where(matr >= 90)
+        collisions = np.where(matr >= 75)
         # print(collisions[0])
 
         if collisions[0].size != 0:
