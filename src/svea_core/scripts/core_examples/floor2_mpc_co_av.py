@@ -112,6 +112,7 @@ class Node:
     def callback_traj(self,path):
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
+        
         self.svea.update_traj(self.traj_x, self.traj_y)
 
     def callback_collision(self, data):
@@ -171,7 +172,7 @@ class Node:
             state = self.svea.wait_for_state()
 
             #This step updates the global path
-            # svea.update_traj(self.traj_x, self.traj_y)
+            #self.svea.update_traj(self.traj_x, self.traj_y)
 
             # compute control input
             if self.collision:

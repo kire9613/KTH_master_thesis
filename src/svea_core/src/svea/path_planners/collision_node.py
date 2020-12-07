@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from math import floor
 
 ## COLLISION NODE PARAMS ######################################################
-update_rate = 1
+update_rate = 2
 timeout_rate = 0.1
 splice_tol = 0.5
 width = 1269
@@ -73,9 +73,6 @@ class Node:
     def callback_path(self, path):
         self.global_path = path
 
-    # def callback_map(self, occ_map):
-    #     self.planner = AStarPlanner(np.asarray(occ_map.data))
-
     def callback_problem(self, problem_map):
 
         problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height)
@@ -102,77 +99,6 @@ class Node:
 
         n = len(self.global_path.poses)
         # print("Path length: {0}".format(n))
-        i = 0
-        while 1:
-            x = self.global_path.poses[i].pose.position.x
-            y = self.global_path.poses[i].pose.position.y
-            x_new_global.append(x)
-            y_new_global.append(y)
-
-            dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
-
-            if dist < splice_tol:
-                x_new_global.extend(x_list)
-                y_new_global.extend(y_list)
-                break
-            i += 1
-
-        i = n - 1
-        while 1:
-            x = self.global_path.poses[i].pose.position.x
-            y = self.global_path.poses[i].pose.position.y
-
-            dist = np.sqrt((x_list[len(x_list) - 1] - x)**2 + (y_list[len(y_list) - 1] - y)**2)
-
-            if dist < splice_tol:
-                for j in range(i, n):
-                    x_new_global.append(self.global_path.poses[j].pose.position.x)
-                    y_new_global.append(self.global_path.poses[j].pose.position.y)
-                break
-            i -= 1
-
-        new_path = lists_to_path(x_new_global, y_new_global)
-
-        #new_path = lists_to_path(x_list, y_list)
-
-        self.solution_pub.publish(new_path)
-        self.rate_timeout.sleep()
-
-
-    def callback_problemOLD(self, problem_map):
-
-        while self.planner == None:
-            self.rate_timeout.sleep()
-
-        obstacles = []
-
-        problem_matr = np.asarray(problem_map.data).reshape(problem_map.width, problem_map.height)
-
-        for i in range(0, problem_map.width):
-            for j in range(0, problem_map.height):
-                if problem_matr[i,j] >= 75:
-                    obstacles.append((problem_map.x + i, problem_map.y + j))
-                if problem_matr[i,j] == -np.int8(1):
-                    sx = problem_map.x + i
-                    sy = problem_map.y + j
-                if problem_matr[i,j] == -np.int8(2):
-                    gx = problem_map.x + i
-                    gy = problem_map.y + j
-
-        print(sx,sy)
-        print(gx,gy)
-
-        y_list, x_list = self.planner.planning(obstacles, sx, sy, gx, gy)
-
-        for i in range(len(x_list)):
-            x_list[i] = x_list[i]*resolution
-            y_list[i] = y_list[i]*resolution
-
-        x_new_global = []
-        y_new_global = []
-
-        n = len(self.global_path.poses)
-        print("Path length: {0}".format(n))
         i = 0
         while 1:
             x = self.global_path.poses[i].pose.position.x
