@@ -219,13 +219,13 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
     return xtraj,ytraj,success, endnodeTheta
 def __main__(): 
     xt, yt = 15.5,4.3
-    x0, y0, theta0 = 0, 0, -0.5
+    x0, y0, theta0 = 1, 0, 0
     settings = {
         "driving_distance": 0.4,
         "use_track": True,
         "safety_distance": 0.3,
         "grid_resolution": 0.1,
-        "success_threshold": 0.1,
+        "success_threshold": 0.5,
         "use_q1": True,
         "intermediate_point": True
         }

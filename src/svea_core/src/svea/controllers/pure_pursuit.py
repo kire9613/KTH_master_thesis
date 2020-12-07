@@ -75,6 +75,7 @@ class PurePursuitController(object):
         return delta
 
     def compute_velocity(self, state):
+        factor = 1
         if self.is_finished:
             # stop moving if trajectory done and reset controller.
             self.I = 0.0
@@ -92,8 +93,10 @@ class PurePursuitController(object):
             velocity_output = self.P + self.I
             if velocity_output > self.max_velocity:
                 velocity_output = self.max_velocity
-        return  velocity_output
-
+            if not self.emg_traj_running:
+                factor = (math.pi-abs(self.steering))/math.pi
+                #print("decresing velocity by factor: ", factor, ", the velocity is now: ", velocity_output*factor)
+        return  velocity_output*factor
 
     def find_target(self, state):
         ind, dist = self._calc_target_index(state)

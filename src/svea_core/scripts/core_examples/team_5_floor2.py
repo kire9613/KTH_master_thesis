@@ -37,13 +37,13 @@ default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 def extract_trajectory(use_astar, use_q1):
     if use_q1: # suitable coordinates for circle around lap
         xt, yt = 15.5,4.3
-        x0, y0, theta0 =  0,0,0
+        x0, y0, theta0 =  1,0,0
         settings = {
-        "driving_distance": 0.25,
+        "driving_distance": 0.4,
         "use_track": True,
         "safety_distance": 0.3,
         "grid_resolution": 0.1,
-        "success_threshold": 1.5,
+        "success_threshold": 0.5,
         "intermediate_point": True,
         "use_q1": True
         }
@@ -109,7 +109,7 @@ def main():
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.05,
         "success_threshold": 0.5,
-        "maximum_expansion": 500,
+        "maximum_expansion": 1000,
         "intermediate_point": False,
         "use_q1": use_q1
         }
