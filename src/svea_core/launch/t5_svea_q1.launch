@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="use_q1" default="true"/>
+    <arg name="use_rviz" default="true"/>
+    <arg name="use_matplotlib" default="false"/>
+    <arg name="is_sim" default="false"/>
+    <arg name="use_astar" default="true"/>
+    <arg name="use_mpc" default="false"/>
+    <arg name="planner_algorithm" default="mpc" />
+    
+    <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" />
+    <arg name="start_pt" default= '0,0,0,0'/>
+    <arg name="obstacles_list" default="$(find svea_core)/resources/params/race_track.yaml" />
+
+    
+
+    <group if="$(eval is_sim == true)">
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />
+        <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
+    </group>
+
+    <rosparam command="load" file="$(find svea_core)/resources/params/race_track.yaml" />
+
+    <node pkg="svea_core" type="team_5_floor2.py" name="team_5_floor2" output="screen">
+        <param name="start_pt" value="$(arg start_pt)"/>
+        <param name="use_rviz" value="$(arg use_rviz)"/>
+        <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
+        <param name="is_sim" value="$(arg is_sim)"/>
+        <param name="use_astar" value="$(arg use_astar)"/>
+        <param name="use_mpc" value="$(arg use_mpc)"/>
+        <param name="use_q1" value="$(arg use_q1)"/>
+
+         <!--Start MPC path planner-->
+            
+        <rosparam file="$(find svea_core)/src/svea/path_planners/mpc_planner.yaml" command="load" />
+        <rosparam file="$(arg obstacles_list)" command="load" />
+
+        <param name="planner_algorithm" value="$(arg planner_algorithm)"/>
+
+        <remap from="~initial_state" to="/initialpose" />
+        <remap from="~goal_state" to="/move_base_simple/goal" />
+
+    </node>
+
+    <group if="$(eval is_sim == false)">
+      <!--open serial connection for controlling SVEA-->
+        <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
+            <param name="port" value="/dev/ttyACM0"/>
+            <param name="baud" value="250000"/>
+        </node>
+      <!--Running localization on the real SVEA-->
+        <include file="$(find svea_sensors)/launch/localize.launch">
+            <arg name="use_rs" value="true"/>
+            <arg name="file_name" value="$(arg map_file)"/>
+        </include>
+    </group>
+
+
+
+</launch>
