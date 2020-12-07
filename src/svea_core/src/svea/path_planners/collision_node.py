@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from math import floor
 
 ## COLLISION NODE PARAMS ######################################################
-update_rate = 1
+update_rate = 2
 timeout_rate = 0.1
 splice_tol = 0.5
 width = 1269

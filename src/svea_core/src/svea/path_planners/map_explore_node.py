@@ -146,10 +146,10 @@ class Node:
             x_end = self.path.poses[i+1].pose.position.x
             y_end = self.path.poses[i+1].pose.position.y
 
-            int_x_start = np.int16(x_start/self.resolution+shift_x)
-            int_y_start = np.int16(y_start/self.resolution+shift_y)
-            int_x_end = np.int16(x_end/self.resolution+shift_x)
-            int_y_end = np.int16(y_end/self.resolution+shift_y)
+            int_x_start = np.int16(floor(x_start/self.resolution+shift_x))
+            int_y_start = np.int16(floor(y_start/self.resolution+shift_y))
+            int_x_end = np.int16(floor(x_end/self.resolution+shift_x))
+            int_y_end = np.int16(floor(y_end/self.resolution+shift_y))
 
             ray = self.raytrace(int_x_start, int_y_start, int_x_end, int_y_end)
 
@@ -158,17 +158,17 @@ class Node:
                 #self.mapper.add_to_map(cell[0],cell[1],path_val)
                 self.path_lookup[ray[l,0], ray[l,1]] = 1
                 self.index_lookup[ray[l,0], ray[l,1]] = i
-                for r in range(1, 2):
-                    t = 0
-                    while t <= 2*np.pi:
-                        a = ray[l,0] + r*np.cos(t)
-                        b = ray[l,1] + r*np.sin(t)
-                        a = int(a)
-                        b = int(b)
-                        if self.is_in_bounds(a,b):
-                            self.path_lookup[(a,b)] = 1
-                            self.index_lookup[(a,b)] = i
-                        t = t + np.pi/32
+                # for r in range(1, 2):
+                #     t = 0
+                #     while t <= 2*np.pi:
+                #         a = ray[l,0] + r*np.cos(t)
+                #         b = ray[l,1] + r*np.sin(t)
+                #         a = int(a)
+                #         b = int(b)
+                #         if self.is_in_bounds(a,b):
+                #             self.path_lookup[(a,b)] = 1
+                #             self.index_lookup[(a,b)] = i
+                #         t = t + np.pi/32
                 l += 1
 
             self.path_lookup[int_x_end, int_y_end] = 1
