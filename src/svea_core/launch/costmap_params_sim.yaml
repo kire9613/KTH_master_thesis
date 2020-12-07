@@ -7,13 +7,13 @@ map_update_rate: 5.0
 #set if you want the voxel map published
 # publish_voxel_map: false
 ##set to true if you want to initialize the costmap from a static map
-# static_map: true
+static_map: true
 #
 ##begin - COMMENT these lines if you set static_map to true
-rolling_window: true
-width: 4.0
-height: 4.0
-resolution: 0.05
+#rolling_window: true
+#width: 4.0
+#height: 4.0
+#resolution: 0.05
 # always_send_full_costmap: false
 ##end - COMMENT these lines if you set static_map to true
 #
@@ -33,8 +33,8 @@ raytrace_range: 4.0
 # footprint: [0.0, 0.0]
 robot_radius: 0.01
 #footprint_padding: 0.01
-inflation_radius: 0.40
-cost_scaling_factor: 6.0
+inflation_radius: 0.20
+cost_scaling_factor: 0.1
 lethal_cost_threshold: 100
 observation_sources: laser_scan_sensor
 laser_scan_sensor: {sensor: laser, data_type: LaserScan, expected_update_rate: 0.1, topic: scan,
