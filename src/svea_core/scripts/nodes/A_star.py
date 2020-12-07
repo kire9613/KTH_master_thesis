@@ -8,9 +8,7 @@ from svea_msgs.msg import VehicleState
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap
 from svea.controllers.grid_type import Grid
-from svea_msgs.msg import lli_ctrl
 
-remote_overwrite = False
 
 class A_star():
 
@@ -73,18 +71,12 @@ class Node():
 
     def __eq__(self, other):
         return self.position == other.position
-         
-def remote_control(msg):
-        control = msg.ctrl        
-        if control >= 4:
-            remote_overwrite = True
-        else:
-            remote_overwrite = False
+
 
 def astar(ocupancy_grid, start, end):
     
     #Timeout Threshold parameter    
-    timeout_time = 10
+    timeout_time = 5
     # Create start and end node
     start_node = Node(None, np.array(start))
     start_node.g = start_node.h = start_node.f = 0
@@ -100,7 +92,7 @@ def astar(ocupancy_grid, start, end):
     counter = 0
     # Loop until you find the end
     start_time = rospy.get_rostime()
-    while len(open_list) > 0 and not remote_overwrite:
+    while len(open_list) > 0:
     
         end_time = rospy.get_rostime()
         if (end_time.secs-start_time.secs >= timeout_time):
@@ -132,7 +124,7 @@ def astar(ocupancy_grid, start, end):
             checkPoint = current_node
             current = current_node.parent
             path.append(checkPoint.position)
-            while current.parent is not None and not remote_overwrite:
+            while current.parent is not None:
                 if path_is_clear(ocupancy_grid,checkPoint.position,current.position):
                     current = current.parent
                 else:
@@ -225,9 +217,6 @@ def main():
     rospy.init_node("A_star")
     a_star = A_star()
     
-    rospy.Subscriber('/lli/remote',
-                     lli_ctrl,
-                     remote_control)
 
     rospy.Subscriber('/SVEA/state',
                      VehicleState,

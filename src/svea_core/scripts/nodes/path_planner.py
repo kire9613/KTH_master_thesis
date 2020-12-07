@@ -18,6 +18,9 @@ number_of_laps = 2
 xs = [-2.00, -6.58, -6.43, -3.0, -1.87, 1.18, 1.24, 1.82 , 4.5, 10.06, 9.83, 6.45, 5.28, -1.9]
 ys = [3.60, -2.97, -4.46, -6.8, -6.12, -2.05, 1.8, 2.66, 3.35, 11.12, 12.04, 14.38, 14.22, 3.75]
 
+xs = [-2.0, -6.58, -6.43, -3.0, -1.87, 1.18, 3, 2.3, 3.35, 5.6, 10.06, 9.83, 6.45, 5.28, -1.9]
+ys = [3.6, -2.97, -4.46, -6.8, -6.12, -2.05, 1, 2.9, 4.5, 4.8, 11.12, 12.047, 14.38, 14.22, 3.75]
+
 class Path_logic():
     def __init__(self):
 
@@ -34,9 +37,9 @@ class Path_logic():
 
         self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 10)
         self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=10)
-        self.look_ahead = 70 #60 # how many pixels forward the path should be estimated 
-        self.threshold_distance = 15 #15 trigger A* when distance to obstacle is less than a threshold
-        self.threshold_wait = 7 #7 wait until car turns around obstacle and check if new obstacles are hidden
+        self.look_ahead = 60 #60 # how many pixels forward the path should be estimated 
+        self.threshold_distance = 20 #15 trigger A* when distance to obstacle is less than a threshold
+        self.threshold_wait = 15 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
         self.current_path = next_traj()

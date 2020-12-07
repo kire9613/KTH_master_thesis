@@ -37,14 +37,14 @@ class Controller:
         #Controller vars for PID
         self.errors = []
         self.errors_for_I = []
-        self.target_velocity = 0.8 #1.0
+        self.target_velocity = 1.0 #1.0
         self.K_p = 1
         self.K_i = 0.1
         self.K_d = 0
         self.last_time = rospy.get_time()
         self.Lfc = 0.4
         self.L = 0.324
-        self.k = 0.6
+        self.k = 0.1
 
     
     def set_state(self, state_msg):

@@ -19,8 +19,10 @@ scans_per_rotation = 1081 #135 for scan in sim, 1081 in real
 class Map_to_Pixels():
     def __init__(self):
         self.flag = False
-        self.min_angle = np.deg2rad(-45)
-        self.max_angle = np.deg2rad(45)
+        self.min_angle = np.deg2rad(-35)
+        self.max_angle = np.deg2rad(35)
+        self.xs = []
+        self.ys = []
         
     def set_state(self,state_msg):
         self.state = state_msg
@@ -43,6 +45,8 @@ class Map_to_Pixels():
         #print(self.max_angle)
         #print(msg.angle_increment)
         if (self.flag):
+            self.xs = []
+            self.ys = []
             for ang in np.arange(self.min_angle, self.max_angle, angle_increment):  #8 worked
                 ang_index=int(zero_angle_ind+round((ang/coefficient))) #int(scans_per_rotation/2)
                 if not(np.isnan(msg.ranges[ang_index])) and msg.ranges[ang_index]<10:
@@ -54,10 +58,14 @@ class Map_to_Pixels():
                     y_robot = (y_scanned * math.cos(self.state.yaw) + x_scanned * math.sin(self.state.yaw))
                     #print(x_robot, y_robot)
 
-                    map_pixel_points.map_pixel_coordinates_x = int((x_robot + self.state.x - self.grid_origin_x)/self.grid_resolution)
-                    map_pixel_points.map_pixel_coordinates_y = int((y_robot + self.state.y - self.grid_origin_y)/self.grid_resolution)
+                    map_pixel_coordinates_x = int((x_robot + self.state.x - self.grid_origin_x)/self.grid_resolution)
+                    map_pixel_coordinates_y = int((y_robot + self.state.y - self.grid_origin_y)/self.grid_resolution)
                     #print(map_pixel_points)
-                    pub.publish(map_pixel_points)
+                    self.xs.append(map_pixel_coordinates_x)
+                    self.ys.append(map_pixel_coordinates_y)
+            map_pixel_points.map_pixel_coordinates_x = self.xs
+            map_pixel_points.map_pixel_coordinates_y = self.ys
+            pub.publish(map_pixel_points)
 
 if __name__ == '__main__':
     rospy.init_node("state_to_pixels_map")

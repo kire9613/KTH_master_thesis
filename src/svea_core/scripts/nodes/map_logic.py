@@ -34,14 +34,14 @@ from nav_msgs.msg import OccupancyGrid
 """
 
 #for dynamical memory
-length_of_memory_list = 5 #10 #how many maps to remember, to high makes it not able to forget stuff that might have been caused by noise in the reading, to small might make it update to often
+length_of_memory_list = 1 #10 #how many maps to remember, to high makes it not able to forget stuff that might have been caused by noise in the reading, to small might make it update to often
 
 #for the lidar
-number_of_rotations_of_the_lidar_per_update = 1 #5 #preferably small so it sends the values faster and can update faster
+number_of_rotations_of_the_lidar_per_update = 70 #5 #preferably small so it sends the values faster and can update faster
 
 #for the inflation
 car_radius_in_meters = 0.4 #meters
-occupied_space_threshold = 25#35
+occupied_space_threshold = 35#35
 inflation_space_value = 125 #int8 max is 127...
 
 #For rescaling
@@ -191,17 +191,24 @@ class Map_logic():
                 self.obstacle_map = np.zeros((self.height, self.width))
 
             self.lidar_step_counter += 1
-            x = int(msg.map_pixel_coordinates_x/rescaling_factor) #convert the lidar readingst to resolution of intrest
-            y = int(msg.map_pixel_coordinates_y/rescaling_factor)
-
-            if (y + 1 > self.height) or (x + 1 > self.width) or (y + 1 < 0) or (x + 1 < 0) :
-                    d = 0                 
-            elif (self.obstacle_map[y, x] < 100): # # 0 = unknown space, -1 = free space, 100 = obstacle
-                self.obstacle_map[y, x] += 10 #can be changed to decierd value
+            xs = msg.map_pixel_coordinates_x
+            ys = msg.map_pixel_coordinates_y
+            
+            n = len(xs)
+            
+            for i in range(n):
+                x = int(xs[i]/rescaling_factor) #convert the lidar readingst to resolution of intrest
+                y = int(ys[i]/rescaling_factor)
+                
+                if (y + 1 > self.height) or (x + 1 > self.width) or (y + 1 < 0) or (x + 1 < 0) :
+                    print("Out of bounds")
+                    d = 0
+                elif (self.obstacle_map[y, x] < 100): # # 0 = unknown space, -1 = free space, 100 = obstacle
+                    self.obstacle_map[y, x] += 10 #can be changed to decierd value
 
             
 
-            if self.lidar_step_counter == 1500*number_of_rotations_of_the_lidar_per_update: #135 = full scan, number_of_rotations_of_the_lidar_per_update times
+            if self.lidar_step_counter == number_of_rotations_of_the_lidar_per_update: #135 = full scan, number_of_rotations_of_the_lidar_per_update times
 
                 #dynamical memory
                 self.dynamical_uppdate_counter += 1

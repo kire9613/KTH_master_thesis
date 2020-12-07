@@ -1,2 +1,2 @@
-int16 map_pixel_coordinates_x
-int16 map_pixel_coordinates_y
+int16[] map_pixel_coordinates_x
+int16[] map_pixel_coordinates_y
