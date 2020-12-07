@@ -218,14 +218,14 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
         print('\n could not find trajectory... try other settings?')      
     return xtraj,ytraj,success, endnodeTheta
 def __main__(): 
-    xt, yt = 19.5,2
+    xt, yt = 15.5,4.3
     x0, y0, theta0 = 0, 0, -0.5
     settings = {
-        "driving_distance": 0.35,
+        "driving_distance": 0.4,
         "use_track": True,
         "safety_distance": 0.3,
         "grid_resolution": 0.1,
-        "success_threshold": 1,
+        "success_threshold": 0.1,
         "use_q1": True,
         "intermediate_point": True
         }

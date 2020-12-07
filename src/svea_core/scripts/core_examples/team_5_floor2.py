@@ -36,7 +36,7 @@ default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 
 def extract_trajectory(use_astar, use_q1):
     if use_q1: # suitable coordinates for circle around lap
-        xt, yt = 19.5,2
+        xt, yt = 15.5,4.3
         x0, y0, theta0 =  0,0,0
         settings = {
         "driving_distance": 0.25,
@@ -96,27 +96,39 @@ def main():
     # Initialize parameters
     istate = 0
     replan_counter = 0
+    backup_attempted = False
 
     # Get ros parameters from launch file
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc,  use_q1 = param_init()
 
     # A* emergency settings 
     emergency_settings = {
-        "driving_distance": 0.3,
+        "driving_distance": 0.2,
         "use_track": False,
         "safety_distance": 0.10,
         "subscribe_to_obstacles": True,
-        "grid_resolution": 0.025,
+        "grid_resolution": 0.05,
         "success_threshold": 0.5,
-        "maximum_expansion": 1000,
+        "maximum_expansion": 500,
         "intermediate_point": False,
         "use_q1": use_q1
         }
     
     # extract trajectory
     traj_x, traj_y = extract_trajectory(use_astar, use_q1)
+    length = len(traj_x)
+    middle_index = length//2
+    traj_x0 = traj_x[:middle_index]
+    traj_y0 = traj_y[:middle_index]
+    traj_x1 = traj_x[middle_index:-1]
+    traj_y1 = traj_y[middle_index:-1]
+
     traj_theta = compute_angles(traj_x,traj_y)
-  
+      # initialize ros interface
+    ros_interface = ROSInterface(traj_x,traj_y)
+    ros_interface.set_goal_angles(traj_theta)
+    traj_x,traj_y = traj_x0, traj_y0
+
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
@@ -147,10 +159,6 @@ def main():
     else: 
         rospy.wait_for_message('/initialpose',PoseWithCovarianceStamped)
 
-    # initialize ros interface
-    ros_interface = ROSInterface(traj_x,traj_y)
-    ros_interface.set_goal_angles(traj_theta)
-
     # Subscribe to initial state
     rospy.Subscriber('/state', VehicleStateMsg, ros_interface.cb_initial_state)  # noqa
     # Subscribe to Astar position
@@ -159,11 +167,12 @@ def main():
     svea.controller.target_velocity = target_velocity
 
     rospy.Subscriber('/scan', LaserScan,svea.controller.emergency_stop)
-
+    first_traj_complete = False
     while (not svea.is_finished and not rospy.is_shutdown()) or svea.controller.emg_traj_running:
         tic = rospy.get_time() # get time
         state = svea.wait_for_state()
-  
+
+
         if istate == 0: # IDLE state - waits here untill emergency stop
             svea.controller.target_velocity = target_velocity
             if svea.controller.emg_stop:
@@ -291,7 +300,13 @@ def main():
         else:
             rospy.loginfo_throttle(1, state)
         toc = rospy.get_time() # stop timer
+
         #rospy.loginfo("Scan time %f", toc-tic) # scan time of while loop
+        if istate == 0 and svea.is_finished and not first_traj_complete:
+            first_traj_complete = True
+            svea.reset_isfinished()
+            traj_x,traj_y = traj_x1, traj_y1
+            svea.update_traj(traj_x,traj_y)
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")
