@@ -115,9 +115,32 @@ class Node:
     def callback_rolling_map(self, map):
         # print("got new map")
         self.map = map
-        self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
-        plt.imshow(self.map_matrix.T)
-        plt.show()
+        self.map_matrix = np.zeros((width, height), dtype=np.int8)
+        # self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
+        # for big matrix
+        x_ind = int(floor(map.info.origin.position.x/resolution))
+        y_ind = int(floor(map.info.origin.position.y/resolution))
+        xmin,xmax = np.clip([x_ind,x_ind+map.info.width],0,width-1)
+        ymin,ymax = np.clip([y_ind,y_ind+map.info.height],0,height-1)
+        if x_ind>0 and y_ind>0:
+            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
+                map.data, (map.info.width,map.info.height), order='F'
+            )[:xmax-xmin,:ymax-ymin]
+        elif y_ind<0:
+            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
+                map.data, (map.info.width,map.info.height), order='F'
+            )[:,-y_ind:]
+        elif x_ind<0:
+            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
+                map.data, (map.info.width,map.info.height), order='F'
+            )[-x_ind:,:]
+        else:
+            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
+                map.data, (map.info.width,map.info.height), order='F'
+            )[-x_ind:,-y_ind:]
+
+        # plt.imshow(self.map_matrix.T)
+        # plt.show()
 
     def callback_state(self, state):
         self.state = state
@@ -126,7 +149,7 @@ class Node:
         self.scan = scan
 
     def callback_path(self, path):
-        # Only run eact time a new global path comes in.
+        # Only run each time a new global path comes in.
         self.path = path
         self.path_lookup = np.zeros((width,height), dtype=np.uint8)
         self.index_lookup = np.zeros((width,height), dtype=np.uint16)

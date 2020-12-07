@@ -46,6 +46,9 @@
     <!--     <param name="base_frame" value="base_link" /> -->
     <!-- </node> -->
 
+    <node pkg="svea_core" type="tf_sim.py" name="tf_sim" output="screen" />
+    <node pkg="tf" type="static_transform_publisher" name="base_link_2_laser" args="0.33 0 0 0 0 0 /base_link /laser 100"/>
+
     <!-- Publishes the voxel grid to rviz for display -->
     <!-- <node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer"> -->
     <!--   <remap from="voxel_grid" to="costmap/voxel_grid"/> -->
@@ -53,7 +56,7 @@
 
     <!-- Run the costmap node -->
     <node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" >
-      <rosparam file="$(find svea_core)/launch/costmap_params.yaml" command="load" ns="costmap" />
+      <rosparam file="$(find svea_core)/launch/costmap_params_sim.yaml" command="load" ns="costmap" />
     </node>
 
     <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
