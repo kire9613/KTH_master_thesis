@@ -59,7 +59,7 @@ def extract_trajectory(use_astar, use_q1):
         "intermediate_point": True,
         "use_q1": False
         }
-    traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,True)
+    traj_x, traj_y,success = generateTrajectory(settings,x0,y0,theta0,xt,yt,False)
 
     return traj_x, traj_y
 
@@ -217,7 +217,7 @@ def main():
                 ros_interface.compute_goal()
                 x0, y0, theta0 = ros_interface.initial_state
                 xt,yt,thetat = ros_interface.goal_state
-                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)# False
+                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,False)# False
                 
                 print("Astar Replanning Trajectory:")
                 if success:
