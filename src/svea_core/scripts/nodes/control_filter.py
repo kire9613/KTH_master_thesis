@@ -41,7 +41,7 @@ class ControlFilter:
         elif self.slow_down.slow_down:
             #print("SLOW DOWN")
             response = ControlMessageResponse()
-            response.speed = 0.1 #0.2
+            response.speed = 0 #0.2
             response.steering = self.control.steering
         else:
             #print("CONTINUE")

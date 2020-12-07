@@ -32,11 +32,11 @@ class Path_logic():
         self.traj_y = [val for sublist in traj_y for val in sublist]
          
 
-        self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj)
+        self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 10)
         self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=10)
-        self.look_ahead = 60 #60 # how many pixels forward the path should be estimated 
+        self.look_ahead = 70 #60 # how many pixels forward the path should be estimated 
         self.threshold_distance = 15 #15 trigger A* when distance to obstacle is less than a threshold
-        self.threshold_wait = 11 #10 wait until car turns around obstacle and check if new obstacles are hidden
+        self.threshold_wait = 7 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
         self.current_path = next_traj()
@@ -60,9 +60,13 @@ class Path_logic():
             self.path_publisher(self.current_path)
         else:
             self.remote_overwrite = False
+            #plt.imshow(self.to_print_map)
+            #plt.colorbar()
+            #plt.show()
     
     def path_publisher(self, path):
         self.publisher_next_traj.publish(path)
+        
 
     def get_inflated_map(self,msg):
         path_requester = PathRequester()
@@ -73,10 +77,17 @@ class Path_logic():
         origin_x = map.info.origin.position.x
         origin_y = map.info.origin.position.y
         inflated_map = np.reshape(map.data, (height, width))
-    
+        self.to_print_map = inflated_map 
+     
         self.current_x = int((self.state.x - origin_x)/resolution)
         self.current_y = int((self.state.y - origin_y)/resolution)
-        slow_down_msg = slow_down()        
+        slow_down_msg = slow_down()
+        
+        """if not self.remote_overwrite:
+            print("PRINTING MAP")
+            plt.imshow(inflated_map)
+            plt.colorbar()
+            plt.show()"""        
 
         for i in range(0,len(self.current_path.x_coordinates)):    
             x_coordinate_pixel = int((self.current_path.x_coordinates[i] - origin_x)/resolution)            
@@ -103,7 +114,7 @@ class Path_logic():
                     target_x, target_y = self.get_target_ind(x_path, y_path, origin_x, origin_y, resolution)  
                 
                 # Find a new path and publish it                     
-                print("New obstacle observed. Calculating new path...")    
+                print("New obstacle observed. Calculating new path...")      
                 new_path = path_requester.estimate_path([self.current_x, self.current_y],[target_x,target_y], map.data, width, height)
                 print("New path has been calculated")
 

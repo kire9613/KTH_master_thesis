@@ -37,7 +37,7 @@ class Controller:
         #Controller vars for PID
         self.errors = []
         self.errors_for_I = []
-        self.target_velocity = 1.0 #1.0
+        self.target_velocity = 0.8 #1.0
         self.K_p = 1
         self.K_i = 0.1
         self.K_d = 0

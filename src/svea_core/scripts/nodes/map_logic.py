@@ -37,11 +37,11 @@ from nav_msgs.msg import OccupancyGrid
 length_of_memory_list = 5 #10 #how many maps to remember, to high makes it not able to forget stuff that might have been caused by noise in the reading, to small might make it update to often
 
 #for the lidar
-number_of_rotations_of_the_lidar_per_update = 2 #5 #preferably small so it sends the values faster and can update faster
+number_of_rotations_of_the_lidar_per_update = 1 #5 #preferably small so it sends the values faster and can update faster
 
 #for the inflation
-car_radius_in_meters = 0.2 #meters
-occupied_space_threshold = 35#35
+car_radius_in_meters = 0.4 #meters
+occupied_space_threshold = 25#35
 inflation_space_value = 125 #int8 max is 127...
 
 #For rescaling
@@ -49,6 +49,9 @@ rescaling_factor = 2#2#4
 
 #for publishing
 pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=10)
+
+
+
 
 def block_reduce(image, block_size, func=np.sum, cval=0, func_kwargs=None):
     #taken from source: https://github.com/scikit-image/scikit-image/tree/ea7a828c67765d4e24c2d561efa4e8e047b6772e
@@ -91,11 +94,18 @@ def view_as_blocks(arr_in, block_shape):
     arr_out = np.lib.stride_tricks.as_strided(arr_in, shape=new_shape, strides=new_strides)
     return arr_out
 
-def add_maps(static_map, map_list):
-    total_map_list = sum(map_list)
-    total_map = np.add(static_map, total_map_list)
+
+
+
+
+
+
+
+def add_maps(map_list):
+    total_map = sum(map_list)
     total_map = np.clip(total_map, a_min = None, a_max = 100, out = total_map)
     return total_map
+
 
 def rescale_map(map_in, resolution_in, rescaling_factor):
     if rescaling_factor == 1:
@@ -109,6 +119,7 @@ def rescale_map(map_in, resolution_in, rescaling_factor):
 def inflate_map(map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value):
 
     radius = int(np.ceil((float(car_radius_in_meters)/2)/resolution))
+    #print(radius)
 
     [height, width] = np.shape(map)
 
@@ -153,12 +164,13 @@ class Map_logic():
         resolution = static_map_in.info.resolution
         height = static_map_in.info.height
         width = static_map_in.info.width
-        static_map = np.reshape(static_map_in.data, (height, width))
         static_map_in_info_origin_position_x = static_map_in.info.origin.position.x
         static_map_in_info_origin_position_y = static_map_in.info.origin.position.y
 
-        #rescale static map and update infos
-        [self.static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
+        #shape, rescale and inflate the static map and update infos
+        static_map = np.reshape(static_map_in.data, (height, width))
+        [static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
+        self.static_map = inflate_map(static_map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value)
         [self.height, self.width] = np.shape(self.static_map)
         self.flag = True
 
@@ -188,7 +200,7 @@ class Map_logic():
 
             
 
-            if self.lidar_step_counter == 270*number_of_rotations_of_the_lidar_per_update: #135 = full scan, number_of_rotations_of_the_lidar_per_update times
+            if self.lidar_step_counter == 1500*number_of_rotations_of_the_lidar_per_update: #135 = full scan, number_of_rotations_of_the_lidar_per_update times
 
                 #dynamical memory
                 self.dynamical_uppdate_counter += 1
@@ -197,22 +209,38 @@ class Map_logic():
                     self.map_list.pop(0)
 
                 #what to send/publish to the pathplaner
-                total_map = add_maps(self.static_map, self.map_list)
+                total_obstacle_map = add_maps(self.map_list)
 
                 """
-                plt.imshow(np.flip(total_map))
+                im = plt.imshow(np.flip(total_obstacle_map))
+                #plt.colorbar()
+                #plt.show()
+                plt.pause(0.05)
+                plt.clf()
+                """
+
+                inflated_obstacle_map = inflate_map(total_obstacle_map, car_radius_in_meters, self.resolution, occupied_space_threshold, inflation_space_value)
+
+                """
+                plt.imshow(np.flip(inflated_obstacle_map))
                 plt.colorbar()
                 plt.show()
                 """
 
-                self.inflated_map.data = inflate_map(total_map, car_radius_in_meters, self.resolution, occupied_space_threshold, inflation_space_value)
-
+                self.inflated_map.data = add_maps([self.static_map, inflated_obstacle_map])
+                
                 """
                 plt.imshow(np.flip(self.inflated_map.data))
                 plt.colorbar()
                 plt.show()
                 """
-
+                """
+                im = plt.imshow(np.flip(self.inflated_map.data))
+                #plt.colorbar()
+                #plt.show()
+                plt.pause(0.05)
+                plt.clf()
+                """
                 publisher(self.inflated_map)
 
                 #restart the counter for the lidars steps

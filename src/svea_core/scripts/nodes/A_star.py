@@ -8,15 +8,20 @@ from svea_msgs.msg import VehicleState
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap
 from svea.controllers.grid_type import Grid
+from svea_msgs.msg import lli_ctrl
 
+remote_overwrite = False
 
 class A_star():
 
     def __init__(self):
         self.current_state = VehicleState()
+        
 
     def state_callback(self, msg):
         self.current_state = msg
+    
+    
     
 
     def calculate_path(self, req):
@@ -60,18 +65,26 @@ class Node():
     def __init__(self, parent=None, position=None):
         self.parent = parent
         self.position = position
-
+        
         self.penalty = False
         self.g = 0
         self.h = 0
         self.f = 0
 
     def __eq__(self, other):
-        return self.position == other.position 
-
+        return self.position == other.position
+         
+def remote_control(msg):
+        control = msg.ctrl        
+        if control >= 4:
+            remote_overwrite = True
+        else:
+            remote_overwrite = False
 
 def astar(ocupancy_grid, start, end):
-
+    
+    #Timeout Threshold parameter    
+    timeout_time = 10
     # Create start and end node
     start_node = Node(None, np.array(start))
     start_node.g = start_node.h = start_node.f = 0
@@ -84,10 +97,19 @@ def astar(ocupancy_grid, start, end):
 
     # Add the start node
     open_list.append(start_node)
-
+    counter = 0
     # Loop until you find the end
-    while len(open_list) > 0:
-        
+    start_time = rospy.get_rostime()
+    while len(open_list) > 0 and not remote_overwrite:
+    
+        end_time = rospy.get_rostime()
+        if (end_time.secs-start_time.secs >= timeout_time):
+            print("Timeout happened")
+            return None
+        #print(remote_overwrite)
+        # Interupter
+        #counter+=1
+        #if counter > 
         # Get the current node
         current_node = open_list[0]
         
@@ -110,7 +132,7 @@ def astar(ocupancy_grid, start, end):
             checkPoint = current_node
             current = current_node.parent
             path.append(checkPoint.position)
-            while current.parent is not None:
+            while current.parent is not None and not remote_overwrite:
                 if path_is_clear(ocupancy_grid,checkPoint.position,current.position):
                     current = current.parent
                 else:
@@ -202,10 +224,19 @@ def path_is_clear(grid ,start, end):
 def main():
     rospy.init_node("A_star")
     a_star = A_star()
+    
+    rospy.Subscriber('/lli/remote',
+                     lli_ctrl,
+                     remote_control)
 
     rospy.Subscriber('/SVEA/state',
                      VehicleState,
                      a_star.state_callback)
+                     
+    rospy.Subscriber('/state',
+                     VehicleState,
+                     a_star.state_callback)
+     
 
     rospy.Service('calculate_path', PathEstimator, a_star.calculate_path)
     rospy.spin()
