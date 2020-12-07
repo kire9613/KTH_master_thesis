@@ -50,6 +50,12 @@
     </node>
     </group>
 
+    <launch>
+      <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter">
+          <rosparam command="load" file="$(find svea_core)/launch/laser_filter_params.yaml" />
+      </node>
+    </launch>
+
     <!-- <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="screen" > -->
     <!--     <!-1- <remap from="scan" to="scan" /> -1-> -->
     <!--     <remap from="map" to="costmap_node/costmap/costmap" /> -->
