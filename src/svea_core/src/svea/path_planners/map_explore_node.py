@@ -145,10 +145,10 @@ class Node:
             x_end = self.path.poses[i+1].pose.position.x
             y_end = self.path.poses[i+1].pose.position.y
 
-            int_x_start = np.int16(x_start/self.resolution+shift_x)
-            int_y_start = np.int16(y_start/self.resolution+shift_y)
-            int_x_end = np.int16(x_end/self.resolution+shift_x)
-            int_y_end = np.int16(y_end/self.resolution+shift_y)
+            int_x_start = np.int16(floor(x_start/self.resolution+shift_x))
+            int_y_start = np.int16(floor(y_start/self.resolution+shift_y))
+            int_x_end = np.int16(floor(x_end/self.resolution+shift_x))
+            int_y_end = np.int16(floor(y_end/self.resolution+shift_y))
 
             ray = self.raytrace(int_x_start, int_y_start, int_x_end, int_y_end)
 

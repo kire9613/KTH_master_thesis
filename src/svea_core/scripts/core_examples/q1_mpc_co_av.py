@@ -179,14 +179,14 @@ class Node:
 
             # compute control input
             if self.collision:
-                if self.coll_t == None:
-                    self.coll_t = rospy.Time.now()
-                deltaT = rospy.Time.now()-self.coll_t
+                # if self.coll_t == None:
+                #     self.coll_t = rospy.Time.now()
+                # deltaT = rospy.Time.now()
                 # print(deltaT)
-                if deltaT>rospy.Duration(5):
-                    # steering, velocity = self.svea.compute_control()
-                    steering, velocity = self.svea.compute_pid_control()
-                    self.svea.send_control(steering, velocity)
+                # if deltaT>rospy.Duration(5):
+                # steering, velocity = self.svea.compute_control()
+                steering, velocity = self.svea.compute_pid_control()
+                self.svea.send_control(steering, velocity)
             else:
                 steering, velocity = self.svea.compute_control()
                 self.svea.send_control(steering, velocity)
