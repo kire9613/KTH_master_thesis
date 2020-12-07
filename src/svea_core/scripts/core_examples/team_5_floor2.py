@@ -37,7 +37,7 @@ default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 def extract_trajectory(use_astar, use_q1):
     if use_q1: # suitable coordinates for circle around lap
         xt, yt = 15.5,4.3
-        x0, y0, theta0 =  1,0,0
+        x0, y0, theta0 =  0.5,0,0
         settings = {
         "driving_distance": 0.4,
         "use_track": True,
