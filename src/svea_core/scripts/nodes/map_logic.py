@@ -171,6 +171,7 @@ class Map_logic():
         static_map = np.reshape(static_map_in.data, (height, width))
         [static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
         self.static_map = inflate_map(static_map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value)
+
         [self.height, self.width] = np.shape(self.static_map)
         self.flag = True
 
