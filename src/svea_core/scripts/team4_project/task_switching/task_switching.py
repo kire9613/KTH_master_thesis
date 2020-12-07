@@ -73,6 +73,11 @@ class BehaviourTree(pt.trees.BehaviourTree):
             tn.set_speed(0)
         ])
 
+        localization = RSequence("Reset localization", children=[
+            tn.is_lost(),
+            tn.reset_localization()
+        ])
+
         self.tree = RSequence("Behaviour Tree", children=[
             initialization,
             pt.composites.Selector('Behaviour', children=[
@@ -80,6 +85,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
                     tn.status_pause(),
                     tn.set_speed(0)
                 ]),
+                localization,
                 check_at_goal,
                 timeout,
                 collision,

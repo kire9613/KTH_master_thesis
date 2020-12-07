@@ -2,10 +2,11 @@ import py_trees as pt
 import numpy as np
 from svea_msgs.msg import VehicleState
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped, Point32
+from geometry_msgs.msg import Pose, PoseStamped, Point32, PoseWithCovarianceStamped
 from std_msgs.msg import Float32, Bool
 from team4_msgs.msg import Collision, AStarAction, AStarGoal
 from sensor_msgs.msg import PointCloud
+from tf.transformations import quaternion_from_euler
 import rospy
 import actionlib
 from copy import deepcopy
@@ -20,6 +21,8 @@ current_waypoint = 0
 initialized = False
 collision_point = np.zeros((2,))
 planning_start_time = None
+last_pose = None
+localization_is_lost = False
 
 def interpolate(start, end, distance):
     # Create n_steps points that are evenly distributed
@@ -407,3 +410,60 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
 
     def cache_state(self, msg):
         self.position = np.array([msg.x, msg.y])
+
+class is_lost(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.state_sub = rospy.Subscriber('/state', VehicleState, self.state_callback)
+
+        self.LOST_THRESHOLD = 2
+
+        super(is_lost, self).__init__('Localization is lost?')
+
+    def update(self):
+        if localization_is_lost:
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+
+    def state_callback(self, state):
+        global last_pose, localization_is_lost
+
+        if last_pose is None:
+            pose = Pose()
+            pose.position.x = state.x
+            pose.position.y = state.y
+            pose.orientation = quaternion_from_euler(0, 0, state.yaw)
+            last_pose = pose
+            return
+
+        if not localization_is_lost:
+            pos = np.array([state.x, state.y])
+            last_pos = np.array([last_pose.position.x, last_pose.position.y])
+
+            if  np.linalg.norm(pos - last_pos) > self.LOST_THRESHOLD:
+                localization_is_lost = True
+                rospy.logwarn('Lost localization! Trying to reset.')
+            else:
+                pose = Pose()
+                pose.position.x = state.x
+                pose.position.y = state.y
+                pose.orientation = quaternion_from_euler(0, 0, state.yaw)
+                last_pose = pose
+
+class reset_localization(pt.behaviour.Behaviour):
+    def __init__(self):
+        self.loc_pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=1)
+
+        super(reset_localization, self).__init__('Reset localization')
+
+    def update(self):
+        global localization_is_lost
+
+        msg = PoseWithCovarianceStamped()
+        msg.header.frame_id = 'map'
+        msg.pose.pose = last_pose
+        msg.pose.covariance = np.zeros((36,)).tolist()
+
+        localization_is_lost = False
+
+        return pt.common.Status.SUCCESS
