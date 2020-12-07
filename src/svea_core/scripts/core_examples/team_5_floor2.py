@@ -278,28 +278,6 @@ def main():
                 istate = 1 # Go to back to obstacle mapping
                 print("state 1")
                 print("Mapping obstacles")
-        elif istate == 8: # Astar replanning for shorter periods
-            if  svea.is_finished:
-                svea.controller.target_velocity = 0
-                svea.reset_isfinished()
-                if ros_interface.current_speed < 0.01:
-                    svea.controller.laser_mapping(ros_interface.initial_state)
-                g_traj_x, g_traj_y,success = generateTrajectory(emergency_settings,x0,y0,theta0,xt,yt,True)# False
-                print("Astar Replanning Trajectory again:")
-                if success:
-                    svea.update_traj(g_traj_x, g_traj_y)
-                    print("state 4")
-                    istate = 4
-                else: # do something here if fails
-                    replan_counter = replan_counter + 1
-                    svea.controller.set_emg_traj_running(False)  
-                    if replan_counter >= 2:
-                        print("Replanned twice and failed!")
-                        break  
-                    else:
-                        print("Planning Failed - Replan with MPC")
-                        istate = 2
-
                 
 
         # compute control input via pure pursuit
