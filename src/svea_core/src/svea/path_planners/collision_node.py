@@ -30,9 +30,9 @@ from math import floor
 update_rate = 2
 timeout_rate = 0.1
 splice_tol = 0.5
-width = 1269
-height = 567
-resolution = 0.05
+width = 635 #1269
+height = 284 #567
+resolution = 0.1
 
 shift_x = int(floor(30.549770/resolution))
 shift_y = int(floor(11.414917/resolution))

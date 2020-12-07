@@ -30,9 +30,9 @@ import matplotlib.pyplot as plt
 ## MAP EXPLORER PARAMS ########################################################
 
 update_rate = 5 # [Hz]
-width = 1269
-height = 567
-resolution = 0.05
+width = 635#1269  
+height = 284#567
+resolution = 0.1
 shift_x = int(floor(30.549770/resolution))
 shift_y = int(floor(11.414917/resolution))
 ###############################################################################
@@ -85,7 +85,6 @@ class Node:
         if map_slice != None:
             self.problem_pub.publish(map_slice)
             #self.rate_timeout.sleep()
-
 
     def callback_map(self, map):
         # print("got new map")
@@ -204,7 +203,7 @@ class Node:
         # print(collisions[0])
 
         if collisions[0].size != 0:
-            self.collision_pub.publish(Bool(True))
+            
             orig_x = collisions[0][0]
             orig_y = collisions[1][0]
 
@@ -245,6 +244,8 @@ class Node:
             map_slice.width = final_width
             map_slice.height = final_height
             map_slice.data = map_matr.reshape(-1)
+
+            self.collision_pub.publish(Bool(True))
 
         return map_slice
 
