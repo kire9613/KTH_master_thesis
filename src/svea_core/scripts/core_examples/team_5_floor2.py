@@ -36,7 +36,7 @@ default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 
 def extract_trajectory(use_astar, use_q1):
     if use_q1: # suitable coordinates for circle around lap
-        xt, yt = 20,2
+        xt, yt = 19.5,2
         x0, y0, theta0 =  0,0,0
         settings = {
         "driving_distance": 0.25,
@@ -108,15 +108,9 @@ def main():
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.025,
         "success_threshold": 0.5,
-<<<<<<< HEAD
-        "intermediate_point": False,
-        "use_q1": use_q1,
-        "maximum_expansion": 1000
-=======
         "maximum_expansion": 1000,
         "intermediate_point": False,
         "use_q1": use_q1
->>>>>>> deb4f2b... A* adaptions for Q1 racing track
         }
     
     # extract trajectory
@@ -247,11 +241,7 @@ def main():
 
         elif istate == 4: # Follow replanned path
             if svea.controller.emg_stop:
-<<<<<<< HEAD
-		svea.update_traj(traj_x,traj_y)
-=======
                 svea.update_traj(traj_x, traj_y)
->>>>>>> 6204d06... small tuning changes to enhance performance
                 print("emg stop in replan")
                 istate = 5 
              

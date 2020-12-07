@@ -120,22 +120,26 @@ class gridpt(object):
         new_pose = []
         for dTheta in ([-math.pi/8, -math.pi/12, 0, math.pi/12, math.pi/8 ]):
             new_pose.append([self.x + self.v*self.dt*math.cos(self.theta +dTheta), self.y + self.v*self.dt*math.sin(self.theta +dTheta), self.theta +dTheta, dTheta])
-###### for first angle #####
         for child in new_pose:
-          status = True
-          gridx = int(numpy.floor((child[0]-xlb)/dl))
-          gridy = int(numpy.floor((child[1]-ylb)/dl))
-          if (grid[gridx,gridy]) == 0 or (grid[gridx,gridy]) == 0.5:
-            status = False
-          else:
-            for i in range(len(list_obs_x)):
-              if math.sqrt((child[0]-list_obs_x[i])**2+(child[1]-list_obs_y[i])**2) <safety_dist:
-                grid[gridx,gridy] = 0.5
+            closest_distance_to_obstacle = 1000 # big value 
+            status = True
+            gridx = int(numpy.floor((child[0]-xlb)/dl))
+            gridy = int(numpy.floor((child[1]-ylb)/dl))
+            if (grid[gridx,gridy]) == 0 or (grid[gridx,gridy]) == 0.5:
                 status = False
-                break
-          if status != False:
-            grid[gridx,gridy] = 0
-            self.children.append([gridpt(settings,child[0],child[1],child[2],self.xt,self.yt),child[3]]) # attach and create new node to list w the corresponding steeering angle
+            else:
+                for i in range(len(list_obs_x)):
+                    distance_to_obstacle =  math.sqrt((child[0]-list_obs_x[i])**2+(child[1]-list_obs_y[i])**2) 
+                    if distance_to_obstacle < safety_dist:
+                        grid[gridx,gridy] = 0.5
+                        status = False
+                        break
+                    elif distance_to_obstacle < closest_distance_to_obstacle:
+                        closest_distance_to_obstacle = distance_to_obstacle
+
+            if status != False:
+                grid[gridx,gridy] = 0
+                self.children.append([gridpt(settings,child[0],child[1],child[2],self.xt,self.yt),child[3],closest_distance_to_obstacle]) # attach and create new node to list w the corresponding steeering angle and cost
 
 def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
     print('calling A*')
@@ -188,9 +192,10 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
                 Qchild = Q[-1]
                 children_nodes[index][0].parent = currnode[0]
                 steering_angle = children_nodes[index][1]
+                closest_distance_to_obstacle = children_nodes[index][2]
                 children_nodes[index][0].howtofindme.append(steering_angle) # append the angle # append x,y
-                if currnode[2] + 0.1 + abs(steering_angle)*0.3 < Qchild[2]: # cost to reach
-                    Q[Q.index(Qchild)][2] = currnode[2] + 0.1 + abs(steering_angle)*0.3 # cost to reach from start
+                if currnode[2] + 0.1 + abs(steering_angle)*0.3 + 0.5/closest_distance_to_obstacle < Qchild[2]: # cost to reach
+                    Q[Q.index(Qchild)][2] = currnode[2] + 0.1 + abs(steering_angle)*0.3  + 0.5/closest_distance_to_obstacle# cost to reach from start
                     Q[Q.index(Qchild)][3] = currnode[0]    # update pointer to mother-node
                     Q[Q.index(Qchild)][4] = children_nodes[index][1] # heuristic cost from child to goal
         if S[-1][0].heuristic <= settings["success_threshold"]: # if we're close to the target --> stop
@@ -213,10 +218,10 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
         print('\n could not find trajectory... try other settings?')      
     return xtraj,ytraj,success, endnodeTheta
 def __main__(): 
-    xt, yt = 20,2
+    xt, yt = 19.5,2
     x0, y0, theta0 = 0, 0, -0.5
     settings = {
-        "driving_distance": 0.3,
+        "driving_distance": 0.35,
         "use_track": True,
         "safety_distance": 0.3,
         "grid_resolution": 0.1,
