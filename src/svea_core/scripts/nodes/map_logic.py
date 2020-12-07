@@ -5,6 +5,7 @@ import numpy as np
 import math
 from svea_msgs.msg import map_pixel_coordinates
 from nav_msgs.msg import OccupancyGrid
+from svea.track import Track
 #import matplotlib.pyplot as plt
 # import skimage.measure #install with: python -m pip install -U scikit-image
 
@@ -157,6 +158,75 @@ class Map_logic():
         #for dynamic memory
         self.map_list = []
         self.flag = False
+        #To add track limitations to the map
+        track = Track()
+        self.keep_out = track.keep_out
+        self.stay_in = track.stay_in
+        self.origin, self.resolution = self.param_init()
+        self.generate_track()
+        
+        
+    def generate_track(self):
+        points_stay_in = []
+        points_keep_out = []
+        for point in self.stay_in:
+            points_stay_in.append([int((point[0] - self.origin[0])/self.resolution),
+                                int((point[1] - self.origin[1])/self.resolution)])
+        for point in self.keep_out:
+            points_keep_out.append([int((point[0] - self.origin[0])/self.resolution),
+                                int((point[1] - self.origin[1])/self.resolution)])
+        self.stay_in = points_stay_in
+        self.keep_out = points_keep_out
+        
+        
+    def param_init(self):
+        """Initialization handles use with just python or in a launch file"""
+        # grab parameters from launch-file
+        origin_param = rospy.search_param('origin')
+        resolution_param = rospy.search_param('resolution')
+        origin = rospy.get_param(origin_param, [0, 0, 0])
+        resolution = rospy.get_param(resolution_param, 1)
+        if isinstance(origin, str):
+            origin = origin.split(',')
+            origin = [float(curr) for curr in origin]
+        return origin, resolution
+        
+        
+    def get_track_map(self, size):
+        track_map = np.zeros(size)
+        start = []
+        end = []
+        n = len(self.stay_in)
+        for i in range(n):
+            start.append(self.stay_in[i])
+            end.append(self.stay_in[(i+1) % n])
+        track_boundaries = np.linspace(start, end)
+        x_coord = np.rint(track_boundaries[:,:,0].flatten())
+        y_coord = np.rint(track_boundaries[:,:,1].flatten())
+        x_coord = x_coord.tolist()
+        y_coord = y_coord.tolist()
+        for i in range(len(x_coord)):
+            x = int(x_coord[i])
+            y = int(y_coord[i])
+            track_map[y][x] = 100
+        start = []
+        end = []
+        n = len(self.keep_out)
+        for i in range(n):
+            start.append(self.keep_out[i])
+            end.append(self.keep_out[(i+1) % n])
+        track_boundaries = np.linspace(start, end)
+        x_coord = np.rint(track_boundaries[:,:,0].flatten())
+        y_coord = np.rint(track_boundaries[:,:,1].flatten())
+        x_coord = x_coord.tolist()
+        y_coord = y_coord.tolist()
+        for i in range(len(x_coord)):
+            x = int(x_coord[i])
+            y = int(y_coord[i])
+            track_map[y][x] = 100
+        return track_map
+        
+        
 
     def get_map(self, msg):
         #extract info from the given static map
@@ -166,9 +236,13 @@ class Map_logic():
         width = static_map_in.info.width
         static_map_in_info_origin_position_x = static_map_in.info.origin.position.x
         static_map_in_info_origin_position_y = static_map_in.info.origin.position.y
-
+        
+        #Add the track to the static map
+        #track_map = self.get_track_map((height, width))
+        
         #shape, rescale and inflate the static map and update infos
         static_map = np.reshape(static_map_in.data, (height, width))
+        #static_map = static_map+track_map
         [static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
         self.static_map = inflate_map(static_map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value)
 
