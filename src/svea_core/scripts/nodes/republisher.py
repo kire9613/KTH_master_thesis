@@ -70,7 +70,6 @@ def publish_path(msg):
     :param t_list: time trajectory in [s], defaults to None
     :type t_list: list
     """
-
     path = Path()
     path.header.stamp = rospy.Time.now()
     path.header.frame_id = 'map'

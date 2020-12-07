@@ -8,17 +8,15 @@ from svea_msgs.msg import next_traj
 from svea.path_planners.path_requester import PathRequester
 from svea_msgs.msg import VehicleState
 from svea_msgs.msg import lli_ctrl
+from std_msgs.msg import Bool
 #import matplotlib.pyplot as plt
 
 from svea_msgs.msg import slow_down
 
 number_of_laps = 2
 
-xs = [-2.00, -6.58, -6.43, -3.0, -1.87, 1.18, 1.24, 1.82 , 4.5, 10.06, 9.83, 6.45, 5.28, -1.9]
-ys = [3.60, -2.97, -4.46, -6.8, -6.12, -2.05, 1.8, 2.66, 3.35, 11.12, 12.04, 14.38, 14.22, 3.75]
-
-xs = [-2.0, -6.58, -6.43, -3.0, -1.87, 1.18, 3, 2.3, 3.35, 5.6, 10.06, 9.83, 6.45, 5.28, -1.9]
-ys = [3.6, -2.97, -4.46, -6.8, -6.12, -2.05, 1, 2.9, 4.5, 4.8, 11.12, 12.047, 14.38, 14.22, 3.75]
+xs = [0.0, 1.4, 4.1, 6.4,  8.8, 18.1, 19.5, 18.6, 6.9, 4.8, 2.8, 1.0, -13.1, -13.9, -14.1, -13.5, -8.2, -7.5, -6.1, -4.6, 0.0]
+ys = [0.0, 0.0, 2.0, 1.7, -0.3, -1.2, 1.1,   3.5, 4.8, 6.8, 6.9, 5.2,  5.65,   4.94,  1.9,  1.1,   0.7,  3.2,  3.3,  0.8, 0.0]
 
 class Path_logic():
     def __init__(self):
@@ -52,6 +50,7 @@ class Path_logic():
         self.current_x=[]
         self.current_y=[]
         self.remote_overwrite = False
+        self.using_astar_publisher = rospy.Publisher('/using_astar', Bool, queue_size = 10)
         
     def remote_control(self,msg):
         control = msg.ctrl        
@@ -127,7 +126,7 @@ class Path_logic():
                     self.pub.publish(slow_down_msg)
                     break
                 
-                traj_x = []
+                """traj_x = []
                 traj_y = []
                 #plot estimated path
                 for i in range(len(new_path.estimated_path_x)-1):
@@ -135,7 +134,7 @@ class Path_logic():
                     traj_y.append(np.linspace(new_path.estimated_path_y[i], new_path.estimated_path_y[i+1]).tolist())
                 # #Makes the nested lists into a one dimensional array.
                 new_path.estimated_path_x = [val for sublist in traj_x for val in sublist]
-                new_path.estimated_path_y = [val for sublist in traj_y for val in sublist]
+                new_path.estimated_path_y = [val for sublist in traj_y for val in sublist]"""
 
                 self.A_star_activated = True                      
 
@@ -225,7 +224,9 @@ class Path_logic():
     
 
     def update_to_next_path(self):
+        
         if self.A_star_activated:
+            #self.using_astar_publisher.publish(True)
             print("A* path is published")
             self.path_publisher(self.current_path)
             self.sent = True
@@ -233,10 +234,12 @@ class Path_logic():
             self.A_star_path_done = False
             
         if not self.A_star_activated and self.A_star_path_done:
+            #self.using_astar_publisher.publish(False)
             #print("Regular path published")
             self.current_path.x_coordinates = self.traj_x
             self.current_path.y_coordinates = self.traj_y
             self.path_publisher(self.current_path)
+        
 
         """elif self.count_laps == number_of_laps:
             self.current_path.x_coordinates = []

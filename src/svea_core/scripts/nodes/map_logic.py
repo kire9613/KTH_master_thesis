@@ -31,18 +31,18 @@ from svea.track import Track
 
 
 #so basicaly everything is working
-#remember that length_of_memory_list, number_of_rotations_of_the_lidar_per_update, occupied_space_threshold and rescaling_factor have a close relationship to determine what gets inflated
+#remember that length_of_memory_list, count_of_scans_until_publish, occupied_space_threshold and rescaling_factor have a close relationship to determine what gets inflated
 """
 
 #for dynamical memory
-length_of_memory_list = 1 #10 #how many maps to remember, to high makes it not able to forget stuff that might have been caused by noise in the reading, to small might make it update to often
+length_of_memory_list = 4 #10 #how many maps to remember, to high makes it not able to forget stuff that might have been caused by noise in the reading, to small might make it update to often
 
 #for the lidar
-number_of_rotations_of_the_lidar_per_update = 70 #5 #preferably small so it sends the values faster and can update faster
+count_of_scans_until_publish = 140 #5 #preferably small so it sends the values faster and can update faster
 
 #for the inflation
 car_radius_in_meters = 0.4 #meters
-occupied_space_threshold = 35#35
+occupied_space_threshold = 15#35
 inflation_space_value = 125 #int8 max is 127...
 
 #For rescaling
@@ -152,9 +152,7 @@ def publisher(map):
 class Map_logic():
     def __init__(self):
         self.lidar_step_counter = 0
-        self.dynamical_uppdate_counter = 0 # not realy nessesary but good to have to save image series
-        #prepare for later
-        self.inflated_map = OccupancyGrid()        
+        self.dynamical_uppdate_counter = 0 # not realy nessesary but good to have to save image series      
         #for dynamic memory
         self.map_list = []
         self.flag = False
@@ -164,6 +162,7 @@ class Map_logic():
         self.stay_in = track.stay_in
         self.origin, self.resolution = self.param_init()
         self.generate_track()
+        self.inflated_map = OccupancyGrid()
         
         
     def generate_track(self):
@@ -237,26 +236,30 @@ class Map_logic():
         static_map_in_info_origin_position_x = static_map_in.info.origin.position.x
         static_map_in_info_origin_position_y = static_map_in.info.origin.position.y
         
-        #Add the track to the static map
-        #track_map = self.get_track_map((height, width))
-        
-        #shape, rescale and inflate the static map and update infos
-        static_map = np.reshape(static_map_in.data, (height, width))
-        #static_map = static_map+track_map
-        [static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
-        self.static_map = inflate_map(static_map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value)
+        if len(self.inflated_map.data) == 0:
+            print("Static map processed")
+            #Add the track to the static map
+            track_map = self.get_track_map((height, width))
+            
+            #shape, rescale and inflate the static map and update infos
+            static_map = np.reshape(static_map_in.data, (height, width))
+            #static_map = static_map+track_map
+            
+            [static_map, self.resolution] = rescale_map(static_map, resolution, rescaling_factor)
+            [track_map, dummy] = rescale_map(track_map, resolution, rescaling_factor)
+            
+            self.static_map = inflate_map(static_map, car_radius_in_meters, resolution, occupied_space_threshold, inflation_space_value)
+            #self.static_map = self.static_map + track_map
+            [self.height, self.width] = np.shape(self.static_map)
+            self.flag = True
 
-        [self.height, self.width] = np.shape(self.static_map)
-        self.flag = True
-
-
-        #prepare the inflated_map
-        self.inflated_map.info.resolution = self.resolution
-        self.inflated_map.info.height = self.height
-        self.inflated_map.info.width = self.width
-        self.inflated_map.info.origin.position.x = static_map_in_info_origin_position_x #-self.inflated_map.info.width*self.resolution/2
-        self.inflated_map.info.origin.position.y = static_map_in_info_origin_position_y #-self.inflated_map.info.height*self.resolution/2
-        self.inflated_map.info.origin.orientation.w = 1.0
+            #prepare the inflated_map
+            self.inflated_map.info.resolution = self.resolution
+            self.inflated_map.info.height = self.height
+            self.inflated_map.info.width = self.width
+            self.inflated_map.info.origin.position.x = static_map_in_info_origin_position_x #-self.inflated_map.info.width*self.resolution/2
+            self.inflated_map.info.origin.position.y = static_map_in_info_origin_position_y #-self.inflated_map.info.height*self.resolution/2
+            self.inflated_map.info.origin.orientation.w = 1.0
 
 
     def update_obstical_map(self, msg):
@@ -282,7 +285,7 @@ class Map_logic():
 
             
 
-            if self.lidar_step_counter == number_of_rotations_of_the_lidar_per_update: #135 = full scan, number_of_rotations_of_the_lidar_per_update times
+            if self.lidar_step_counter == count_of_scans_until_publish: #135 = full scan, count_of_scans_until_publish times
 
                 #dynamical memory
                 self.dynamical_uppdate_counter += 1

@@ -8,6 +8,7 @@ from svea_msgs.msg import CoordinateArray
 from svea_msgs.srv import ControlMessage
 from svea_msgs.srv import ControlMessageResponse
 from svea_msgs.msg import next_traj
+from std_msgs.msg import Bool
 
 '''
 Node with PID controller with pure pursuit. 
@@ -38,7 +39,7 @@ class Controller:
         self.errors = []
         self.errors_for_I = []
         self.target_velocity = 1.0 #1.0
-        self.K_p = 1
+        self.K_p = 1.0
         self.K_i = 0.1
         self.K_d = 0
         self.last_time = rospy.get_time()
@@ -56,7 +57,15 @@ class Controller:
         # self.trajectory = trajectory_msg
         self.traj_x = trajectory_msg.x_coordinates
         self.traj_y = trajectory_msg.y_coordinates
-
+        
+    '''def update_lookahead(self, msg):
+        if msg.data == True:
+            self.k = 0.1
+            self.errors_for_I = []
+        else:
+            self.k = 0.6
+    '''
+    
     def getPIDSpeed(self):
         test = False
         if test:
@@ -82,7 +91,9 @@ class Controller:
             D = 0
         
         PID = P+I+D
-        return max(0, min(4, PID))
+        maxinput = 4
+        # print(max(0, min(maxinput, PID)))
+        return max(0, min(maxinput, PID))
 
 
     def getSteering(self):
@@ -154,6 +165,10 @@ if __name__ == '__main__':
     rospy.Subscriber('/SVEA/state',
                      VehicleState,
                      controller.set_state)
+                     
+    #rospy.Subscriber('/using_astar',
+    #                 Bool,
+    #                 controller.update_lookahead)
 
     rospy.loginfo('Speed and Steering Node Initialized')
 
