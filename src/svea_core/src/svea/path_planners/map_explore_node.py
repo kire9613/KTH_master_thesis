@@ -28,8 +28,13 @@ from std_msgs.msg import Bool
 import matplotlib.pyplot as plt
 
 ## MAP EXPLORER PARAMS ########################################################
-update_rate = 5 # [Hz]
 
+update_rate = 5 # [Hz]
+width = 1269
+height = 567
+resolution = 0.05
+shift_x = int(floor(30.549770/resolution))
+shift_y = int(floor(11.414917/resolution))
 ###############################################################################
 
 class Node:
@@ -86,7 +91,7 @@ class Node:
         # print("got new map")
         self.map = map
         self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
-        # plt.imshow(self.map_matrix.T)
+        # plt.imshow(self.map_matrix.T,origin="lower")
         # plt.show()
 
     def callback_rolling_map(self, map):
@@ -95,10 +100,14 @@ class Node:
         self.map_matrix = np.zeros((width, height), dtype=np.int8)
         # self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
         # for big matrix
-        x_ind = int(floor(map.info.origin.position.x/resolution))
-        y_ind = int(floor(map.info.origin.position.y/resolution))
+        x_ind = int(floor((map.info.origin.position.x+30.549770)/resolution))
+        y_ind = int(floor((map.info.origin.position.y+11.414917)/resolution))
         xmin,xmax = np.clip([x_ind,x_ind+map.info.width],0,width-1)
         ymin,ymax = np.clip([y_ind,y_ind+map.info.height],0,height-1)
+        # self.xmin = xmin
+        # self.xmax = xmax
+        # self.ymin = ymin
+        # self.ymax = ymax
         if x_ind>0 and y_ind>0:
             self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
                 map.data, (map.info.width,map.info.height), order='F'
@@ -116,7 +125,7 @@ class Node:
                 map.data, (map.info.width,map.info.height), order='F'
             )[-x_ind:,-y_ind:]
 
-        # plt.imshow(self.map_matrix.T)
+        # plt.imshow(self.map_matrix.T,origin="lower")
         # plt.show()
 
     def callback_state(self, state):
@@ -137,10 +146,10 @@ class Node:
             x_end = self.path.poses[i+1].pose.position.x
             y_end = self.path.poses[i+1].pose.position.y
 
-            int_x_start = np.int16(x_start/self.resolution)
-            int_y_start = np.int16(y_start/self.resolution)
-            int_x_end = np.int16(x_end/self.resolution)
-            int_y_end = np.int16(y_end/self.resolution)
+            int_x_start = np.int16(x_start/self.resolution+shift_x)
+            int_y_start = np.int16(y_start/self.resolution+shift_y)
+            int_x_end = np.int16(x_end/self.resolution+shift_x)
+            int_y_end = np.int16(y_end/self.resolution+shift_y)
 
             ray = self.raytrace(int_x_start, int_y_start, int_x_end, int_y_end)
 
@@ -149,7 +158,6 @@ class Node:
                 #self.mapper.add_to_map(cell[0],cell[1],path_val)
                 self.path_lookup[ray[l,0], ray[l,1]] = 1
                 self.index_lookup[ray[l,0], ray[l,1]] = i
-                """
                 for r in range(1, 2):
                     t = 0
                     while t <= 2*np.pi:
@@ -161,11 +169,12 @@ class Node:
                             self.path_lookup[(a,b)] = 1
                             self.index_lookup[(a,b)] = i
                         t = t + np.pi/32
-                """
                 l += 1
 
             self.path_lookup[int_x_end, int_y_end] = 1
             self.index_lookup[int_x_end, int_y_end] = len(path.poses) - 1
+        # plt.imshow(self.path_lookup.T,origin="lower")
+        # plt.show()
 
     def collision_check(self):
 
@@ -189,7 +198,8 @@ class Node:
 
         matr = self.map_matrix*self.path_lookup
 
-        collisions = np.where(matr >= 75)
+        collisions = np.where(matr >= 90)
+        # print(collisions[0])
 
         if collisions[0].size != 0:
             self.collision_pub.publish(Bool(True))
@@ -206,23 +216,21 @@ class Node:
 
             map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
 
-            # print(xmin, xmax)
-            # print(ymin, ymax)
-
-            # print(orig_x,orig_y)
             rospy.loginfo("Intersected path found!")
+            # print(orig_x,orig_y)
 
             obs_ind = self.index_lookup[orig_x, orig_y]
 
-            print(obs_ind)
+            # print(obs_ind)
 
-            start_x = np.int16(self.path.poses[obs_ind - 5].pose.position.x/self.resolution)
-            start_y = np.int16(self.path.poses[obs_ind - 5].pose.position.y/self.resolution)
-            goal_x = np.int16(self.path.poses[obs_ind + 5].pose.position.x/self.resolution)
-            goal_y = np.int16(self.path.poses[obs_ind + 5].pose.position.y/self.resolution)
+            start_x = np.int16(self.path.poses[obs_ind - 5].pose.position.x/self.resolution)+shift_x
+            goal_x = np.int16(self.path.poses[obs_ind + 5].pose.position.x/self.resolution)+shift_x
 
-            # print(start_x, start_y)
-            # print(goal_x, goal_y)
+            start_y = np.int16(self.path.poses[obs_ind - 5].pose.position.y/self.resolution)+shift_y
+            goal_y = np.int16(self.path.poses[obs_ind + 5].pose.position.y/self.resolution)+shift_y
+
+            # print(start_x,goal_x,xmin,xmax)
+            # print(start_y,goal_y,ymin,ymax)
 
             map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
             map_matr[goal_x - xmin, goal_y - ymin] = -np.int8(2)

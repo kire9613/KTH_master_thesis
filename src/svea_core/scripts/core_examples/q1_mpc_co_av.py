@@ -90,6 +90,7 @@ class Node:
         #This subscriber and its callback function is the local planner
         traj_upd_sub = rospy.Subscriber('/trajectory_updates', Path, self.callback_traj)
         collision_sub = rospy.Subscriber('/collision', Bool, self.callback_collision)
+        self.coll_t = None
         # select data handler based on the ros params
         if self.use_rviz:
             self.DataHandler = RVIZPathHandler
@@ -178,9 +179,14 @@ class Node:
 
             # compute control input
             if self.collision:
-                steering, velocity = self.svea.compute_control()
-                # steering, velocity = self.svea.compute_pid_control()
-                self.svea.send_control(steering, velocity)
+                if self.coll_t == None:
+                    self.coll_t = rospy.Time.now()
+                deltaT = rospy.Time.now()-self.coll_t
+                # print(deltaT)
+                if deltaT>rospy.Duration(5):
+                    # steering, velocity = self.svea.compute_control()
+                    steering, velocity = self.svea.compute_pid_control()
+                    self.svea.send_control(steering, velocity)
             else:
                 steering, velocity = self.svea.compute_control()
                 self.svea.send_control(steering, velocity)

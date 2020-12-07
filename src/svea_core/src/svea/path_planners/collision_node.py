@@ -23,13 +23,19 @@ from svea_msgs.msg import VehicleState
 # OTHER
 from matrix_astar3 import AStarPlanner
 
+import matplotlib.pyplot as plt
+from math import floor
+
 ## COLLISION NODE PARAMS ######################################################
 update_rate = 1
 timeout_rate = 0.1
-resolution = 0.05
 splice_tol = 0.5
-width=879
-height=171
+width = 1269
+height = 567
+resolution = 0.05
+
+shift_x = int(floor(30.549770/resolution))
+shift_y = int(floor(11.414917/resolution))
 
 oob_delimiter = max(width,height) + 1
 ###############################################################################
@@ -73,6 +79,8 @@ class Node:
     def callback_problem(self, problem_map):
 
         problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height)
+        # plt.imshow(problem_matr.T,origin="lower")
+        plt.show()
         sx,sy = np.where(problem_matr==-np.int8(1))
         gx,gy = np.where(problem_matr==-np.int8(2))
         sx,sy = sx[0], sy[0]
@@ -82,8 +90,8 @@ class Node:
         problem_matr += 1
         path = pyastar.astar_path(problem_matr, (sx,sy), (gx,gy), allow_diagonal=True)
 
-        x_list = (path[:,0]+problem_map.x)*resolution
-        y_list = (path[:,1]+problem_map.y)*resolution
+        x_list = (path[:,0]+problem_map.x-shift_x)*resolution
+        y_list = (path[:,1]+problem_map.y-shift_y)*resolution
         # print(x_list)
         # print(y_list)
 
