@@ -42,7 +42,7 @@ class PurePursuitController(object):
         rospy.set_param('/team_5_floor2/lidar_obstacles',[]) # parameter to keep obstacles
 
     def compute_angle(self):
-        self.emg_angle_range = np.arctan2((self.width + 0.3),(2*self.emergency_distance))
+        self.emg_angle_range = math.pi/3 + math.pi/12 # np.arctan2((self.width + 0.3),(2*self.emergency_distance))
         print("emergency angle in rad", self.emg_angle_range)
 
     def set_emg_traj_running(self,running):
@@ -131,13 +131,21 @@ class PurePursuitController(object):
     def emergency_stop(self, laserScan):
         
         # Compute index ranges for emergency stop scan
-        min_index =  int(round((-self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
-        max_index =  int(round((self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
+        min_index =  int(round((-math.pi/2 - laserScan.angle_min)/laserScan.angle_increment))
+        max_index =  int(round((math.pi/2 - laserScan.angle_min)/laserScan.angle_increment))
+        
+        angles = np.linspace(-self.emg_angle_range,self.emg_angle_range,max_index-min_index)
 
+        ellipse_a = (self.width + 0.15)/2
+        ellipse_b = self.emergency_distance*1
+        ellipse_vector = ellipse_a*ellipse_b/np.sqrt((ellipse_a*np.cos(angles))**2 + (ellipse_b*np.sin(angles))**2)
         points = laserScan.ranges[min_index:max_index]
-        self.laser_scan = laserScan
-        if min(points) < self.emergency_distance:
+        
+        if ( points < ellipse_vector).any() == True:
             self.emg_stop = True
+
+        self.laser_scan = laserScan
+
         
     def laser_mapping(self,state):
         
