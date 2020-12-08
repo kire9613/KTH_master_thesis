@@ -103,11 +103,11 @@ def main():
 
     # A* emergency settings 
     emergency_settings = {
-        "driving_distance": 0.2,
+        "driving_distance": 0.25,
         "use_track": False,
         "safety_distance": 0.10,
         "subscribe_to_obstacles": True,
-        "grid_resolution": 0.05,
+        "grid_resolution": 0.075,
         "success_threshold": 0.5,
         "maximum_expansion": 1000,
         "intermediate_point": False,

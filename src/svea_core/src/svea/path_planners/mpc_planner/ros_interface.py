@@ -129,7 +129,7 @@ class ROSInterface(object):
         if path_index == 0:
             print("index not found")
             
-        step_ahead = 8 #8 step ahead but not too far 
+        step_ahead = 6 #8 step ahead but not too far 
         if step_ahead + path_index > traj_length:
             goal_index = traj_length - 1 
             #print("index is last index:",goal_index)
