@@ -286,7 +286,7 @@ def main():
             time_start = rospy.get_time()
             istate = 6
         elif istate == 6: # pulse signal for 0.5 s on, 0.5 s off
-            timeout = 0.5 
+        
             if rospy.get_time() - time_start > 0.5:
                 svea.controller.backing_up = False
             if rospy.get_time() - time_start > 1:
