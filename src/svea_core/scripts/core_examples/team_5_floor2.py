@@ -105,7 +105,7 @@ def main():
     emergency_settings = {
         "driving_distance": 0.25,
         "use_track": False,
-        "safety_distance": 0.10,
+        "safety_distance": 0.13,
         "subscribe_to_obstacles": True,
         "grid_resolution": 0.075,
         "success_threshold": 0.5,
