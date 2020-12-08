@@ -136,22 +136,22 @@ class Node:
         xlb = [-np.inf]*3+[-1]
         xub = [ np.inf]*3+[3.6]
 
-        self.svea.controller.build_solver(
-            dt,
-            Q=params.Q,
-            R=params.R,
-            P=params.P,
-            ulb=ulb,
-            uub=uub,
-            xlb=xlb,
-            xub=xub,
-            max_cpu_time=0.8*dt,
-            horizon=params.horizon,
-            model_type=params.model_type,
-            solver_=params.solver_,
-            TAU = params.TAU,
-            N_IND_SEARCH = params.N_IND_SEARCH,
-        )
+        # self.svea.controller.build_solver(
+        #     dt,
+        #     Q=params.Q,
+        #     R=params.R,
+        #     P=params.P,
+        #     ulb=ulb,
+        #     uub=uub,
+        #     xlb=xlb,
+        #     xub=xub,
+        #     max_cpu_time=0.8*dt,
+        #     horizon=params.horizon,
+        #     model_type=params.model_type,
+        #     solver_=params.solver_,
+        #     TAU = params.TAU,
+        #     N_IND_SEARCH = params.N_IND_SEARCH,
+        # )
         self.svea.start(wait=True)
 
         if self.is_sim:
@@ -178,6 +178,7 @@ class Node:
             if self.collision:
                 steering, _ = self.svea.compute_pid_control()
                 self.svea.send_control(steering, 0)
+
             else:
                 steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)

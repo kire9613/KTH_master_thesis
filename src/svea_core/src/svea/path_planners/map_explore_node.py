@@ -1,21 +1,16 @@
 #!/usr/bin/env python
-
-"""
-    @Team1
-"""
+# -*- coding: utf-8 -*-
 
 from __future__ import print_function
 
-# Python standard library
+
 import rospy
 import numpy as np
 from math import floor
 
-# ROS
 import rospy
 import tf
 
-# ROS messages
 from geometry_msgs.msg import Point, Pose, Quaternion
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
@@ -23,9 +18,13 @@ from map_msgs.msg import OccupancyGridUpdate
 from nav_msgs.msg import Path
 from std_msgs.msg import Bool, Int16MultiArray
 
-# SVEA
-
 import matplotlib.pyplot as plt
+
+"""
+map_explore_node: Collision check
+"""
+
+__author__ = "Team 1"
 
 ## MAP EXPLORER PARAMS ########################################################
 
@@ -36,6 +35,7 @@ resolution = 0.1
 shift_x = np.int16(30.549770/resolution)
 shift_y = np.int16(11.414917/resolution)
 collision_distance = 5
+timeout_rate = 1.0
 
 ###############################################################################
 #                                   FLOOR 2                                   #
@@ -47,6 +47,7 @@ resolution = 0.05
 shift_x = 0
 shift_y = 0
 collision_distance = 5
+timeout_rate = 1.0
 ###############################################################################
 
 class Node:
@@ -77,7 +78,7 @@ class Node:
         self.path_lookup = None
         self.index_lookup = None
 
-        self.rate_timeout = rospy.Rate(1)
+        self.rate_timeout = rospy.Rate(timeout_rate)
 
     def callback_collision(self, msg):
         self.collision = msg.data
@@ -97,12 +98,12 @@ class Node:
         # print("got new map update!")
         self.map = map
         self.map_matrix[map.x:map.x+map.width,map.y:map.y+map.height] = np.reshape(map.data, (map.width, map.height), order='F')
+        self.map_update_matrix= np.reshape(map.data, (map.width, map.height), order='F')
 
         map_slice = self.collision_check()
 
         if map_slice != None:
             self.problem_pub.publish(map_slice)
-            #self.rate_timeout.sleep()
 
     def callback_map(self, map):
         # print("got new map")
@@ -199,31 +200,41 @@ class Node:
 
         map_slice = None
 
-        plan_width = 120
-        plan_height = 120
-
-        # If rolling window is not set to true
-        # window = int(floor(self.window/resolution))
-
-        # x_ind = int(floor(self.state.x/resolution))
-        # y_ind = int(floor(self.state.y/resolution))
-        # xmin = np.clip(x_ind-window,0,width-1)
-        # xmax = np.clip(x_ind+window,0,width-1)
-        # ymin = np.clip(y_ind-window,0,height-1)
-        # ymax = np.clip(y_ind+window,0,height-1)
-
-        # close_path = np.zeros((width,height))
-        # close_path[xmin:xmax,ymin:ymax] = path_lookup[xmin:xmax,ymin:ymax]
+        plan_width = self.map.width+50
+        plan_height = self.map.height+50
 
         matr = self.map_matrix*self.path_lookup
+
+        # matr = self.map_update_matrix*self.path_lookup[self.map.x:self.map.x+self.map.width,self.map.y:self.map.y+self.map.height]
+        # fig, (ax1,ax2,ax3) = plt.subplots(3)
+        # ax1.imshow(self.map_update_matrix.T,origin="lower")
+        # ax2.imshow(self.path_lookup[self.map.x:self.map.x+self.map.width,self.map.y:self.map.y+self.map.height].T,origin="lower")
+        # ax3.imshow(matr.T,origin="lower")
+        # plt.show()
 
         collisions = np.where(matr >= 75)
         # print(collisions[0])
 
         if collisions[0].size != 0 and not self.collision:
+            self.collision_pub.publish(Bool(True))
 
             orig_x = collisions[0][0]
             orig_y = collisions[1][0]
+
+            obs_ind = self.index_lookup[orig_x, orig_y] # gives index in global path of the collision point.
+            # TODO: collision_distance can actually be IMPORTED in collision_node instead
+            self.index_pub.publish(Int16MultiArray(
+                data=[obs_ind,collision_distance]
+            ))
+
+
+            # print(obs_ind)
+
+            start_x = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.x/self.resolution)+shift_x
+            goal_x = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.x/self.resolution)+shift_x
+
+            start_y = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.y/self.resolution)+shift_y
+            goal_y = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.y/self.resolution)+shift_y
 
             xmin = np.clip(orig_x - plan_width/2,0,self.global_width)
             xmax = np.clip(orig_x + plan_width/2,0,self.global_width)
@@ -238,19 +249,6 @@ class Node:
             rospy.loginfo("Intersected path found!")
             # print(orig_x,orig_y)
 
-            obs_ind = self.index_lookup[orig_x, orig_y] # gives index in global path of the collision point.
-            # TODO: collision_distance can actually be IMPORTED in collision_node instead
-            self.index_pub.publish(Int16MultiArray(
-                data=[obs_ind,collision_distance]
-            ))
-
-            # print(obs_ind)
-
-            start_x = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.x/self.resolution)+shift_x
-            goal_x = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.x/self.resolution)+shift_x
-
-            start_y = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.y/self.resolution)+shift_y
-            goal_y = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.y/self.resolution)+shift_y
 
             # print(start_x,goal_x,xmin,xmax)
             # print(start_y,goal_y,ymin,ymax)
@@ -266,8 +264,6 @@ class Node:
             map_slice.width = final_width
             map_slice.height = final_height
             map_slice.data = map_matr.reshape(-1)
-
-            self.collision_pub.publish(Bool(True))
 
         return map_slice
 

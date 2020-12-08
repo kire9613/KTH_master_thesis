@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-"""
-    @by Johan Hedin Team1
-"""
+# -*- coding: utf-8 -*-
+
+__author__ = "Team1"
+
 # Python standard library
 import numpy as np
 # ROS
@@ -61,9 +62,8 @@ class Node:
 
         self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
         self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
-        self.problem_sub = rospy.Subscriber('problem_map', OccupancyGridUpdate, self.callback_problem)
-
         self.index_sub = rospy.Subscriber('problem_index', Int16MultiArray, self.callback_index)
+        self.problem_sub = rospy.Subscriber('problem_map', OccupancyGridUpdate, self.callback_problem)
 
         self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
         # self.map_sub = rospy.Subscriber('map', OccupancyGrid, self.callback_map)
@@ -109,48 +109,13 @@ class Node:
         # print(x_list)
         # print(y_list)
 
-        # TODO: OLD CODE speed this up later...
-
+        n = len(self.global_path.poses)
         x_new_global = [i.pose.position.x for i in self.global_path.poses]
         y_new_global = [i.pose.position.y for i in self.global_path.poses]
-        idx_x = self.obs_ind-self.collision_distance
-        idx_x2 = self.obs_ind+self.collision_distance
-        idx_y = self.obs_ind-self.collision_distance
-        idx_y2 = self.obs_ind+self.collision_distance
-        x_new_global[idx_x:idx_x2] = x_list # insert list in list at point idx_x
-        y_new_global[idx_y:idx_y2] = y_list # insert list in list at point idx_y
-
-        # n = len(self.global_path.poses)
-        # print("Path length: {0}".format(n))
-
-        # i = 0
-        # while 1:
-        #     x = self.global_path.poses[i].pose.position.x
-        #     y = self.global_path.poses[i].pose.position.y
-        #     x_new_global.append(x)
-        #     y_new_global.append(y)
-
-        #     dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
-
-        #     if dist < splice_tol:
-        #         x_new_global.extend(x_list)
-        #         y_new_global.extend(y_list)
-        #         break
-        #     i += 1
-
-        # i = n - 1
-        # while 1:
-        #     x = self.global_path.poses[i].pose.position.x
-        #     y = self.global_path.poses[i].pose.position.y
-
-        #     dist = np.sqrt((x_list[len(x_list) - 1] - x)**2 + (y_list[len(y_list) - 1] - y)**2)
-
-        #     if dist < splice_tol:
-        #         for j in range(i, n):
-        #             x_new_global.append(self.global_path.poses[j].pose.position.x)
-        #             y_new_global.append(self.global_path.poses[j].pose.position.y)
-        #         break
-        #     i -= 1
+        idx_1 = self.obs_ind-self.collision_distance
+        idx_2 = self.obs_ind+self.collision_distance
+        x_new_global[idx_1:idx_2] = x_list # insert list in list at point idx_x
+        y_new_global[idx_1:idx_2] = y_list # insert list in list at point idx_y
 
         new_path = lists_to_path(x_new_global, y_new_global)
 
@@ -159,7 +124,7 @@ class Node:
         self.solution_pub.publish(new_path)
         rospy.loginfo("New global path published! Setting collision to False.")
         self.collision_pub.publish(Bool(False))
-        self.rate_timeout.sleep()
+        # self.rate_timeout.sleep()
 
 def lists_to_path(x_list, y_list):
     # TODO: A bit unnecessary to go from path to list to path to list. Try
