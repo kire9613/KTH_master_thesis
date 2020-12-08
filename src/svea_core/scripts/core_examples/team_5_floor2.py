@@ -262,6 +262,8 @@ def main():
         elif istate == 4: # Follow replanned path
             if svea.controller.emg_stop:
                 svea.update_traj(traj_x, traj_y)
+                backup_attempted = False
+                changed_astar_settings = False
                 print("state 5: Emg stop in replanned path")
                 istate = 5 
              
