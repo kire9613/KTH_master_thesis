@@ -215,7 +215,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
             
     if len(xtraj) == 0:
         endnodeTheta = 0 
-        print('\n could not find trajectory... try other settings?')      
+        print('\n Astar Failed - could not find trajectory')      
     return xtraj,ytraj,success, endnodeTheta
 def __main__(): 
     xt, yt = 15.5,4.3

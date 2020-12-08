@@ -111,7 +111,7 @@ class ROSInterface(object):
 
         self._current_target_state = [x, y]
 
-    def compute_goal(self):
+    def compute_goal(self, step_ahead):
         old_goal_state = self.goal_state
         traj_length = len(self.x_traj)
         #print("searching for value", self._current_target_state[0], self._current_target_state[1])
@@ -129,7 +129,6 @@ class ROSInterface(object):
         if path_index == 0:
             print("index not found")
             
-        step_ahead = 6 #8 step ahead but not too far 
         if step_ahead + path_index > traj_length:
             goal_index = traj_length - 1 
             #print("index is last index:",goal_index)
