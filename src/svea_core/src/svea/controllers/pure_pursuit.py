@@ -42,7 +42,7 @@ class PurePursuitController(object):
         rospy.set_param('/team_5_floor2/lidar_obstacles',[]) # parameter to keep obstacles
 
     def compute_angle(self):
-        self.emg_angle_range =  np.arctan2((self.width + 0.3),(2*self.emergency_distance))
+        self.emg_angle_range =  np.arctan2((self.width + 0.5),(2*self.emergency_distance))
         print("emergency angle in rad", self.emg_angle_range)
 
     def set_emg_traj_running(self,running):
