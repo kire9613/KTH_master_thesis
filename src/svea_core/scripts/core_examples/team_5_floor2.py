@@ -237,6 +237,7 @@ def main():
                     print("state 4: Following replanned path")
                     istate = 4
                 elif not backup_attempted:
+                    timeout = 2
                     istate = 5
                     print("state 5: Backing up!")
                 elif not changed_astar_settings:
@@ -261,6 +262,7 @@ def main():
 
         elif istate == 4: # Follow replanned path
             if svea.controller.emg_stop:
+                timeout = 1
                 svea.update_traj(traj_x, traj_y)
                 backup_attempted = False
                 changed_astar_settings = False
@@ -291,7 +293,7 @@ def main():
                 svea.controller.backing_up = True
                 istate = 7
         elif istate == 7: # Backing up for 2s
-            timeout = 1
+           
             if rospy.get_time() - time_start > timeout:
                 svea.controller.backing_up = False
                 istate = 1 # Go to back to obstacle mapping
