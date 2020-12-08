@@ -175,7 +175,7 @@ def main():
 
         if istate == 0: # IDLE state - waits here untill emergency stop
             svea.controller.target_velocity = target_velocity
-            changed_step_ahead = False
+            changed_astar_settings = False
             step_ahead = 6
             if svea.controller.emg_stop:
                 print("state 1: Mapping obstacles")
@@ -236,15 +236,24 @@ def main():
                     svea.update_traj(g_traj_x, g_traj_y)
                     print("state 4: Following replanned path")
                     istate = 4
-                elif not changed_step_ahead:
-                    changed_step_ahead = True
-                    step_ahead = 4
-                    print("Planning again with step ahead 4")
+                elif not changed_astar_settings:
+                    changed_astar_settings = True
+                    emergency_settings = {
+                                        "driving_distance": 0.2,
+                                        "use_track": False,
+                                        "safety_distance": 0.10,
+                                        "subscribe_to_obstacles": True,
+                                        "grid_resolution": 0.05,
+                                        "success_threshold": 0.5,
+                                        "maximum_expansion": 1000,
+                                        "intermediate_point": False,
+                                        "use_q1": use_q1
+                                        }
+                    print("Planning again with finer grid in Astar")
                     istate = 1 
                 elif not backup_attempted:
-                    step_ahead = 4
                     istate = 5
-                    print("Backing up!")
+                    print("state 5: Backing up!")
                 else: # do something here if fails
                     svea.controller.set_emg_traj_running(False)  
                     print("Replanned too many times - failed!!!")
@@ -280,8 +289,8 @@ def main():
                 svea.controller.backing_up = True
                 istate = 7
         elif istate == 7: # Backing up for 2s
-            timeout = 2
-            if rospy.get_time() > time_start + timeout:
+            timeout = 1
+            if rospy.get_time() - time_start > timeout:
                 svea.controller.backing_up = False
                 istate = 1 # Go to back to obstacle mapping
                 print("state 1: Mapping obstacles")
