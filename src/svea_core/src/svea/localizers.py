@@ -38,7 +38,7 @@ class LocalizationInterface(object):
         sub_namespace = vehicle_name + '/' if vehicle_name else ''
         self._state_topic = sub_namespace + 'state'
 
-        self.state = VehicleState(0.535, -2.9267,0.97262)
+        self.state = VehicleState(0, 0 ,0)
         self.last_time = float('nan')
 
         self.is_ready = False

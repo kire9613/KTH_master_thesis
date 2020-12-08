@@ -164,10 +164,10 @@ class Node:
 
         # simulation loop
         self.svea.controller.target_velocity = target_velocity
-        self.svea.pid.target_velocity = target_velocity/2
-        self.svea.pid.k = 0.6  # look forward gain
-        self.svea.pid.Lfc = 0.4  # look-ahead distance
-        self.svea.pid.K_p = 1.0  # speed control propotional gain
+        self.svea.pid.target_velocity = target_velocity
+        self.svea.pid.k = 0.4  # look forward gain
+        self.svea.pid.Lfc = 0.72 # look-ahead distance
+        self.svea.pid.K_p = 1.2  # speed control propotional gain
         self.svea.pid.K_i = 0.2  # speed control integral gain
         self.svea.pid.K_d = 0.0  # speed control derivitive gain
         self.svea.pid.L = 0.324  # [m] wheel base of vehicle
@@ -188,14 +188,15 @@ class Node:
                 steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
             else:
-                steering, velocity = self.svea.compute_control()
+                steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data
             if self.use_matplotlib or self.use_rviz:
                 self.svea.visualize_data()
             else:
-                rospy.loginfo_throttle(1, state)
+                self.svea.visualize_data()
+                # rospy.loginfo_throttle(1, state)
 
         if not rospy.is_shutdown():
             rospy.loginfo("Trajectory finished!")

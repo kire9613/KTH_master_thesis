@@ -50,6 +50,10 @@
     </node>
     </group>
 
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter">
+        <rosparam command="load" file="$(find svea_core)/launch/laser_filter_params.yaml" />
+    </node>
+
     <!-- <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="screen" > -->
     <!--     <!-1- <remap from="scan" to="scan" /> -1-> -->
     <!--     <remap from="map" to="costmap_node/costmap/costmap" /> -->
@@ -67,9 +71,9 @@
       <rosparam file="$(find svea_core)/launch/costmap_params.yaml" command="load" ns="costmap" />
     </node>
 
-    <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
-    <!-- <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" /> -->
     <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
+    <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" />
+    <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
 
 
 </launch>

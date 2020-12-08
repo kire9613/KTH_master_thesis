@@ -21,7 +21,7 @@ from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
 from map_msgs.msg import OccupancyGridUpdate
 from nav_msgs.msg import Path
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int16MultiArray
 
 # SVEA
 
@@ -30,11 +30,23 @@ import matplotlib.pyplot as plt
 ## MAP EXPLORER PARAMS ########################################################
 
 update_rate = 5 # [Hz]
-width = 635#1269  
+width = 635#1269
 height = 284#567
 resolution = 0.1
-shift_x = int(floor(30.549770/resolution))
-shift_y = int(floor(11.414917/resolution))
+shift_x = np.int16(30.549770/resolution)
+shift_y = np.int16(11.414917/resolution)
+collision_distance = 5
+
+###############################################################################
+#                                   FLOOR 2                                   #
+###############################################################################
+update_rate = 2 # [Hz]
+width = 879
+height = 171
+resolution = 0.05
+shift_x = 0
+shift_y = 0
+collision_distance = 5
 ###############################################################################
 
 class Node:
@@ -44,12 +56,15 @@ class Node:
     def __init__(self):
 
         rospy.init_node('explore_node')
+        self.collision = False
 
         self.window = 3 # m, the window size for collision check
 
         self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
+        self.index_pub = rospy.Publisher('problem_index', Int16MultiArray, queue_size=1, latch=False)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
 
+        self.collision_sub = rospy.Subscriber('collision', Bool, self.callback_collision)
         self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap_updates', OccupancyGridUpdate, self.callback_map_updates)
         # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
         # self.rolling_map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_rolling_map)
@@ -63,6 +78,9 @@ class Node:
         self.index_lookup = None
 
         self.rate_timeout = rospy.Rate(1)
+
+    def callback_collision(self, msg):
+        self.collision = msg.data
 
     def callback_glb_map(self, map):
         self.global_height = map.info.height
@@ -99,8 +117,8 @@ class Node:
         self.map_matrix = np.zeros((width, height), dtype=np.int8)
         # self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
         # for big matrix
-        x_ind = int(floor((map.info.origin.position.x+30.549770)/resolution))
-        y_ind = int(floor((map.info.origin.position.y+11.414917)/resolution))
+        x_ind = np.int16((map.info.origin.position.x+30.549770)/resolution)
+        y_ind = np.int16((map.info.origin.position.y+11.414917)/resolution)
         xmin,xmax = np.clip([x_ind,x_ind+map.info.width],0,width-1)
         ymin,ymax = np.clip([y_ind,y_ind+map.info.height],0,height-1)
         # self.xmin = xmin
@@ -145,10 +163,10 @@ class Node:
             x_end = self.path.poses[i+1].pose.position.x
             y_end = self.path.poses[i+1].pose.position.y
 
-            int_x_start = np.int16(floor(x_start/self.resolution+shift_x))
-            int_y_start = np.int16(floor(y_start/self.resolution+shift_y))
-            int_x_end = np.int16(floor(x_end/self.resolution+shift_x))
-            int_y_end = np.int16(floor(y_end/self.resolution+shift_y))
+            int_x_start = np.int16(x_start/self.resolution+shift_x)
+            int_y_start = np.int16(y_start/self.resolution+shift_y)
+            int_x_end = np.int16(x_end/self.resolution+shift_x)
+            int_y_end = np.int16(y_end/self.resolution+shift_y)
 
             ray = self.raytrace(int_x_start, int_y_start, int_x_end, int_y_end)
 
@@ -174,8 +192,8 @@ class Node:
 
             self.path_lookup[int_x_end, int_y_end] = 1
             self.index_lookup[int_x_end, int_y_end] = len(path.poses) - 1
-        #plt.imshow(self.path_lookup.T,origin="lower")
-        #plt.show()
+        # plt.imshow(self.path_lookup.T,origin="lower")
+        # plt.show()
 
     def collision_check(self):
 
@@ -202,8 +220,8 @@ class Node:
         collisions = np.where(matr >= 75)
         # print(collisions[0])
 
-        if collisions[0].size != 0:
-            
+        if collisions[0].size != 0 and not self.collision:
+
             orig_x = collisions[0][0]
             orig_y = collisions[1][0]
 
@@ -220,15 +238,19 @@ class Node:
             rospy.loginfo("Intersected path found!")
             # print(orig_x,orig_y)
 
-            obs_ind = self.index_lookup[orig_x, orig_y]
+            obs_ind = self.index_lookup[orig_x, orig_y] # gives index in global path of the collision point.
+            # TODO: collision_distance can actually be IMPORTED in collision_node instead
+            self.index_pub.publish(Int16MultiArray(
+                data=[obs_ind,collision_distance]
+            ))
 
             # print(obs_ind)
 
-            start_x = np.int16(self.path.poses[obs_ind - 5].pose.position.x/self.resolution)+shift_x
-            goal_x = np.int16(self.path.poses[obs_ind + 5].pose.position.x/self.resolution)+shift_x
+            start_x = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.x/self.resolution)+shift_x
+            goal_x = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.x/self.resolution)+shift_x
 
-            start_y = np.int16(self.path.poses[obs_ind - 5].pose.position.y/self.resolution)+shift_y
-            goal_y = np.int16(self.path.poses[obs_ind + 5].pose.position.y/self.resolution)+shift_y
+            start_y = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.y/self.resolution)+shift_y
+            goal_y = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.y/self.resolution)+shift_y
 
             # print(start_x,goal_x,xmin,xmax)
             # print(start_y,goal_y,ymin,ymax)

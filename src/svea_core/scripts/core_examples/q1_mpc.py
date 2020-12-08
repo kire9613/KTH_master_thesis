@@ -185,7 +185,8 @@ def main():
         if use_matplotlib or use_rviz:
             svea.visualize_data()
         else:
-            rospy.loginfo_throttle(1, state)
+            svea.visualize_data()
+            # rospy.loginfo_throttle(1, state)
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")

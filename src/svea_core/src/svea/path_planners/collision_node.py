@@ -14,6 +14,7 @@ from nav_msgs.msg import OccupancyGrid
 from map_msgs.msg import OccupancyGridUpdate
 from nav_msgs.msg import Path
 from rospy.numpy_msg import numpy_msg
+from std_msgs.msg import Bool, Int16MultiArray
 
 import svea.pyastar.pyastar as pyastar
 
@@ -39,6 +40,16 @@ shift_y = int(floor(11.414917/resolution))
 
 oob_delimiter = max(width,height) + 1
 ###############################################################################
+#                                   FLOOR 2                                   #
+###############################################################################
+update_rate = 2 # [Hz]
+width = 879
+height = 171
+resolution = 0.05
+shift_x = 0
+shift_y = 0
+oob_delimiter = max(width,height) + 1
+###############################################################################
 
 class Node:
     """
@@ -49,11 +60,13 @@ class Node:
         rospy.init_node('collision_node')
 
         self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
+        self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
+        self.problem_sub = rospy.Subscriber('problem_map', OccupancyGridUpdate, self.callback_problem)
 
-        self.problem_sub = rospy.Subscriber('/problem_map', OccupancyGridUpdate, self.callback_problem)
+        self.index_sub = rospy.Subscriber('problem_index', Int16MultiArray, self.callback_index)
 
-        self.path_sub = rospy.Subscriber('/path_plan', Path, self.callback_path)
-        # self.map_sub = rospy.Subscriber('/map', OccupancyGrid, self.callback_map)
+        self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
+        # self.map_sub = rospy.Subscriber('map', OccupancyGrid, self.callback_map)
 
         self.global_path = Path()
 
@@ -70,6 +83,10 @@ class Node:
 
         rospy.spin()
 
+    def callback_index(self, msg):
+        self.obs_ind = msg.data[0]
+        self.collision_distance = msg.data[1]
+
     def callback_path(self, path):
         self.global_path = path
 
@@ -77,7 +94,7 @@ class Node:
 
         problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height)
         # plt.imshow(problem_matr.T,origin="lower")
-        plt.show()
+        # plt.show()
         sx,sy = np.where(problem_matr==-np.int8(1))
         gx,gy = np.where(problem_matr==-np.int8(2))
         sx,sy = sx[0], sy[0]
@@ -94,48 +111,59 @@ class Node:
 
         # TODO: OLD CODE speed this up later...
 
-        x_new_global = []
-        y_new_global = []
+        x_new_global = [i.pose.position.x for i in self.global_path.poses]
+        y_new_global = [i.pose.position.y for i in self.global_path.poses]
+        idx_x = self.obs_ind-self.collision_distance
+        idx_x2 = self.obs_ind+self.collision_distance
+        idx_y = self.obs_ind-self.collision_distance
+        idx_y2 = self.obs_ind+self.collision_distance
+        x_new_global[idx_x:idx_x2] = x_list # insert list in list at point idx_x
+        y_new_global[idx_y:idx_y2] = y_list # insert list in list at point idx_y
 
-        n = len(self.global_path.poses)
+        # n = len(self.global_path.poses)
         # print("Path length: {0}".format(n))
-        i = 0
-        while 1:
-            x = self.global_path.poses[i].pose.position.x
-            y = self.global_path.poses[i].pose.position.y
-            x_new_global.append(x)
-            y_new_global.append(y)
 
-            dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
+        # i = 0
+        # while 1:
+        #     x = self.global_path.poses[i].pose.position.x
+        #     y = self.global_path.poses[i].pose.position.y
+        #     x_new_global.append(x)
+        #     y_new_global.append(y)
 
-            if dist < splice_tol:
-                x_new_global.extend(x_list)
-                y_new_global.extend(y_list)
-                break
-            i += 1
+        #     dist = np.sqrt((x_list[0] - x)**2 + (y_list[0] - y)**2)
 
-        i = n - 1
-        while 1:
-            x = self.global_path.poses[i].pose.position.x
-            y = self.global_path.poses[i].pose.position.y
+        #     if dist < splice_tol:
+        #         x_new_global.extend(x_list)
+        #         y_new_global.extend(y_list)
+        #         break
+        #     i += 1
 
-            dist = np.sqrt((x_list[len(x_list) - 1] - x)**2 + (y_list[len(y_list) - 1] - y)**2)
+        # i = n - 1
+        # while 1:
+        #     x = self.global_path.poses[i].pose.position.x
+        #     y = self.global_path.poses[i].pose.position.y
 
-            if dist < splice_tol:
-                for j in range(i, n):
-                    x_new_global.append(self.global_path.poses[j].pose.position.x)
-                    y_new_global.append(self.global_path.poses[j].pose.position.y)
-                break
-            i -= 1
+        #     dist = np.sqrt((x_list[len(x_list) - 1] - x)**2 + (y_list[len(y_list) - 1] - y)**2)
+
+        #     if dist < splice_tol:
+        #         for j in range(i, n):
+        #             x_new_global.append(self.global_path.poses[j].pose.position.x)
+        #             y_new_global.append(self.global_path.poses[j].pose.position.y)
+        #         break
+        #     i -= 1
 
         new_path = lists_to_path(x_new_global, y_new_global)
 
         #new_path = lists_to_path(x_list, y_list)
 
         self.solution_pub.publish(new_path)
+        rospy.loginfo("New global path published! Setting collision to False.")
+        self.collision_pub.publish(Bool(False))
         self.rate_timeout.sleep()
 
 def lists_to_path(x_list, y_list):
+    # TODO: A bit unnecessary to go from path to list to path to list. Try
+    # fixing this in data.py or something.
     path = Path()
     path.header.stamp = rospy.Time.now()
     path.header.frame_id = 'map'

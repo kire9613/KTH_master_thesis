@@ -51,7 +51,7 @@ class PurePursuitController(object):
         else:
             # speed control
             e = self.target_velocity - state.v
-            self.e_sum += e
+            self.e_sum += e*0.1
             # if e*self.e_tmin1<0: # anti-windup, reset when crossing zero
             #     self.e_sum=0
             P = e*self.K_p
@@ -59,7 +59,7 @@ class PurePursuitController(object):
             D = (e-self.e_tmin1)*self.K_d/0.01 # dt = 0.01, first order approx
             self.e_tmin1 = e
             u = P
-            speed_lim = 1.50
+            speed_lim = 2.50
             u = np.clip(u,-speed_lim+self.target_velocity,speed_lim-self.target_velocity)
             return self.target_velocity + u
 

@@ -112,7 +112,7 @@ class Node:
     def callback_traj(self,path):
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
-        
+
         self.svea.update_traj(self.traj_x, self.traj_y)
 
     def callback_collision(self, data):
@@ -161,7 +161,7 @@ class Node:
         # simualtion loop
 
         self.svea.controller.target_velocity = target_velocity
-        self.svea.pid.target_velocity = target_velocity/2
+        self.svea.pid.target_velocity = target_velocity
         self.svea.pid.k = 0.6  # look forward gain
         self.svea.pid.Lfc = 0.4  # look-ahead distance
         self.svea.pid.K_p = 1.0  # speed control propotional gain
@@ -176,17 +176,18 @@ class Node:
 
             # compute control input
             if self.collision:
-                steering, velocity = self.svea.compute_pid_control()
-                self.svea.send_control(steering, velocity)
+                steering, _ = self.svea.compute_pid_control()
+                self.svea.send_control(steering, 0)
             else:
-                steering, velocity = self.svea.compute_control()
+                steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data
             if self.use_matplotlib or self.use_rviz:
                 self.svea.visualize_data()
             else:
-                rospy.loginfo_throttle(1, state)
+                self.svea.visualize_data()
+                # rospy.loginfo_throttle(1, state)
 
         if not rospy.is_shutdown():
             rospy.loginfo("Trajectory finished!")

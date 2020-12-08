@@ -7,7 +7,8 @@
     <arg name="use_rviz" default="false"/>
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="false"/>
-    <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" />
+    <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" /> -->
+    <arg name="map_file" default="$(find svea_core)/resources/maps/q1rescaled.yaml" />
     <arg name="run_lidar" default="true"/>
     <arg name="use_mpc" default="true"/>
 
@@ -16,7 +17,7 @@
     </group>
 
     <!-- <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" /> -->
-    <rosparam command="load" file="$(find svea_core)/resources/params/q1obs.yaml" />
+    <!-- <rosparam command="load" file="$(find svea_core)/resources/params/q1obs.yaml" /> -->
     <rosparam command="load" file="$(find svea_core)/resources/params/race_track.yaml" />
 
     <include file="$(find svea_sensors)/launch/localize.launch">
@@ -50,11 +51,9 @@
     </node>
     </group>
 
-    <launch>
-      <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter">
-          <rosparam command="load" file="$(find svea_core)/launch/laser_filter_params.yaml" />
-      </node>
-    </launch>
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter">
+        <rosparam command="load" file="$(find svea_core)/launch/laser_filter_params.yaml" />
+    </node>
 
     <!-- <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="screen" > -->
     <!--     <!-1- <remap from="scan" to="scan" /> -1-> -->
@@ -73,9 +72,9 @@
       <rosparam file="$(find svea_core)/launch/costmap_params.yaml" command="load" ns="costmap" />
     </node>
 
-    <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
-    <!-- <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" /> -->
     <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
+    <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" />
+    <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
 
 
 </launch>
