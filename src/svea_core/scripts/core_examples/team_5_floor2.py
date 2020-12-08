@@ -236,6 +236,9 @@ def main():
                     svea.update_traj(g_traj_x, g_traj_y)
                     print("state 4: Following replanned path")
                     istate = 4
+                elif not backup_attempted:
+                    istate = 5
+                    print("state 5: Backing up!")
                 elif not changed_astar_settings:
                     changed_astar_settings = True
                     emergency_settings = {
@@ -245,15 +248,12 @@ def main():
                                         "subscribe_to_obstacles": True,
                                         "grid_resolution": 0.05,
                                         "success_threshold": 0.5,
-                                        "maximum_expansion": 1000,
+                                        "maximum_expansion": 2000,
                                         "intermediate_point": False,
                                         "use_q1": use_q1
                                         }
                     print("Planning again with finer grid in Astar")
                     istate = 1 
-                elif not backup_attempted:
-                    istate = 5
-                    print("state 5: Backing up!")
                 else: # do something here if fails
                     svea.controller.set_emg_traj_running(False)  
                     print("Replanned too many times - failed!!!")
