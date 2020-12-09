@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# TODO:
+# map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
+# IndexError: index 23 is out of bounds for axis 1 with size 23
+
 from __future__ import print_function
 from __future__ import division
 
