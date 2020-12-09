@@ -25,7 +25,9 @@ TARGET_DISTANCE = 2e-1 # 2dm between targets
 #GOAL_LIST = [[1.23,-1.97],[6.61,6.02],[4.73,13.1],[-0.77,5.01],[-3.33,-6.73]] # List of "goals" or waypoints for car to plan between initially
 #GOAL_LIST = [[5.92,14.7],[1.23,-1.97],[6.61,6.02],[4.73,13.1],[-0.77,5.01],[-3.33,-6.73]] # List of "goals" or waypoints for car to plan between initially
 #q1 start pos: '17.9, 3.54, 3.1, 0'
-GOAL_LIST = [[11.9,3.64],[-7.22,4.86],[-4.61,0.558],[11.9,-2.6],[1.86,4.05]] # List of "goals" or waypoints for car to plan between initially
+#GOAL_LIST = [[11.9,3.64],[-7.22,4.86],[-4.61,0.558],[11.9,-2.6],[1.86,4.05]] # List of "goals" or waypoints for car to plan between initially
+"""Race track goals"""
+GOAL_LIST = [[8.65,0.16],[19.5,-0.21],[14.1,4.07],[-0.91,5.34],[-7.81,0.73],[2.69,0.92]]
 
 def print_tree(t):
     print("\033[2J\033[H")
