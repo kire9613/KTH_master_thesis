@@ -466,6 +466,8 @@ class reset_localization(pt.behaviour.Behaviour):
         msg.pose.pose = last_pose
         msg.pose.covariance = np.zeros((36,)).tolist()
 
+        self.loc_pub.publish(msg)
+
         localization_is_lost = False
 
         return pt.common.Status.SUCCESS
