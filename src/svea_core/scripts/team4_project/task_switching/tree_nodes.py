@@ -13,7 +13,7 @@ from copy import deepcopy
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 PLANNING_TIMEOUT = 20 # seconds
-TARGET_VELOCITY = 0.7
+TARGET_VELOCITY = 1.0
 
 waypoints = []
 current_path = Path()
@@ -405,7 +405,7 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
     def update(self):
         distance = np.linalg.norm(self.position - collision_point)
         speed = max(0, min(self.MAX_SPEED, self.K*(distance-self.MIN_DISTANCE)))
-        if speed <= 0.2:
+        if speed <= 0.25:
             speed = 0
         self.speed_pub.publish(speed)
         return pt.common.Status.SUCCESS
