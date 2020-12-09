@@ -21,33 +21,34 @@ import svea.pyastar.pyastar as pyastar
 import matplotlib.pyplot as plt
 
 """
-map_collision_node: Collision check
+map_collision_node: Collision check. Takes care of collision using A* and then
+updates path
 """
 
 __author__ = "Team 1"
 
 ## MAP EXPLORER PARAMS ########################################################
 
-update_rate = 5 # [Hz]
+update_rate = 2 # [Hz]
 width = 635#1269
 height = 284#567
 resolution = 0.1
 shift_x = np.int16(30.549770/resolution)
 shift_y = np.int16(11.414917/resolution)
 collision_distance = 5
-timeout_rate = 1.0
+# timeout_rate = 1.0
 
 ###############################################################################
 #                                   FLOOR 2                                   #
 ###############################################################################
-update_rate = 2 # [Hz]
-width = 879
-height = 171
-resolution = 0.05
-shift_x = 0
-shift_y = 0
-collision_distance = 5
-timeout_rate = 1.0
+# update_rate = 2 # [Hz]
+# width = 879
+# height = 171
+# resolution = 0.05
+# shift_x = 0
+# shift_y = 0
+# collision_distance = 5
+# timeout_rate = 1.0
 ###############################################################################
 
 class Node:
@@ -77,14 +78,12 @@ class Node:
         self.path_lookup = None
         self.index_lookup = None
 
-        self.rate_timeout = rospy.Rate(timeout_rate)
-
         self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
         self.problem_sub = rospy.Subscriber('problem_map', OccupancyGridUpdate, self.callback_problem)
 
         # self.map_sub = rospy.Subscriber('map', OccupancyGrid, self.callback_map)
 
-        self.rate_timeout = rospy.Rate(timeout_rate)
+        self.rate = rospy.Rate(update_rate)
 
         self.planner = None
 
@@ -177,12 +176,14 @@ class Node:
             orig_x = collisions[0][0]+self.map.x
             orig_y = collisions[1][0]+self.map.y
 
+            # print("Map center at ",orig_x,orig_y)
+
             self.obs_ind = self.index_lookup[orig_x, orig_y] # gives index in global path of the collision point.
             # self.obs_ind = self.index_lookup.get((orig_x,orig_y)) # gives index in global path of the collision point.
-            print(self.obs_ind)
+            # print("obs_ind =",self.obs_ind)
 
-            print(self.obs_ind + collision_distance)
-            print(len(self.path.poses))
+            # print("obs_ind + collision_distance =", self.obs_ind + collision_distance)
+            # print("len(self.path.poses) =",len(self.path.poses))
 
             start_x = np.int16(self.path.poses[self.obs_ind - collision_distance].pose.position.x/self.resolution)+shift_x
             goal_x = np.int16(self.path.poses[self.obs_ind + collision_distance].pose.position.x/self.resolution)+shift_x
@@ -254,8 +255,8 @@ class Node:
 
         self.solution_pub.publish(new_path)
         rospy.loginfo("New global path published! Setting collision to False.")
+        self.rate.sleep()
         self.collision_pub.publish(Bool(False))
-        self.rate_timeout.sleep()
 
     def run(self):
         rate = rospy.Rate(update_rate)
