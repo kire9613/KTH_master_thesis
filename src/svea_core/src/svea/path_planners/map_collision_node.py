@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+from __future__ import division
 
 import rospy
 import numpy as np
@@ -13,7 +14,7 @@ from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
 from map_msgs.msg import OccupancyGridUpdate
 from nav_msgs.msg import Path
-from std_msgs.msg import Bool, Int16MultiArray
+from std_msgs.msg import Bool, Int16MultiArray, Float32MultiArray
 
 import svea.bresenham.bresenham as bresenham
 import svea.pyastar.pyastar as pyastar
@@ -21,21 +22,22 @@ import svea.pyastar.pyastar as pyastar
 import matplotlib.pyplot as plt
 
 """
-map_collision_node: Collision check
+map_collision_node: Collision check. Takes care of collision using A* and then
+updates path
 """
 
 __author__ = "Team 1"
 
 ## MAP EXPLORER PARAMS ########################################################
 
-update_rate = 5 # [Hz]
+update_rate = 2 # [Hz]
 width = 635#1269
 height = 284#567
 resolution = 0.1
 shift_x = np.int16(30.549770/resolution)
 shift_y = np.int16(11.414917/resolution)
 collision_distance = 5
-timeout_rate = 1.0
+# timeout_rate = 1.0
 
 ###############################################################################
 #                                   FLOOR 2                                   #
@@ -59,17 +61,19 @@ class Node:
         rospy.init_node('explore_node')
         self.collision = False
 
-        self.window = 3 # m, the window size for collision check
+        self.traj_x = None
+        self.traj_y = None
 
         self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
 
+        self.initial_traj_sub = rospy.Subscriber('init_traj', Float32MultiArray, self.callback_init_traj)
+
         self.collision_sub = rospy.Subscriber('collision', Bool, self.callback_collision)
         self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap_updates', OccupancyGridUpdate, self.callback_map_updates)
-        # self.map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_map)
-        # self.rolling_map_sub = rospy.Subscriber('costmap_node/costmap/costmap', OccupancyGrid, self.callback_rolling_map)
+
         self.glb_map_sub = rospy.Subscriber('map', OccupancyGrid, self.callback_glb_map)
-        self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
+        # self.path_sub = rospy.Subscriber('path_plan', Path, self.callback_path)
 
         self.scan = LaserScan()
         self.path = Path()
@@ -77,16 +81,24 @@ class Node:
         self.path_lookup = None
         self.index_lookup = None
 
-        self.rate_timeout = rospy.Rate(timeout_rate)
-
-        self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
+        self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=False)
         self.problem_sub = rospy.Subscriber('problem_map', OccupancyGridUpdate, self.callback_problem)
 
         # self.map_sub = rospy.Subscriber('map', OccupancyGrid, self.callback_map)
 
-        self.rate_timeout = rospy.Rate(timeout_rate)
+        self.rate = rospy.Rate(update_rate)
 
         self.planner = None
+
+    def callback_init_traj(self, msg):
+        rospy.loginfo("Map collision trying to read initial trajectory data!")
+        n = len(msg.data)
+        self.traj_x = np.array(msg.data[0:int(n/2)])
+        self.traj_y = np.array(msg.data[int(n/2):])
+        assert len(self.traj_x)==len(self.traj_y)
+        rospy.loginfo("Map collision node received initial trajectory!")
+        self.traj_to_occupgrid()
+        rospy.loginfo("Map collision node converted initial trajectory to OccupGrid!")
 
     def callback_collision(self, msg):
         self.collision = msg.data
@@ -161,7 +173,7 @@ class Node:
 
         matr = self.map_update_matrix*self.path_lookup[self.map.x:self.map.x+self.map.width,self.map.y:self.map.y+self.map.height]
 
-        collisions = np.where(matr >= 75)
+        collisions = np.where(matr >= 90)
         # print(collisions[0])
 
         if collisions[0].size != 0 and not self.collision:
@@ -177,23 +189,25 @@ class Node:
             orig_x = collisions[0][0]+self.map.x
             orig_y = collisions[1][0]+self.map.y
 
+            # print("Map center at ",orig_x,orig_y)
+
             self.obs_ind = self.index_lookup[orig_x, orig_y] # gives index in global path of the collision point.
             # self.obs_ind = self.index_lookup.get((orig_x,orig_y)) # gives index in global path of the collision point.
-            print(self.obs_ind)
+            # print("obs_ind =",self.obs_ind)
 
-            print(self.obs_ind + collision_distance)
-            print(len(self.path.poses))
+            # print("obs_ind + collision_distance =", self.obs_ind + collision_distance)
+            # print("len(self.path.poses) =",len(self.path.poses))
 
-            start_x = np.int16(self.path.poses[self.obs_ind - collision_distance].pose.position.x/self.resolution)+shift_x
-            goal_x = np.int16(self.path.poses[self.obs_ind + collision_distance].pose.position.x/self.resolution)+shift_x
+            start_x = np.int16(self.traj_x[self.obs_ind - collision_distance]/self.resolution)+shift_x
+            goal_x = np.int16(self.traj_x[self.obs_ind + collision_distance]/self.resolution)+shift_x
 
-            start_y = np.int16(self.path.poses[self.obs_ind - collision_distance].pose.position.y/self.resolution)+shift_y
-            goal_y = np.int16(self.path.poses[self.obs_ind + collision_distance].pose.position.y/self.resolution)+shift_y
+            start_y = np.int16(self.traj_y[self.obs_ind - collision_distance]/self.resolution)+shift_y
+            goal_y = np.int16(self.traj_y[self.obs_ind + collision_distance]/self.resolution)+shift_y
 
-            xmin = np.clip(orig_x - plan_width/2,0,self.global_width)
-            xmax = np.clip(orig_x + plan_width/2,0,self.global_width)
-            ymin = np.clip(orig_y - plan_height/2,0,self.global_height)
-            ymax = np.clip(orig_y + plan_height/2,0,self.global_height)
+            xmin = np.int16(np.clip(orig_x - plan_width/2,0,self.global_width))
+            xmax = np.int16(np.clip(orig_x + plan_width/2,0,self.global_width))
+            ymin = np.int16(np.clip(orig_y - plan_height/2,0,self.global_height))
+            ymax = np.int16(np.clip(orig_y + plan_height/2,0,self.global_height))
 
             final_width = xmax - xmin - 1
             final_height = ymax - ymin - 1
@@ -201,8 +215,6 @@ class Node:
             map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
 
             rospy.loginfo("Intersected path found!")
-            # print(orig_x,orig_y)
-
 
             # print(start_x,goal_x,xmin,xmax)
             # print(start_y,goal_y,ymin,ymax)
@@ -221,6 +233,23 @@ class Node:
 
         return map_slice
 
+    def traj_to_occupgrid(self):
+        gen = np.array([[
+            np.int16(self.traj_x[i]/resolution)+shift_x,
+            np.int16(self.traj_y[i]/resolution)+shift_y,
+            np.int16(self.traj_x[i+1]/resolution)+shift_x,
+            np.int16(self.traj_y[i+1]/resolution)+shift_y,
+            i,]
+        for i in range(len(self.traj_x)-1)],dtype=np.int32)
+        self.path_lookup = np.zeros((self.global_width,self.global_height),dtype=np.int32)
+        self.index_lookup = np.zeros((self.global_width,self.global_height),dtype=np.int32)
+        bresenham.bres_segments_count(gen,self.path_lookup,self.index_lookup)
+
+        # fig, (ax1,ax2) = plt.subplots(2)
+        # ax1.imshow(self.path_lookup.T,origin="lower")
+        # ax2.imshow(self.index_lookup.T,origin="lower")
+        # plt.show()
+
     def callback_problem(self, problem_map):
 
         problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height)
@@ -235,27 +264,40 @@ class Node:
         problem_matr += 1
         path = pyastar.astar_path(problem_matr, (sx,sy), (gx,gy), allow_diagonal=True)
 
-        x_list = (path[:,0]+problem_map.x-shift_x)*resolution
-        y_list = (path[:,1]+problem_map.y-shift_y)*resolution
+        x_list = np.array((path[:,0]+problem_map.x-shift_x)*resolution,dtype=np.float32)
+        y_list = np.array((path[:,1]+problem_map.y-shift_y)*resolution,dtype=np.float32)
         # print(x_list)
         # print(y_list)
 
-        n = len(self.path.poses)
-        x_new_global = [i.pose.position.x for i in self.path.poses]
-        y_new_global = [i.pose.position.y for i in self.path.poses]
         idx_1 = self.obs_ind-collision_distance
         idx_2 = self.obs_ind+collision_distance
-        x_new_global[idx_1:idx_2] = x_list # insert list in list at point idx_x
-        y_new_global[idx_1:idx_2] = y_list # insert list in list at point idx_y
 
-        new_path = lists_to_path(x_new_global, y_new_global)
+        # print("idx_1 =", idx_1)
+        # print("idx_2 =", idx_2)
+
+        # print("traj_x =", self.traj_x)
+        # print("traj_y =", self.traj_y)
+        # print("Deleting elements")
+        self.traj_x = np.delete(self.traj_x,slice(idx_1,idx_2))
+        self.traj_y = np.delete(self.traj_y,slice(idx_1,idx_2))
+        # print("traj_x =", self.traj_x)
+        # print("traj_y =", self.traj_y)
+
+        # print("Inserting elements")
+        self.traj_x = np.insert(self.traj_x,idx_1,x_list)
+        self.traj_y = np.insert(self.traj_y,idx_1,y_list)
+        # print("traj_x =", self.traj_x)
+        # print("traj_y =", self.traj_y)
+        self.traj_to_occupgrid()
+
+        new_path = lists_to_path(self.traj_x, self.traj_y)
 
         #new_path = lists_to_path(x_list, y_list)
 
         self.solution_pub.publish(new_path)
         rospy.loginfo("New global path published! Setting collision to False.")
         self.collision_pub.publish(Bool(False))
-        self.rate_timeout.sleep()
+        self.rate.sleep()
 
     def run(self):
         rate = rospy.Rate(update_rate)

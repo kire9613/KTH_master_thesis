@@ -47,7 +47,7 @@
     <!-- </node> -->
 
     <node pkg="svea_core" type="tf_sim.py" name="tf_sim" output="screen" />
-    <node pkg="tf" type="static_transform_publisher" name="base_link_2_laser" args="0.33 0 0 0 0 0 /base_link /laser 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="base_link_2_laser" args="0.33 0 0 0 0 0 /base_link /laser 40"/>
 
     <!-- Publishes the voxel grid to rviz for display -->
     <!-- <node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer"> -->
@@ -59,8 +59,10 @@
       <rosparam file="$(find svea_core)/launch/costmap_params_sim.yaml" command="load" ns="costmap" />
     </node>
 
-    <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" />    
-    <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" />
-    <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" />
+    <node pkg="svea_core" type="map_collision_node.py" name="map_collision_node" output="screen" />
+
+    <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
+    <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
+    <!-- <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" /> -->
 
 </launch>
