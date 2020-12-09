@@ -34,19 +34,20 @@ class PurePursuitController(object):
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
-        target_vel = self.target_velocity
+        # target_vel = self.target_velocity
         # if steering > 0.1:
         #     target_vel = self.target_velocity * 0.75
         # elif steering > 0.3:
         #     target_vel = self.target_velocity * 0.5
 
+        target_vel = self.target_velocity
         p = np.array([state.x,state.y])
         t = np.array([self.traj_x[min(self.current_index+10,len(self.traj_x)-1)],self.traj_y[min(self.current_index+10,len(self.traj_y)-1)]])
         tp = t-p
         tp /= np.linalg.norm(tp)
         h = np.array([np.cos(state.yaw),np.sin(state.yaw)])
         delta = np.arccos(np.dot(h,tp))
-        if delta > math.pi/4:
+        if delta > math.pi/4 and self.target_velocity != 0:
             #print("restrict velocity")
             #target_vel = 0.3
             target_vel = (1/delta) * (math.pi/4) # max pi/4 -> pi
