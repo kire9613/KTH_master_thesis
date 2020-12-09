@@ -14,6 +14,8 @@ class PurePursuitController(object):
     L = 0.324  # [m] wheel base of vehicle
     e_sum = 0
     e_tmin1 = 0
+    K_str = 0.5
+    st_cor = 0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -41,7 +43,17 @@ class PurePursuitController(object):
         if state.v < 0:  # back
             alpha = math.pi - alpha
         Lf = self.k * state.v + self.Lfc
-        delta = math.atan2(2.0 * self.L * math.sin(alpha) / Lf, 1.0)
+
+        st_err,st_dir = self.short_dist(state)
+
+        if st_dir > 0:
+            self.st_cor = self.K_str*st_err
+        elif st_dir < 0:
+            self.st_cor = -self.K_str*st_err
+        
+        print("st_cor",self.st_cor)
+
+        delta = math.atan2(2.0 * self.L * math.sin(alpha) / Lf, 1.0) + self.st_cor
         return delta
 
     def compute_velocity(self, state):
@@ -64,10 +76,22 @@ class PurePursuitController(object):
             return self.target_velocity + u
 
     def find_target(self, state):
-        ind = self._calc_target_index(state)
-        tx = self.traj_x[ind]
-        ty = self.traj_y[ind]
+        _,tar = self._calc_target_index(state)
+        tx = self.traj_x[tar]
+        ty = self.traj_y[tar]
         self.target = (tx, ty)
+
+    def short_dist(self, state):
+        ind,tar = self._calc_target_index(state)
+        cur_x = self.traj_x[ind]
+        cur_y = self.traj_y[ind]
+        tx = self.traj_x[tar]
+        ty = self.traj_y[tar]
+
+        dist = math.sqrt((cur_y-state.y)**2 + (cur_x-state.x)**2)
+        st_dir = state.x*(ty-cur_y) -  state.y*(tx - cur_x)
+
+        return dist,st_dir
 
     def _calc_target_index(self, state):
         # search nearest point index
@@ -75,22 +99,23 @@ class PurePursuitController(object):
         dy = [state.y - icy for icy in self.traj_y]
         d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]
         ind = d.index(min(d))
+        tar = ind
         dist = 0.0
         Lf = self.k * state.v + self.Lfc
 
         # search look ahead target point index
-        while Lf > dist and (ind + 1) < len(self.traj_x):
-            dx = self.traj_x[ind + 1] - self.traj_x[ind]
-            dy = self.traj_y[ind + 1] - self.traj_y[ind]
+        while Lf > dist and (tar + 1) < len(self.traj_x):
+            dx = self.traj_x[tar + 1] - self.traj_x[tar]
+            dy = self.traj_y[tar + 1] - self.traj_y[tar]
             dist += math.sqrt(dx ** 2 + dy ** 2)
-            ind += 1
+            tar += 1
 
         # terminating condition
         thresh = 0.3
         target_dist = math.hypot(self.traj_x[-1]-state.x,self.traj_y[-1]-state.y)
         is_close = (target_dist<thresh)
-        if ind+1==len(self.traj_x) and is_close:
+        if tar+1==len(self.traj_x) and is_close:
             pass
             # self.is_finished = True
 
-        return ind
+        return ind,tar
