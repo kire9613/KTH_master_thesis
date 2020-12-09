@@ -199,10 +199,15 @@ class Node:
             # print("len(self.path.poses) =",len(self.path.poses))
 
             start_x = np.int16(self.traj_x[self.obs_ind - collision_distance]/self.resolution)+shift_x
-            goal_x = np.int16(self.traj_x[self.obs_ind + collision_distance]/self.resolution)+shift_x
-
             start_y = np.int16(self.traj_y[self.obs_ind - collision_distance]/self.resolution)+shift_y
-            goal_y = np.int16(self.traj_y[self.obs_ind + collision_distance]/self.resolution)+shift_y
+
+            try:
+                goal_x = np.int16(self.traj_x[self.obs_ind + collision_distance]/self.resolution)+shift_x
+                goal_y = np.int16(self.traj_y[self.obs_ind + collision_distance]/self.resolution)+shift_y
+            except:
+                rospy.logwarn("obs_ind + collision_distance is out of bounds for self.traj_x/y. Returning last element instead")
+                goal_x = np.int16(self.traj_x[-1]/self.resolution)+shift_x
+                goal_y = np.int16(self.traj_y[-1]/self.resolution)+shift_y
 
             xmin = np.int16(np.clip(orig_x - plan_width/2,0,self.global_width))
             xmax = np.int16(np.clip(orig_x + plan_width/2,0,self.global_width))
