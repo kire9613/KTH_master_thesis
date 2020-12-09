@@ -203,10 +203,10 @@ class move_waypoint(pt.behaviour.Behaviour):
         global waypoints
 
         # If waypoint we are planning to is not the last
-        # waypoint, move it clser to the next one
+        # waypoint, move it clser to the previous one
         if current_waypoint+1 < len(waypoints)-1:
             p1 = waypoints[current_waypoint+1]
-            p2 = waypoints[current_waypoint+2]
+            p2 = waypoints[current_waypoint]
 
             # Move half the distance to p2
             p1 = p1 + 0.5*(p2-p1)
