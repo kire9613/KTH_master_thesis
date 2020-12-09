@@ -14,7 +14,7 @@ class PurePursuitController(object):
     L = 0.324  # [m] wheel base of vehicle
     e_sum = 0
     e_tmin1 = 0
-    K_str = 1.0
+    K_str = 0.6
     I_str = 0.2
     st_err_sum = 0
     st_cor = 0
