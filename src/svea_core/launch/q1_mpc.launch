@@ -60,6 +60,7 @@
     </node>
 
     <node pkg="svea_core" type="map_collision_node.py" name="map_collision_node" output="screen" />
+
     <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
     <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
     <!-- <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" /> -->
