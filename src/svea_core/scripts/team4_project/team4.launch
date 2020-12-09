@@ -2,7 +2,7 @@
 <launch>
 
     <arg name="use_matplotlib" default="false"/>
-    <arg name="is_sim" default="false"/>
+    <arg name="is_sim" default="true"/>
     <arg name="use_rviz" default="true"/>
     <arg name="use_lidar" default="true"/>
     <arg name="show_tree" default="false"/>
