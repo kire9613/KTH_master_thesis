@@ -9,3 +9,7 @@ src/CMakeLists.txt
 
 .vscode/
 src/.vscode/
+
+# TEAM 1
+src/svea_core/src/svea/bresenham/build/lib.linux-x86_64-2.7/
+src/svea_core/src/svea/bresenham/build/temp.linux-x86_64-2.7/
