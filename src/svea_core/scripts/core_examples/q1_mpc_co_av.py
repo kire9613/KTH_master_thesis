@@ -178,7 +178,7 @@ class Node:
         self.svea.pid.k = 0.5  # look forward gain
         self.svea.pid.Lfc = 0.7 # look-ahead distance
         self.svea.pid.K_p = 1.2  # speed control propotional gain
-        self.svea.pid.K_i = 0.2  # speed control integral gain
+        self.svea.pid.K_i = 0  # speed control integral gain
         self.svea.pid.K_d = 0.0  # speed control derivitive gain
         self.svea.pid.L = 0.324  # [m] wheel base of vehicle
         while not self.svea.is_finished and not rospy.is_shutdown():
