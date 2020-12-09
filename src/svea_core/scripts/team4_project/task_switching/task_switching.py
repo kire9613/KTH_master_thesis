@@ -117,25 +117,36 @@ def main():
 
     vis_waypoint_msg = PointCloud()
     vis_waypoint_msg.header.frame_id = 'map'
+    #
+    # for i in range(len(GOAL_LIST)):
+    #     if i == 0: # If first waypoint, plan from start to waypoint
+    #         path = get_path([start_state.x, start_state.y], GOAL_LIST[i]) #[-5.36, -1.66] [5.94, 14.5]
+    #         path = list(reversed(path))
+    #     else: # Else, plan from previous waypoint to next
+    #         path = get_path(GOAL_LIST[i-1], GOAL_LIST[i])
+    #         path = list(reversed(path))
+    #         del path[0]
+    #
+    #     for p in path:
+    #         tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
+    #         vis_point = Point32()
+    #         vis_point.x = p.pose.position.x
+    #         vis_point.y = p.pose.position.y
+    #         vis_waypoint_msg.points.append(vis_point)
 
-    for i in range(len(GOAL_LIST)):
-        if i == 0: # If first waypoint, plan from start to waypoint
-            path = get_path([start_state.x, start_state.y], GOAL_LIST[i]) #[-5.36, -1.66] [5.94, 14.5]
-            path = list(reversed(path))
-        else: # Else, plan from previous waypoint to next
-            path = get_path(GOAL_LIST[i-1], GOAL_LIST[i])
-            path = list(reversed(path))
-            del path[0]
-
-        for p in path:
-            tn.waypoints.append(np.array([p.pose.position.x, p.pose.position.y]))
-            vis_point = Point32()
-            vis_point.x = p.pose.position.x
-            vis_point.y = p.pose.position.y
-            vis_waypoint_msg.points.append(vis_point)
+    """ Complete set of waypoints """
+    path = [[2.62257741e-02, 5.55977173e-06],[3.41, 2],[6.6, 1.91],[8.65, 0.16],[13.04689895, -0.45365062],[16.74991176, -1.26631695],[19.5 , -0.21],[19.40077279,  3.11716495],[16.93911541,  3.97146113],[14.1 ,  4.07],[7.14921592, 4.52974599],[4.92176179, 6.79254158],[2.96389709, 6.9894187 ],[0.73324065, 5.37245639],[-0.91,  5.34],[-9.18432957,  5.57541465],[-12.84969308,   5.98099129],[-14.1,3.74],[-13.47335798,   0.75542513],[-10.48376699,   0.75753486],[-7.81,  0.73],[-7.55,3.38],[-5.33,3.28],[-5.54,0.48],[-1.89603235,  0.05966632],[1.0222541 , 0.17457613],[2.69, 0.92]]
+    
+    for p in path:
+        tn.waypoints.append(np.array([p[0], p[1]]))
+        vis_point = Point32()
+        vis_point.x = p[0]
+        vis_point.y = p[1]
+        vis_waypoint_msg.points.append(vis_point)
 
     waypoint_vis.publish(vis_waypoint_msg)
 
+    print(str(tn.waypoints))
 
     behaviour_tree = BehaviourTree()
     behaviour_tree.setup(timeout=10000)

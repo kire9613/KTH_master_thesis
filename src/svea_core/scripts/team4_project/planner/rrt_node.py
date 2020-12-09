@@ -190,6 +190,7 @@ class RRTNode:
 
         last = path[-1]
         path = self.smooth_path(path, grid_map)
+        path = path[:-1]
         path.append(last)
         return path
 
