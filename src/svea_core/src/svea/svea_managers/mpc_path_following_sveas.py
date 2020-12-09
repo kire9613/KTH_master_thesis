@@ -53,6 +53,8 @@ class SVEAMPC(SVEAPurePursuit):
         self.controller.traj_x = traj_x
         self.controller.traj_y = traj_y
         self.data_handler.update_traj(traj_x, traj_y)
+        self.pid.traj_x = traj_x
+        self.pid.traj_y = traj_y
 
     def update_traj_mpc(self, traj_x, traj_y):
         """Update trajectory

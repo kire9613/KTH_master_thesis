@@ -51,10 +51,10 @@ class PurePursuitController(object):
         self.st_err_sum += st_err*self.dt
         if st_dir >= 0:
             self.st_cor = self.K_str*st_err   # + self.I_str*self.st_err_sum
-            print("RIGHT")
+            # print("RIGHT")
         elif st_dir < 0:
             self.st_cor = -self.K_str*st_err   # + self.I_str*self.st_err_sum)
-            print("LEFT")
+            # print("LEFT")
         #print("st_err",st_err)
 
         delta = math.atan2(2.0 * self.L * math.sin(alpha) / Lf, 1.0) + self.st_cor
