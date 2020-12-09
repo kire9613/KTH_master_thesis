@@ -9,10 +9,10 @@
 
 
     <rosparam command="load" file="$(find svea_core)/resources/params/q1_polygons.yaml" />
-    <rosparam command="load" file="$(find svea_core)/resources/params/q1floor_track.yaml" />
+    <rosparam command="load" file="$(find svea_core)/resources/params/track_q1.yaml" />
     <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" />
     <arg name="start_pt" default= '17.9, 3.54, 3.1, 0'/>
-    
+
     <!--
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
     <rosparam command="load" file="$(find svea_core)/resources/params/floor2_track.yaml" />
@@ -24,7 +24,7 @@
     <machine name="adam" address="mrmixit-Predator-PH317-52.local" user="mrmixit" env-loader="/home/mrmixit/Project/svea_starter/remote-env.sh"/>
     <machine name="caroline" address="caroline-HP-Pavilion-Notebook.local" user="caroline" env-loader="/home/caroline/EL2425/svea_starter/remote-env.sh"/>
     <machine name="ylva" address="Harrison.local" user="ylva" env-loader="/home/ylva/el2425/svea_starter/remote-env.sh"/>
-        
+
 
     <group if="$(eval is_sim == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/scripts/team4_project/rviz.rviz" />
