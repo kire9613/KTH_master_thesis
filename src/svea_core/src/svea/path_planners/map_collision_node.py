@@ -166,8 +166,8 @@ class Node:
 
         map_slice = None
 
-        plan_width = 2*self.map.width
-        plan_height = 2*self.map.height
+        plan_width = 1.0*self.map.width
+        plan_height = 1.0*self.map.height
 
         # matr = self.map_matrix*self.path_lookup
 
