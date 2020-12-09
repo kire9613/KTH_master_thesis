@@ -4,6 +4,7 @@
 # TODO:
 # map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
 # IndexError: index 23 is out of bounds for axis 1 with size 23
+# CORRECTION, IF THIS HAPPENS, INCREASE plan_width/height
 
 from __future__ import print_function
 from __future__ import division
@@ -170,8 +171,8 @@ class Node:
 
         map_slice = None
 
-        plan_width = 1.0*self.map.width
-        plan_height = 1.0*self.map.height
+        plan_width = 1.5*self.map.width
+        plan_height = 1.5*self.map.height
 
         # matr = self.map_matrix*self.path_lookup
 
@@ -238,7 +239,7 @@ class Node:
             map_slice.y = ymin
             map_slice.width = final_width
             map_slice.height = final_height
-            map_slice.data = map_matr.reshape(-1)
+            map_slice.data = map_matr.reshape(-1,order="F") # TODO: Not sure about order here
 
         return map_slice
 
@@ -261,7 +262,7 @@ class Node:
 
     def callback_problem(self, problem_map):
 
-        problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height)
+        problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height,order="F") # TODO: Not sure about order here
         # plt.imshow(problem_matr.T,origin="lower")
         # plt.show()
         sx,sy = np.where(problem_matr==-np.int8(1))
