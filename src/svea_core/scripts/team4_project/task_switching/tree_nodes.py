@@ -204,7 +204,7 @@ class move_waypoint(pt.behaviour.Behaviour):
 
     def update(self):
         global waypoints
-	global current_waypoint
+
         # If waypoint we are planning to is not the last
         # waypoint, move it clser to the next one
         if current_waypoint+1 < len(waypoints)-1:
@@ -217,8 +217,7 @@ class move_waypoint(pt.behaviour.Behaviour):
             # If we move the waypoint on top of the next
             # one remove it
             if np.linalg.norm(p1-p2) <= self.WAYPOINT_CONVERGED_DISTANCE:
-                #del waypoints[current_waypoint+1]
-		current_waypoint += 1
+                del waypoints[current_waypoint+1]
             else:
                 waypoints[current_waypoint+1] = p1
 
