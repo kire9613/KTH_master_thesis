@@ -203,10 +203,10 @@ class move_waypoint(pt.behaviour.Behaviour):
         global waypoints
 
         # If waypoint we are planning to is not the last
-        # waypoint, move it clser to the next one
+        # waypoint, move it clser to the previous one
         if current_waypoint+1 < len(waypoints)-1:
             p1 = waypoints[current_waypoint+1]
-            p2 = waypoints[current_waypoint+2]
+            p2 = waypoints[current_waypoint]
 
             # Move half the distance to p2
             p1 = p1 + 0.5*(p2-p1)
@@ -402,6 +402,8 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
     def update(self):
         distance = np.linalg.norm(self.position - collision_point)
         speed = max(0, min(self.MAX_SPEED, self.K*(distance-self.MIN_DISTANCE)))
+        if speed <= 0.2:
+            speed = 0
         self.speed_pub.publish(speed)
         return pt.common.Status.SUCCESS
 
