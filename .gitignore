@@ -9,3 +9,4 @@ src/CMakeLists.txt
 
 .vscode/
 src/.vscode/
+src/svea_core/src/svea/bresenham/build/temp.linux-aarch64-2.7/
