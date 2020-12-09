@@ -19,6 +19,8 @@ class PurePursuitController(object):
     st_err_sum = 0
     st_cor = 0
     dt = 0.1
+    Kv = 1.0
+    low_lim = 1.0
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -31,7 +33,7 @@ class PurePursuitController(object):
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
-        velocity = self.compute_velocity(state)
+        velocity = self.compute_reduced_velocity(state,steering)
         return steering, velocity
 
     def compute_steering(self, state, target=None):
@@ -50,33 +52,38 @@ class PurePursuitController(object):
         st_err,st_dir = self.short_dist(state)
         self.st_err_sum += st_err*self.dt
         if st_dir > 0:
-            self.st_cor = self.K_str*st_err + self.I_str*self.st_err_sum
+            self.st_cor = self.K_str*st_err #+ self.I_str*self.st_err_sum
         elif st_dir < 0:
-            self.st_cor = -(self.K_str*st_err + self.I_str*self.st_err_sum)
+            self.st_cor = -(self.K_str*st_err) #+ self.I_str*self.st_err_sum)
         
-        print("st_cor",self.st_cor)
+        #print("st_cor",self.st_cor)
 
         delta = math.atan2(2.0 * self.L * math.sin(alpha) / Lf, 1.0) + self.st_cor
         return delta
 
-    def compute_velocity(self, state):
+    def compute_reduced_velocity(self, state, str_ang=None):
         if self.is_finished:
             # stop moning if trajectory done
             return 0.0
         else:
             # speed control
-            e = self.target_velocity - state.v
+            if not str_ang:
+                str_ang = self.compute_steering(state)
+            v_del = self.Kv*abs(str_ang/0.7)            
+            temp_target_velocity = max(self.target_velocity*(1-v_del),self.low_lim)
+            print("temp_target",temp_target_velocity)
+            e = temp_target_velocity - state.v
             self.e_sum += e*self.dt
             # if e*self.e_tmin1<0: # anti-windup, reset when crossing zero
             #     self.e_sum=0
             P = e*self.K_p
             I = self.e_sum*self.K_i
-            D = (e-self.e_tmin1)*self.K_d/0.01 # dt = 0.01, first order approx
+            #D = (e-self.e_tmin1)*self.K_d/0.01 # dt = 0.01, first order approx
             self.e_tmin1 = e
-            u = P
+            u = P + I
             speed_lim = 2.50
-            u = np.clip(u,-speed_lim+self.target_velocity,speed_lim-self.target_velocity)
-            return self.target_velocity + u
+            u = np.clip(u,-speed_lim-temp_target_velocity,speed_lim-temp_target_velocity)
+            return temp_target_velocity + u
 
     def find_target(self, state):
         _,tar = self._calc_target_index(state)
@@ -92,7 +99,7 @@ class PurePursuitController(object):
         ty = self.traj_y[tar]
 
         dist = math.sqrt((cur_y-state.y)**2 + (cur_x-state.x)**2)
-        st_dir = state.x*(ty-cur_y) -  state.y*(tx - cur_x)
+        st_dir = (state.x-cur_x)*(ty-cur_y) -  (state.y-cur_y)*(tx - cur_x)
 
         return dist,st_dir
 
