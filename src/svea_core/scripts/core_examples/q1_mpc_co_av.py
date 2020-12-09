@@ -165,8 +165,8 @@ class Node:
         # simulation loop
         self.svea.controller.target_velocity = target_velocity
         self.svea.pid.target_velocity = target_velocity
-        self.svea.pid.k = 0.4  # look forward gain
-        self.svea.pid.Lfc = 0.72 # look-ahead distance
+        self.svea.pid.k = 0.5  # look forward gain
+        self.svea.pid.Lfc = 0.7 # look-ahead distance
         self.svea.pid.K_p = 1.2  # speed control propotional gain
         self.svea.pid.K_i = 0.2  # speed control integral gain
         self.svea.pid.K_d = 0.0  # speed control derivitive gain
@@ -185,10 +185,10 @@ class Node:
                 # print(deltaT)
                 # if deltaT>rospy.Duration(5):
                 # steering, velocity = self.svea.compute_control()
-                steering, velocity = self.svea.compute_pid_control()
-                self.svea.send_control(steering, velocity)
+                # steering,_  = self.svea.compute_pid_control()
+                self.svea.send_control(0, 0)
             else:
-                steering, velocity = self.svea.compute_pid_control()
+                steering, velocity = self.svea.compute_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data

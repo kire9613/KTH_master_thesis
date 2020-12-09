@@ -166,12 +166,12 @@ class Node:
         if collisions[0].size != 0 and not self.collision:
             self.collision_pub.publish(Bool(True))
 
-            fig, (ax1,ax2,ax3,ax4) = plt.subplots(4)
-            ax1.imshow(self.map_update_matrix.T,origin="lower")
-            ax2.imshow(self.path_lookup[self.map.x:self.map.x+self.map.width,self.map.y:self.map.y+self.map.height].T,origin="lower")
-            ax3.imshow(matr.T,origin="lower")
-            ax4.imshow(self.index_lookup[self.map.x:self.map.x+self.map.width,self.map.y:self.map.y+self.map.height].T,origin="lower")
-            plt.show()
+            # fig, (ax1,ax2,ax3,ax4) = plt.subplots(4)
+            # ax1.imshow(self.map_update_matrix.T,origin="lower")
+            # ax2.imshow(self.path_lookup[self.map.x:self.map.x+self.map.width,self.map.y:self.map.y+self.map.height].T,origin="lower")
+            # ax3.imshow(matr.T,origin="lower")
+            # ax4.imshow(self.index_lookup[self.map.x:self.map.x+self.map.width,self.map.y:self.map.y+self.map.height].T,origin="lower")
+            # plt.show()
 
             orig_x = collisions[0][0]+self.map.x
             orig_y = collisions[1][0]+self.map.y
