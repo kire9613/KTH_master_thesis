@@ -36,7 +36,7 @@ height = 284#567
 resolution = 0.1
 shift_x = np.int16(30.549770/resolution)
 shift_y = np.int16(11.414917/resolution)
-collision_distance = 5
+collision_distance = 4
 # timeout_rate = 1.0
 
 ###############################################################################
@@ -166,8 +166,8 @@ class Node:
 
         map_slice = None
 
-        plan_width = 1.0*self.map.width
-        plan_height = 1.0*self.map.height
+        plan_width = 1.5*self.map.width
+        plan_height = 1.5*self.map.height
 
         # matr = self.map_matrix*self.path_lookup
 
