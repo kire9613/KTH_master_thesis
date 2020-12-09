@@ -2,7 +2,7 @@ import py_trees as pt
 import numpy as np
 from svea_msgs.msg import VehicleState
 from nav_msgs.msg import Path
-from geometry_msgs.msg import Pose, PoseStamped, Point32, PoseWithCovarianceStamped
+from geometry_msgs.msg import Pose, PoseStamped, Point32, PoseWithCovarianceStamped, Quaternion
 from std_msgs.msg import Float32, Bool
 from team4_msgs.msg import Collision, AStarAction, AStarGoal
 from sensor_msgs.msg import PointCloud
@@ -449,7 +449,8 @@ class is_lost(pt.behaviour.Behaviour):
                 pose = Pose()
                 pose.position.x = state.x
                 pose.position.y = state.y
-                pose.orientation = quaternion_from_euler(0, 0, state.yaw)
+                q = quaternion_from_euler(0, 0, state.yaw)
+                pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
                 last_pose = pose
 
 class reset_localization(pt.behaviour.Behaviour):
