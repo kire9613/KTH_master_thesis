@@ -32,12 +32,19 @@ class PurePursuitController(object):
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
-        velocity = self.compute_velocity(state)
+        target_vel = self.target_velocity
+        # if steering > 0.1:
+        #     target_vel = self.target_velocity * 0.75
+        # elif steering > 0.3:
+        #     target_vel = self.target_velocity * 0.5
+        velocity = self.compute_velocity(state, target_vel)
         return steering, velocity
 
     def compute_steering(self, state, target=None):
         if target is None:
             self.find_target(state)
+
+
         else:
             # allow manual setting of target
             self.target = target
@@ -57,10 +64,11 @@ class PurePursuitController(object):
         delta = math.atan2(2.0 * self.L * math.sin(alpha) / Lf, 1.0)
         return delta
 
-    def compute_velocity(self, state):
+    def compute_velocity(self, state, vel_t):
         # speed control
 
-        e = self.target_velocity - state.v
+        #e = self.target_velocity - state.v
+        e = vel_t - state.v
 
         saturated_prev_u = self.prev_u
         if not (self.MIN_U <= self.prev_u <= self.MAX_U):
@@ -76,7 +84,8 @@ class PurePursuitController(object):
         if not (self.MIN_U <= u <= self.MAX_U):
             u = min([self.MAX_U, max([self.MIN_U, u])])
 
-        if self.target_velocity == 0:
+        #if self.target_velocity == 0:
+        if vel_t == 0:
             return 0
         else:
             return u
