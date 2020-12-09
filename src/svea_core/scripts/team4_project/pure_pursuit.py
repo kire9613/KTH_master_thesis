@@ -17,6 +17,8 @@ class PurePursuitController(object):
     L = 0.324     # [m] wheel base of vehicle
     MAX_U = 1.7   # Maximum control signal
     MIN_U = -0.45 # Minimum control signal
+    TURN_VEL = 0.4 # Speed when doing a pi/2 turn
+    TURN_LIMIT = math.pi/8 # Angle when speed is reduced
 
     def __init__(self, traj_lock, vehicle_name=''):
         self.traj_x = []
@@ -47,10 +49,13 @@ class PurePursuitController(object):
         tp /= np.linalg.norm(tp)
         h = np.array([np.cos(state.yaw),np.sin(state.yaw)])
         delta = np.arccos(np.dot(h,tp))
-        if delta > math.pi/4 and self.target_velocity != 0:
+        if delta > self.TURN_LIMIT and self.target_velocity != 0:
             #print("restrict velocity")
             #target_vel = 0.3
-            target_vel = (1/delta) * (math.pi/4) # max pi/4 -> pi
+            k = (target_vel - self.TURN_VEL)/(self.TURN_LIMIT - math.pi/2)
+            m = target_vel - k*self.TURN_LIMIT
+            target_vel = k*delta + m
+            target_vel = max(target_vel, self.TURN_VEL)
         velocity = self.compute_velocity(state, target_vel)
         return steering, velocity
 
