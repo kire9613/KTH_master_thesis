@@ -15,7 +15,10 @@ class PurePursuitController(object):
     e_sum = 0
     e_tmin1 = 0
     K_str = 0.5
+    I_str = 0.1
+    st_err_sum = 0
     st_cor = 0
+    dt = 0.1
 
     def __init__(self, vehicle_name=''):
         self.traj_x = []
@@ -45,11 +48,11 @@ class PurePursuitController(object):
         Lf = self.k * state.v + self.Lfc
 
         st_err,st_dir = self.short_dist(state)
-
+        self.st_err_sum += st_err*self.dt
         if st_dir > 0:
-            self.st_cor = self.K_str*st_err
+            self.st_cor = self.K_str*st_err + self.I_str*self.st_err_sum
         elif st_dir < 0:
-            self.st_cor = -self.K_str*st_err
+            self.st_cor = -(self.K_str*st_err + self.I_str*self.st_err_sum)
         
         print("st_cor",self.st_cor)
 
@@ -63,7 +66,7 @@ class PurePursuitController(object):
         else:
             # speed control
             e = self.target_velocity - state.v
-            self.e_sum += e*0.1
+            self.e_sum += e*self.dt
             # if e*self.e_tmin1<0: # anti-windup, reset when crossing zero
             #     self.e_sum=0
             P = e*self.K_p
