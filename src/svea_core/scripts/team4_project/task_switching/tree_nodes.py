@@ -13,7 +13,7 @@ from copy import deepcopy
 
 TARGET_DISTANCE = 2e-1 # 2dm between targets
 PLANNING_TIMEOUT = 20 # seconds
-TARGET_VELOCITY = 0.7
+TARGET_VELOCITY = 1.0
 
 waypoints = []
 current_path = Path()
@@ -204,7 +204,7 @@ class move_waypoint(pt.behaviour.Behaviour):
 
     def update(self):
         global waypoints
-
+	global current_waypoint
         # If waypoint we are planning to is not the last
         # waypoint, move it clser to the next one
         if current_waypoint+1 < len(waypoints)-1:
@@ -217,7 +217,8 @@ class move_waypoint(pt.behaviour.Behaviour):
             # If we move the waypoint on top of the next
             # one remove it
             if np.linalg.norm(p1-p2) <= self.WAYPOINT_CONVERGED_DISTANCE:
-                del waypoints[current_waypoint+1]
+                #del waypoints[current_waypoint+1]
+		current_waypoint += 1
             else:
                 waypoints[current_waypoint+1] = p1
 
@@ -405,7 +406,7 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
     def update(self):
         distance = np.linalg.norm(self.position - collision_point)
         speed = max(0, min(self.MAX_SPEED, self.K*(distance-self.MIN_DISTANCE)))
-        if speed <= 0.2:
+        if speed <= 0.25:
             speed = 0
         self.speed_pub.publish(speed)
         return pt.common.Status.SUCCESS
