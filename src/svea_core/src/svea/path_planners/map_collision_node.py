@@ -41,7 +41,7 @@ height = 284#567
 resolution = 0.1
 shift_x = np.int16(30.549770/resolution)
 shift_y = np.int16(11.414917/resolution)
-collision_distance = 5
+collision_distance = 4
 # timeout_rate = 1.0
 
 ###############################################################################

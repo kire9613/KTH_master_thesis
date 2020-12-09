@@ -122,9 +122,9 @@ class Node:
     def callback_traj(self,path):
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
-        self.svea.update_traj(self.traj_x, self.traj_y)
+        # self.svea.update_traj(self.traj_x, self.traj_y)
         # if MPC.. this calculates speed profile etc.
-        # self.svea.update_traj_mpc(self.traj_x, self.traj_y)
+        self.svea.update_traj_mpc(self.traj_x, self.traj_y)
 
     def callback_collision(self, data):
         # print(data.data)
@@ -164,8 +164,8 @@ class Node:
             TAU = params.TAU,
             N_IND_SEARCH = params.N_IND_SEARCH,
         )
-        # self.svea.update_traj_mpc(self.traj_x, self.traj_y)
-        self.svea.update_traj(self.traj_x, self.traj_y)
+        self.svea.update_traj_mpc(self.traj_x, self.traj_y)
+        # self.svea.update_traj(self.traj_x, self.traj_y)
         self.svea.start(wait=True)
 
         track = Track(vehicle_name, publish_track=True)
@@ -179,7 +179,7 @@ class Node:
         self.svea.controller.target_velocity = target_velocity
         self.svea.pid.target_velocity = target_velocity
         self.svea.pid.k = 0.5  # look forward gain
-        self.svea.pid.Lfc = 0.75 # look-ahead distance
+        self.svea.pid.Lfc = 0.7 # look-ahead distance
         self.svea.pid.K_p = 1.2  # speed control propotional gain
         self.svea.pid.K_i = 0  # speed control integral gain
         self.svea.pid.K_d = 0.0  # speed control derivitive gain
@@ -199,9 +199,11 @@ class Node:
                 # if deltaT>rospy.Duration(5):
                 # steering, velocity = self.svea.compute_control()
                 # steering,_  = self.svea.compute_pid_control()
+                # steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(0, 0)
             else:
-                steering, velocity = self.svea.compute_pid_control()
+                steering, velocity = self.svea.compute_control()
+                # steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data
