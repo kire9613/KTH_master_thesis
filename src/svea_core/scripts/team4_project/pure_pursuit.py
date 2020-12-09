@@ -2,7 +2,7 @@
 Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math
-
+import numpy as np
 from threading import Lock
 
 traj_lock = Lock()
@@ -30,6 +30,8 @@ class PurePursuitController(object):
         self.prev_u = 0
         self.prev_e = 0
 
+        self.current_index = 0
+
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
         target_vel = self.target_velocity
@@ -37,6 +39,17 @@ class PurePursuitController(object):
         #     target_vel = self.target_velocity * 0.75
         # elif steering > 0.3:
         #     target_vel = self.target_velocity * 0.5
+
+        p = np.array([state.x,state.y])
+        t = np.array([self.traj_x[min(self.current_index+10,len(self.traj_x)-1)],self.traj_y[min(self.current_index+10,len(self.traj_y)-1)]])
+        tp = t-p
+        tp /= np.linalg.norm(tp)
+        h = np.array([np.cos(state.yaw),np.sin(state.yaw)])
+        delta = np.arccos(np.dot(h,tp))
+        if delta > math.pi/4:
+            #print("restrict velocity")
+            #target_vel = 0.3
+            target_vel = (1/delta) * (math.pi/4) # max pi/4 -> pi
         velocity = self.compute_velocity(state, target_vel)
         return steering, velocity
 
@@ -93,6 +106,7 @@ class PurePursuitController(object):
     def find_target(self, state):
         with traj_lock:
             ind = self._calc_target_index(state)
+            self.current_index = ind
             tx = self.traj_x[ind]
             ty = self.traj_y[ind]
             self.target = (tx, ty)
