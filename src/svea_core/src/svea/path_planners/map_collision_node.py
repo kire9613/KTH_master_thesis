@@ -3,15 +3,12 @@
 
 from __future__ import print_function
 
-
 import rospy
 import numpy as np
-from math import floor
 
 import rospy
-import tf
 
-from geometry_msgs.msg import Point, Pose, Quaternion
+from geometry_msgs.msg import Pose, PoseStamped
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
 from map_msgs.msg import OccupancyGridUpdate
@@ -19,11 +16,12 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Bool, Int16MultiArray
 
 import svea.bresenham.bresenham as bresenham
+import svea.pyastar.pyastar as pyastar
 
 import matplotlib.pyplot as plt
 
 """
-map_explore_node: Collision check
+map_collision_node: Collision check
 """
 
 __author__ = "Team 1"
@@ -64,7 +62,6 @@ class Node:
         self.window = 3 # m, the window size for collision check
 
         self.collision_pub = rospy.Publisher('collision', Bool, queue_size=1, latch=False)
-        self.index_pub = rospy.Publisher('problem_index', Int16MultiArray, queue_size=1, latch=False)
         self.problem_pub = rospy.Publisher('problem_map', OccupancyGridUpdate, queue_size=1, latch=False)
 
         self.collision_sub = rospy.Subscriber('collision', Bool, self.callback_collision)
@@ -81,6 +78,15 @@ class Node:
         self.index_lookup = None
 
         self.rate_timeout = rospy.Rate(timeout_rate)
+
+        self.solution_pub = rospy.Publisher('trajectory_updates', Path, queue_size=1, latch=True)
+        self.problem_sub = rospy.Subscriber('problem_map', OccupancyGridUpdate, self.callback_problem)
+
+        # self.map_sub = rospy.Subscriber('map', OccupancyGrid, self.callback_map)
+
+        self.rate_timeout = rospy.Rate(timeout_rate)
+
+        self.planner = None
 
     def callback_collision(self, msg):
         self.collision = msg.data
@@ -111,40 +117,6 @@ class Node:
         # print("got new map")
         self.map = map
         self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
-        # plt.imshow(self.map_matrix.T,origin="lower")
-        # plt.show()
-
-    def callback_rolling_map(self, map):
-        # print("got new map")
-        self.map = map
-        self.map_matrix = np.zeros((width, height), dtype=np.int8)
-        # self.map_matrix = np.reshape(map.data, (map.info.width, map.info.height), order='F')
-        # for big matrix
-        x_ind = np.int16((map.info.origin.position.x+30.549770)/resolution)
-        y_ind = np.int16((map.info.origin.position.y+11.414917)/resolution)
-        xmin,xmax = np.clip([x_ind,x_ind+map.info.width],0,width-1)
-        ymin,ymax = np.clip([y_ind,y_ind+map.info.height],0,height-1)
-        # self.xmin = xmin
-        # self.xmax = xmax
-        # self.ymin = ymin
-        # self.ymax = ymax
-        if x_ind>0 and y_ind>0:
-            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
-                map.data, (map.info.width,map.info.height), order='F'
-            )[:xmax-xmin,:ymax-ymin]
-        elif y_ind<0:
-            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
-                map.data, (map.info.width,map.info.height), order='F'
-            )[:,-y_ind:]
-        elif x_ind<0:
-            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
-                map.data, (map.info.width,map.info.height), order='F'
-            )[-x_ind:,:]
-        else:
-            self.map_matrix[xmin:xmax,ymin:ymax] = np.reshape(
-                map.data, (map.info.width,map.info.height), order='F'
-            )[-x_ind:,-y_ind:]
-
         # plt.imshow(self.map_matrix.T,origin="lower")
         # plt.show()
 
@@ -205,24 +177,18 @@ class Node:
             orig_x = collisions[0][0]+self.map.x
             orig_y = collisions[1][0]+self.map.y
 
-            obs_ind = self.index_lookup[orig_x, orig_y] # gives index in global path of the collision point.
-            # obs_ind = self.index_lookup.get((orig_x,orig_y)) # gives index in global path of the collision point.
-            print(obs_ind)
+            self.obs_ind = self.index_lookup[orig_x, orig_y] # gives index in global path of the collision point.
+            # self.obs_ind = self.index_lookup.get((orig_x,orig_y)) # gives index in global path of the collision point.
+            print(self.obs_ind)
 
-            # TODO: collision_distance can actually be IMPORTED in collision_node instead
-            self.index_pub.publish(Int16MultiArray(
-                data=[obs_ind,collision_distance]
-            ))
-
-            # print(obs_ind)
-            print(obs_ind + collision_distance)
+            print(self.obs_ind + collision_distance)
             print(len(self.path.poses))
 
-            start_x = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.x/self.resolution)+shift_x
-            goal_x = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.x/self.resolution)+shift_x
+            start_x = np.int16(self.path.poses[self.obs_ind - collision_distance].pose.position.x/self.resolution)+shift_x
+            goal_x = np.int16(self.path.poses[self.obs_ind + collision_distance].pose.position.x/self.resolution)+shift_x
 
-            start_y = np.int16(self.path.poses[obs_ind - collision_distance].pose.position.y/self.resolution)+shift_y
-            goal_y = np.int16(self.path.poses[obs_ind + collision_distance].pose.position.y/self.resolution)+shift_y
+            start_y = np.int16(self.path.poses[self.obs_ind - collision_distance].pose.position.y/self.resolution)+shift_y
+            goal_y = np.int16(self.path.poses[self.obs_ind + collision_distance].pose.position.y/self.resolution)+shift_y
 
             xmin = np.clip(orig_x - plan_width/2,0,self.global_width)
             xmax = np.clip(orig_x + plan_width/2,0,self.global_width)
@@ -255,58 +221,64 @@ class Node:
 
         return map_slice
 
-    def is_in_bounds(self, x, y):
-        """Returns weather (x, y) is inside grid_map or not."""
-        if x >= 0 and x < self.global_width:
-            if y >= 0 and y < self.global_height:
-                return True
-        else:
-            print("False: ({0},{1})".format(x,y))
-            return False
+    def callback_problem(self, problem_map):
 
-    def raytrace(self, start_x, start_y, end_x, end_y):
-        """Returns all cells in the grid map that has been traversed
-        from start to end, including start and excluding end.
-        """
-        x = start_x
-        y = start_y
-        dx = np.abs(end_x - start_x)
-        dy = np.abs(end_y - start_y)
-        n = dx + dy
-        x_inc = 1
-        if end_x <= start_x:
-            x_inc = -1
-        y_inc = 1
-        if end_y <= start_y:
-            y_inc = -1
-        error = dx - dy
-        dx *= 2
-        dy *= 2
-        traversed = np.full((n + 1,2), np.int16(self.oob_delimiter))
-        i = 0
-        while i < np.int16(n):
-            traversed[i,0] = np.int16(x)
-            traversed[i,1] = np.int16(y)
-            if error > 0:
-                x += x_inc
-                error -= dy
-            else:
-                if error == 0:
-                    traversed[i,0] = np.int16(x + x_inc)
-                    traversed[i,1] = np.int16(y)
-                y += y_inc
-                error += dx
-            i += 1
-        return traversed
+        problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height)
+        # plt.imshow(problem_matr.T,origin="lower")
+        # plt.show()
+        sx,sy = np.where(problem_matr==-np.int8(1))
+        gx,gy = np.where(problem_matr==-np.int8(2))
+        sx,sy = sx[0], sy[0]
+        gx,gy = gx[0], gy[0]
+        problem_matr[sx,sy] += 1
+        problem_matr[gx,gy] += 2
+        problem_matr += 1
+        path = pyastar.astar_path(problem_matr, (sx,sy), (gx,gy), allow_diagonal=True)
+
+        x_list = (path[:,0]+problem_map.x-shift_x)*resolution
+        y_list = (path[:,1]+problem_map.y-shift_y)*resolution
+        # print(x_list)
+        # print(y_list)
+
+        n = len(self.path.poses)
+        x_new_global = [i.pose.position.x for i in self.path.poses]
+        y_new_global = [i.pose.position.y for i in self.path.poses]
+        idx_1 = self.obs_ind-collision_distance
+        idx_2 = self.obs_ind+collision_distance
+        x_new_global[idx_1:idx_2] = x_list # insert list in list at point idx_x
+        y_new_global[idx_1:idx_2] = y_list # insert list in list at point idx_y
+
+        new_path = lists_to_path(x_new_global, y_new_global)
+
+        #new_path = lists_to_path(x_list, y_list)
+
+        self.solution_pub.publish(new_path)
+        rospy.loginfo("New global path published! Setting collision to False.")
+        self.collision_pub.publish(Bool(False))
+        self.rate_timeout.sleep()
 
     def run(self):
         rate = rospy.Rate(update_rate)
 
         while not rospy.is_shutdown():
-
             rate.sleep()
 
         rospy.spin()
+
+def lists_to_path(x_list, y_list):
+    # TODO: A bit unnecessary to go from path to list to path to list. Try
+    # fixing this in data.py or something.
+    path = Path()
+    path.header.stamp = rospy.Time.now()
+    path.header.frame_id = 'map'
+    path.poses = []
+    for i in range(len(x_list)):
+        curr_pose = PoseStamped()
+        curr_pose.header.frame_id = 'map'
+        curr_pose.pose.position.x = float(x_list[i])
+        curr_pose.pose.position.y = float(y_list[i])
+        path.poses.append(curr_pose)
+    return path
 
 if __name__ == '__main__':
     try:

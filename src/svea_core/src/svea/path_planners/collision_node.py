@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__author__ = "Team1"
-
 # Python standard library
 import numpy as np
 # ROS
 import rospy
-import message_filters
 
 # ROS messages
 from geometry_msgs.msg import Pose, PoseStamped
@@ -28,6 +25,12 @@ from matrix_astar3 import AStarPlanner
 import matplotlib.pyplot as plt
 from math import floor
 
+"""
+collision_node: Takes care off collision using A* and updates path
+"""
+
+__author__ = "Team1"
+
 ## COLLISION NODE PARAMS ######################################################
 update_rate = 2
 timeout_rate = 0.1
@@ -36,8 +39,8 @@ width = 635 #1269
 height = 284 #567
 resolution = 0.1
 
-shift_x = int(floor(30.549770/resolution))
-shift_y = int(floor(11.414917/resolution))
+shift_x = np.int16(30.549770/resolution)
+shift_y = np.int16(11.414917/resolution)
 
 oob_delimiter = max(width,height) + 1
 ###############################################################################
