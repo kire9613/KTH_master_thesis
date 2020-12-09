@@ -40,7 +40,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
             tn.has_initialized(),
             RSequence('Initialize', children=[
                 tn.next_waypoint_exists(),
-                tn.replan_path(),
+                tn.interpolate_to_next_waypoint(),
                 tn.set_initialized()
             ])
         ])
