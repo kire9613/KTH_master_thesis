@@ -33,6 +33,7 @@ class SVEAMPC(SVEAPurePursuit):
         self.controller = controller(vehicle_name,target_velocity,low_lim,dl)
         self.pid = pid(vehicle_name)
 
+        # self.update_traj_mpc(traj_x, traj_y)
         self.update_traj(traj_x, traj_y)
 
         # goto parameters
@@ -40,6 +41,20 @@ class SVEAMPC(SVEAPurePursuit):
         self.goto_thresh = 0.05 # m
 
     def update_traj(self, traj_x, traj_y):
+        """Update trajectory
+
+        :param traj_x: X coordinates of trajectory, defaults to []
+        :type traj_x: list
+        :param traj_y: Y coordinates of trajectory, defaults to []
+        :type traj_y: list
+        """
+
+        assert len(traj_x) == len(traj_y)
+        self.controller.traj_x = traj_x
+        self.controller.traj_y = traj_y
+        self.data_handler.update_traj(traj_x, traj_y)
+
+    def update_traj_mpc(self, traj_x, traj_y):
         """Update trajectory
 
         :param traj_x: X coordinates of trajectory, defaults to []

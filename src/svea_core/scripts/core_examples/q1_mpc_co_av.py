@@ -13,7 +13,7 @@ from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Path
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32MultiArray
 
 from svea.svea_managers.mpc_path_following_sveas import SVEAMPC
 from svea.controllers.mpc.mpc import MPC
@@ -68,6 +68,8 @@ default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 class Node:
     def __init__(self):
         rospy.init_node('floor2_mpc_co_av')
+        initial_traj_pub = rospy.Publisher('init_traj', Float32MultiArray, queue_size=1, latch=True)
+        initial_traj_pub.publish(Float32MultiArray(data=traj_x_init+traj_y_init)) # TODO: This assumes traj_x_init are python arrays
 
         # grab parameters from launch-file
         start_pt_param = rospy.search_param('start_pt')
@@ -88,8 +90,8 @@ class Node:
         self.run_lidar = rospy.get_param(run_lidar_param, True)
 
         #This subscriber and its callback function is the local planner
-        traj_upd_sub = rospy.Subscriber('/trajectory_updates', Path, self.callback_traj)
-        collision_sub = rospy.Subscriber('/collision', Bool, self.callback_collision)
+        traj_upd_sub = rospy.Subscriber('trajectory_updates', Path, self.callback_traj)
+        collision_sub = rospy.Subscriber('collision', Bool, self.callback_collision)
         self.coll_t = None
         # select data handler based on the ros params
         if self.use_rviz:
@@ -114,7 +116,9 @@ class Node:
     def callback_traj(self,path):
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
-        self.svea.update_traj(self.traj_x, self.traj_y)
+        # self.svea.update_traj(self.traj_x, self.traj_y)
+        # if MPC.. this calculates speed profile etc.
+        self.svea.update_traj_mpc(self.traj_x, self.traj_y)
 
     def callback_collision(self, data):
         # print(data.data)
@@ -137,6 +141,7 @@ class Node:
         xlb = [-np.inf]*3+[-1]
         xub = [ np.inf]*3+[3.6]
 
+        # To use this again, switch from update_traj to update_traj_mpc
         self.svea.controller.build_solver(
             dt,
             Q=params.Q,
@@ -153,6 +158,8 @@ class Node:
             TAU = params.TAU,
             N_IND_SEARCH = params.N_IND_SEARCH,
         )
+        self.svea.update_traj_mpc(self.traj_x, self.traj_y)
+        # self.svea.update_traj(self.traj_x, self.traj_y)
         self.svea.start(wait=True)
 
         track = Track(vehicle_name, publish_track=True)
@@ -188,7 +195,7 @@ class Node:
                 # steering,_  = self.svea.compute_pid_control()
                 self.svea.send_control(0, 0)
             else:
-                steering, velocity = self.svea.compute_control()
+                steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data
