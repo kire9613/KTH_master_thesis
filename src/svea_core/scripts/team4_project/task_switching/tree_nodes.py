@@ -402,6 +402,8 @@ class adjust_replan_speed(pt.behaviour.Behaviour):
     def update(self):
         distance = np.linalg.norm(self.position - collision_point)
         speed = max(0, min(self.MAX_SPEED, self.K*(distance-self.MIN_DISTANCE)))
+        if speed <= 0.2:
+            speed = 0
         self.speed_pub.publish(speed)
         return pt.common.Status.SUCCESS
 
