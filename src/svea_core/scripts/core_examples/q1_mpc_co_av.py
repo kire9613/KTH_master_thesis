@@ -188,7 +188,7 @@ class Node:
                 # steering,_  = self.svea.compute_pid_control()
                 self.svea.send_control(0, 0)
             else:
-                steering, velocity = self.svea.compute_control()
+                steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data
