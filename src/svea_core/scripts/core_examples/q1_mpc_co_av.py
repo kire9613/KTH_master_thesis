@@ -122,9 +122,9 @@ class Node:
     def callback_traj(self,path):
         self.traj_x = [i.pose.position.x for i in path.poses]
         self.traj_y = [i.pose.position.y for i in path.poses]
-        # self.svea.update_traj(self.traj_x, self.traj_y)
+        self.svea.update_traj(self.traj_x, self.traj_y)
         # if MPC.. this calculates speed profile etc.
-        self.svea.update_traj_mpc(self.traj_x, self.traj_y)
+        # self.svea.update_traj_mpc(self.traj_x, self.traj_y)
 
     def callback_collision(self, data):
         # print(data.data)
@@ -164,8 +164,8 @@ class Node:
             TAU = params.TAU,
             N_IND_SEARCH = params.N_IND_SEARCH,
         )
-        self.svea.update_traj_mpc(self.traj_x, self.traj_y)
-        # self.svea.update_traj(self.traj_x, self.traj_y)
+        # self.svea.update_traj_mpc(self.traj_x, self.traj_y)
+        self.svea.update_traj(self.traj_x, self.traj_y)
         self.svea.start(wait=True)
 
         track = Track(vehicle_name, publish_track=True)
@@ -202,8 +202,8 @@ class Node:
                 # steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(0, 0)
             else:
-                steering, velocity = self.svea.compute_control()
-                # steering, velocity = self.svea.compute_pid_control()
+                # steering, velocity = self.svea.compute_control()
+                steering, velocity = self.svea.compute_pid_control()
                 self.svea.send_control(steering, velocity)
 
             # visualize data
