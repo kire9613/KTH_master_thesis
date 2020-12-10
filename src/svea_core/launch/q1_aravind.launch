@@ -22,7 +22,7 @@
     <rosparam command="load" file="$(find svea_core)/resources/params/race_track.yaml" />
 
     <group>
-        <machine name="svea1.local" user="nvidia" env-loader="$(find svea_core)/resources/env.sh" default="true" />
+    <machine name="svea1" address="svea1.local" user="nvidia" env-loader="$(find svea_core)/resources/env.sh" default="true" />
     <include file="$(find svea_sensors)/launch/localize.launch">
         <arg name="use_rs" value="true"/>
         <arg name="file_name" value="$(arg map_file)"/>
