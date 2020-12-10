@@ -8,7 +8,7 @@ from svea_msgs.msg import CoordinateArray
 from svea_msgs.srv import ControlMessage
 from svea_msgs.srv import ControlMessageResponse
 from svea_msgs.msg import next_traj
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 
 '''
 Node with PID controller with pure pursuit. 
@@ -33,19 +33,22 @@ class Controller:
         #Makes the nested lists into a one dimensional array.
         self.traj_x = [val for sublist in traj_x for val in sublist]
         self.traj_y = [val for sublist in traj_y for val in sublist]
-        self.publisher = rospy.Publisher('/ControlMessage', ControlMessageResponse, queue_size=2)
-        self.target_publisher = rospy.Publisher('/TargetPoint', next_traj, queue_size=2)
+        self.publisher = rospy.Publisher('/ControlMessage', ControlMessageResponse, queue_size=1)
+        self.target_publisher = rospy.Publisher('/TargetPoint', next_traj, queue_size=1)
+        self.control_publisher = rospy.Publisher('/Debugging/ControlSignal', Float32, queue_size=1)
+        self.error_publisher = rospy.Publisher('/Debugging/ErrorSignal', Float32, queue_size=1)
+        self.error_sum_publisher = rospy.Publisher('/Debugging/ErrorSumSignal', Float32, queue_size=1)
         #Controller vars for PID
         self.errors = []
         self.errors_for_I = []
         self.target_velocity = 1.0 #1.0
-        self.K_p = 1.0
+        self.K_p = 1
         self.K_i = 0.1
-        self.K_d = 0
+        self.K_d = 0.01
         self.last_time = rospy.get_time()
         self.Lfc = 0.4
         self.L = 0.324
-        self.k = 0.3
+        self.k = 0.8
 
     
     def set_state(self, state_msg):
@@ -58,41 +61,57 @@ class Controller:
         self.traj_x = trajectory_msg.x_coordinates
         self.traj_y = trajectory_msg.y_coordinates
         
-    '''def update_lookahead(self, msg):
+    def using_astar(self, msg):
         if msg.data == True:
-            self.k = 0.1
-            self.errors_for_I = []
+            self.target_velocity = 0.6
+            self.k = 0.004
         else:
-            self.k = 0.6
-    '''
+            self.target_velocity = 1.0
+            self.k = 0.8
+    
     
     def getPIDSpeed(self):
         test = False
         if test:
             return 1
         
-        self.errors.append(self.target_velocity-self.state.v)
+        
+        if not self.state.v < 0.1:
+            self.errors.append(self.target_velocity-self.state.v)
+        else:
+            self.errors.append(0)
 
         P = self.K_p*(self.errors[-1])
 
-        if abs(self.errors[-1]) < self.target_velocity*0.4:
-            self.errors_for_I.append(self.errors[-1])
-            I = self.K_i*(sum(self.errors_for_I))
+        if len(self.errors)>1:
+            I = self.K_i*(sum(self.errors))
         else:
-            self.errors_for_I = []
-            I = 0.4
+            I = 0
+
+        #else:
+        #    I = 0.6
 
         newtime = rospy.get_time()
         dt = newtime - self.last_time
         self.last_time = newtime
         if len(self.errors)>1:
             D = self.K_d*(self.errors[-1]-self.errors[-2])/dt
+            #if self.errors[-1]*self.errors[-2]<0:
+            #    self.errors = []
         else:
             D = 0
         
-        PID = P+I+D
+        if len(self.errors)>100:
+            self.errors = self.errors[-100:-1]
+        
+        if np.abs(self.state.v) < 0.1:
+            PID = 0.4
+        else:
+            PID = P+I+D
+        self.control_publisher.publish(PID)
+        self.error_publisher.publish(self.errors[-1])
+        self.error_sum_publisher.publish(sum(self.errors)/len(self.errors))
         maxinput = 4
-        # print(max(0, min(maxinput, PID)))
         return max(0, min(maxinput, PID))
 
 
@@ -166,9 +185,9 @@ if __name__ == '__main__':
                      VehicleState,
                      controller.set_state)
                      
-    #rospy.Subscriber('/using_astar',
-    #                 Bool,
-    #                 controller.update_lookahead)
+    rospy.Subscriber('/using_astar',
+                     Bool,
+                     controller.using_astar)
 
     rospy.loginfo('Speed and Steering Node Initialized')
 

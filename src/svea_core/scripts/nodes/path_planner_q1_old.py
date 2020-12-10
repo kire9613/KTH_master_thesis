@@ -9,6 +9,7 @@ from svea.path_planners.path_requester import PathRequester
 from svea_msgs.msg import VehicleState
 from svea_msgs.msg import lli_ctrl
 from std_msgs.msg import Bool
+from svea_msgs.msg import emergency_break
 #from geometry_msgs.PoseWithCovarianceStamped import
 #import matplotlib.pyplot as plt
 
@@ -37,7 +38,7 @@ class Path_logic():
         self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=1)
         self.look_ahead = 25 #60 # how many pixels forward the path should be estimated 
         self.threshold_distance = 10 #15 trigger A* when distance to obstacle is less than a threshold
-        self.threshold_wait = 1 #7 wait until car turns around obstacle and check if new obstacles are hidden
+        self.threshold_wait = 5 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
         self.current_path = next_traj()
@@ -52,6 +53,7 @@ class Path_logic():
         self.current_y=[]
         self.remote_overwrite = False
         self.using_astar_publisher = rospy.Publisher('/using_astar', Bool, queue_size = 1)
+        
         
     def remote_control(self,msg):
         control = msg.ctrl        
@@ -117,10 +119,10 @@ class Path_logic():
                 print("New obstacle observed. Calculating new path...")
                 new_path = path_requester.estimate_path([self.current_x, self.current_y],[target_x,target_y], map.data, width, height)
                            
-                
+
                 if new_path == None:
-                    slow_down_msg.slow_down = False
-                    self.pub.publish(slow_down_msg)
+                    #slow_down_msg.slow_down = False
+                    #self.pub.publish(slow_down_msg)
                     break
                 print("New path has been calculated")   
                 self.A_star_activated = True
@@ -222,7 +224,11 @@ class Path_logic():
                 self.sent = False
 
         self.update_to_next_path()
-    
+        
+    def path_logic.reset_sent(self,msg):
+        flag = msg.emergency_break
+        if self.sent and flag:
+            self.sent = False
 
     def update_to_next_path(self):
         
@@ -271,5 +277,10 @@ if __name__ == '__main__':
     rospy.Subscriber('/SVEA/state',
                      VehicleState,
                      path_logic.current_position_callback, queue_size = 1)
+                     
+    rospy.Subscriber('emergency_break',
+                     emergency_break,
+                     path_logic.reset_sent)
+                    
 
     rospy.spin()

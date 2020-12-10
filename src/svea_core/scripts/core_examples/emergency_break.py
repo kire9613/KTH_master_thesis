@@ -11,14 +11,16 @@ def callback(msg):
     angles=[-15,-10,-5,0,5,10,15] #Angles to check Lidar range
     emergency_break_msg.emergency_break = False
     coefficient = msg.angle_increment*(180/math.pi)
+    pub = rospy.Publisher('emergency_break', emergency_break, queue_size=10)
     
     for ang in angles:
         ang_index=int(540+round(ang/coefficient))
         #print(msg.ranges[ang_index])
         if msg.ranges[ang_index] < 0.3:
             emergency_break_msg.emergency_break = True
-            print("Emergency break")
-    pub = rospy.Publisher('emergency_break', emergency_break, queue_size=10)
+            
+    if emergency_break_msg.emergency_break:
+        print("Emergency break")
     pub.publish(emergency_break_msg)
 
 if __name__ == '__main__':

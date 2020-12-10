@@ -133,7 +133,7 @@ def astar(ocupancy_grid, start, end):
                     path.append(checkPoint.position)
             path.append(current.position)
             
-            #path = relevant_pix(path, ocupancy_grid)
+            path = relevant_pix(path, ocupancy_grid)
 
             return np.array(path[::-1]) # Return reversed path
 
@@ -174,7 +174,7 @@ def astar(ocupancy_grid, start, end):
             # Add the child to the open list
             open_list.append(child)
             
-"""def relevant_pix(path, grid):
+def relevant_pix(path, grid):
     new_path = []
     new_path.append(path[0])
     for element in range(1,len(path)-1):
@@ -186,7 +186,7 @@ def astar(ocupancy_grid, start, end):
         elif grid[x + 1,y +1] or grid[x - 1,y + 1] or grid[x - 1,y - 1] or grid[x + 1,y - 1] > 100:
             new_path.append(path[element])
     new_path.append(path[-1])
-    return new_path"""
+    return new_path
 
 """def iterate_path(path_points):
     connected_path = []
