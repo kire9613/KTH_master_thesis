@@ -45,34 +45,38 @@ class BehaviourTree(pt.trees.BehaviourTree):
             ])
         ])
 
-        timeout = RSequence('Plannin timeout', children=[
+        timeout = RSequence('Planning timeout', children=[
             tn.planning_timed_out(),
             tn.move_waypoint(),
             tn.reset_planning_timeout()
         ])
 
-        collision = RSequence("Collision", children=[
-            tn.obstacle_detected(),
-            tn.adjust_replan_speed(),
+
+        set_speed_and_replan = RSequence("Driving", children=[
+            pt.composites.Selector('Adjust speed?', children=[
+                RSequence("Collision?", children=[
+                    tn.obstacle_detected(),
+                    tn.adjust_replan_speed()
+                ]),
+                RSequence("Drive", children=[
+                    tn.set_speed(tn.TARGET_VELOCITY),
+                ])
+            ]),
             tn.replan_path()
         ])
 
-        following = pt.composites.Selector("Path planning", children=[
-            RSequence("Reached waypoint?", children=[
-                tn.is_at_waypoint(),
-                tn.update_waypoint(),
-                tn.interpolate_to_next_waypoint()
-            ]),
-            RSequence("Drive", children=[
-                tn.set_speed(tn.TARGET_VELOCITY),
-                tn.replan_path()
-            ])
-        ])
-
-        check_at_goal = RSequence("Is at goal?", children=[
+        waypoint_checker = RSequence("Is at waypoint?", children=[
             tn.is_at_waypoint(),
-            tn.is_last_waypoint(),
-            tn.set_speed(0)
+            pt.composites.Selector("Goal or update?", children=[
+                RSequence("Is at goal?", children=[
+                    tn.is_last_waypoint(),
+                    tn.set_speed(0)
+                ]),
+                RSequence("Update waypoint", children=[
+                    tn.update_waypoint(),
+                    tn.interpolate_to_next_waypoint()
+                ])
+            ])
         ])
 
         localization = RSequence("Reset localization", children=[
@@ -88,10 +92,9 @@ class BehaviourTree(pt.trees.BehaviourTree):
                     tn.set_speed(0)
                 ]),
                 localization,
-                check_at_goal,
+                waypoint_checker,
                 timeout,
-                collision,
-                following
+                set_speed_and_replan
             ])
         ])
 
@@ -112,7 +115,7 @@ def main():
     # Nodes to wait for before startup
     nodes_wait = ['mapping']
     for node in nodes_wait:
-        rospy.loginfo('Waitig for node %s...' % node)
+        rospy.loginfo('Waiting for node %s...' % node)
         while not rospy.wait_for_message('/node_started/' + node, Bool).data:
             rospy.sleep(0.1)
 
