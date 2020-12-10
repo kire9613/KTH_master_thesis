@@ -25,7 +25,10 @@ bool operator==(const Node &n1, const Node &n2) {
 // http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#S7
 // L_\inf norm (diagonal distance)
 float linf_norm(int i0, int j0, int i1, int j1) {
-  return std::max(std::abs(i0 - i1), std::abs(j0 - j1));
+  /* return std::max(std::abs(i0 - i1), std::abs(j0 - j1)); */
+  /* TODO: l2_norm should be better, but is TOO optimal */
+  /* this is now l2_norm !! */
+  return std::pow(i0 - i1,2.) + std::pow(j0 - j1,2.);
 }
 
 // L_1 norm (manhattan distance)

@@ -175,8 +175,8 @@ class Node:
 
         map_slice = None
 
-        plan_width = 1.5*self.map.width
-        plan_height = 1.5*self.map.height
+        plan_width = 1.8*self.map.width
+        plan_height = 1.8*self.map.height
 
         # matr = self.map_matrix*self.path_lookup
 
@@ -318,7 +318,7 @@ class Node:
         self.solution_pub.publish(new_path)
         rospy.loginfo("New global path published! Setting collision to False.")
         self.collision_pub.publish(Bool(False))
-        self.rate.sleep()
+        # self.rate.sleep()
 
     def run(self):
         rate = rospy.Rate(update_rate)
