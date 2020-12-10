@@ -11,6 +11,7 @@ from map_msgs.msg import OccupancyGridUpdate
 from grid_map import GridMap
 import matplotlib.pyplot as plt
 from copy import deepcopy
+import rospy
 
 class Mapping:
     """
@@ -181,7 +182,7 @@ class Mapping:
                             y_index_list.append(cell[1])
 
                     obs_ind_list.append((x_index_e,y_index_e))
-                else: 
+                elif range < scan.range_max: 
                     # coordinates in scan frame
                     x_scan_p = scan.range_max/2 * cos(angle) + 0.282
                     y_scan_p = scan.range_max/2 * sin(angle)
