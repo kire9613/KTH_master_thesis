@@ -94,7 +94,7 @@ class is_last_waypoint(pt.behaviour.Behaviour):
 
     def update(self):
         # The car has reached the waypoint if it is within 5dm
-        if np.all(waypoints[-1] == waypoints[current_waypoint]):
+        if current_waypoint == len(waypoints)-1:
             return pt.common.Status.SUCCESS
         else:
             return pt.common.Status.FAILURE
