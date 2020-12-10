@@ -8,8 +8,9 @@
     <arg name="use_matplotlib" default="false"/>
     <arg name="is_sim" default="false"/>
     <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" /> -->
-    <arg name="map_file" default="$(find svea_core)/resources/maps/q1rescaled.yaml" />
+    <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/q1rescaled.yaml" /> -->
     <!-- <arg name="map_file" default="$(find svea_core)/resources/maps/q1_track.yaml" /> -->
+    <arg name="map_file" default="$(find svea_core)/resources/maps/empty.yaml" />
     <arg name="run_lidar" default="true"/>
     <arg name="use_mpc" default="true"/>
 
@@ -68,10 +69,15 @@
     <!--   <remap from="voxel_grid" to="costmap/voxel_grid"/> -->
     <!-- </node> -->
 
+    <remap from="map" to="empty_map"/>
+    <arg name="empty_map_file" default="$(find svea_core)/resources/maps/empty.yaml" />
+    <node pkg="map_server" type="map_server" name="empty_map_server" output="screen" args="$(arg empty_map_file)" />
+
     <!-- Run the costmap node -->
     <node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" >
-      <rosparam file="$(find svea_core)/launch/costmap_params.yaml" command="load" ns="costmap" />
+      <rosparam file="$(find svea_core)/launch/costmap_params_sim.yaml" command="load" ns="costmap" />
     </node>
+    <remap from="empty_map" to="map"/>
 
     <node pkg="svea_core" type="map_collision_node.py" name="explore_node" output="screen" />
     <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
