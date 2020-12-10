@@ -32,11 +32,11 @@ class Path_logic():
         self.traj_y = [val for sublist in traj_y for val in sublist]
          
 
-        self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 10)
-        self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=10)
+        self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 1)
+        self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=1)
         self.look_ahead = 60 #60 # how many pixels forward the path should be estimated 
-        self.threshold_distance = 15 #15 trigger A* when distance to obstacle is less than a threshold
-        self.threshold_wait = 1 #7 wait until car turns around obstacle and check if new obstacles are hidden
+        self.threshold_distance = 13 #15 trigger A* when distance to obstacle is less than a threshold
+        self.threshold_wait = 5 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
         self.current_path = next_traj()
@@ -50,7 +50,7 @@ class Path_logic():
         self.current_x=[]
         self.current_y=[]
         self.remote_overwrite = False
-        self.using_astar_publisher = rospy.Publisher('/using_astar', Bool, queue_size = 10)
+        self.using_astar_publisher = rospy.Publisher('/using_astar', Bool, queue_size = 1)
         
     def remote_control(self,msg):
         control = msg.ctrl        
@@ -115,7 +115,7 @@ class Path_logic():
                     target_x, target_y = self.get_target_ind(x_path, y_path, origin_x, origin_y, resolution)  
                 
                 # Find a new path and publish it                     
-                print("New obstacle observed. Calculating new path...")      
+                print("New obstacle observed. Calculating new path...")
                 new_path = path_requester.estimate_path([self.current_x, self.current_y],[target_x,target_y], map.data, width, height)
                 print("New path has been calculated")
     
@@ -226,7 +226,7 @@ class Path_logic():
     def update_to_next_path(self):
         
         if self.A_star_activated:
-            #self.using_astar_publisher.publish(True)
+            self.using_astar_publisher.publish(True)
             print("A* path is published")
             self.path_publisher(self.current_path)
             self.sent = True
@@ -234,7 +234,7 @@ class Path_logic():
             self.A_star_path_done = False
             
         if not self.A_star_activated and self.A_star_path_done:
-            #self.using_astar_publisher.publish(False)
+            self.using_astar_publisher.publish(False)
             #print("Regular path published")
             self.current_path.x_coordinates = self.traj_x
             self.current_path.y_coordinates = self.traj_y
@@ -257,18 +257,18 @@ if __name__ == '__main__':
     
     rospy.Subscriber('/lli/remote',
                      lli_ctrl,
-                     path_logic.remote_control)
+                     path_logic.remote_control, queue_size = 1)
 
     rospy.Subscriber('/inflated_map',
                      OccupancyGrid,
-                     path_logic.get_inflated_map)                                                         
+                     path_logic.get_inflated_map, queue_size = 1, buff_size = 2**28)
 
     rospy.Subscriber('/state',
                      VehicleState,
-                     path_logic.current_position_callback)
+                     path_logic.current_position_callback, queue_size = 1)
 
     rospy.Subscriber('/SVEA/state',
                      VehicleState,
-                     path_logic.current_position_callback)
+                     path_logic.current_position_callback, queue_size = 1)
 
     rospy.spin()

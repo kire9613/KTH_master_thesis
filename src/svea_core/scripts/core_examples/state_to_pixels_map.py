@@ -19,8 +19,8 @@ scans_per_rotation = 1081 #135 for scan in sim, 1081 in real
 class Map_to_Pixels():
     def __init__(self):
         self.flag = False
-        self.min_angle = np.deg2rad(-35)
-        self.max_angle = np.deg2rad(35)
+        self.min_angle = np.deg2rad(-90)
+        self.max_angle = np.deg2rad(90)
         self.xs = []
         self.ys = []
         
@@ -37,10 +37,10 @@ class Map_to_Pixels():
     def fromStateToPixelCoordinates(self,msg):
         #print("Length of scans: ", len(msg.ranges))
         map_pixel_points = map_pixel_coordinates()
-        pub = rospy.Publisher('pixel_coordinates', map_pixel_coordinates, queue_size=10)
+        pub = rospy.Publisher('pixel_coordinates', map_pixel_coordinates, queue_size=1)
         zero_angle_ind = np.ceil(scans_per_rotation/2)
         coefficient = msg.angle_increment
-        angle_increment = msg.angle_increment * 8
+        angle_increment = msg.angle_increment * 2
         #print(self.min_angle)
         #print(self.max_angle)
         #print(msg.angle_increment)

@@ -37,8 +37,8 @@ class Path_logic():
         self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 10)
         self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=10)
         self.look_ahead = 60 #60 # how many pixels forward the path should be estimated 
-        self.threshold_distance = 20 #15 trigger A* when distance to obstacle is less than a threshold
-        self.threshold_wait = 1 #7 wait until car turns around obstacle and check if new obstacles are hidden
+        self.threshold_distance = 15 #15 trigger A* when distance to obstacle is less than a threshold
+        self.threshold_wait = 10 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
         self.current_path = next_traj()
@@ -129,7 +129,7 @@ class Path_logic():
                 
                 traj_x = []
                 traj_y = []
-                #plot estimated path
+                
                 for i in range(len(new_path.estimated_path_x)-1):
                     traj_x.append(np.linspace(new_path.estimated_path_x[i], new_path.estimated_path_x[i+1]).tolist())
                     traj_y.append(np.linspace(new_path.estimated_path_y[i], new_path.estimated_path_y[i+1]).tolist())
