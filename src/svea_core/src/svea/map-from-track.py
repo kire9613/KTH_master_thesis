@@ -95,6 +95,9 @@ bresenham.bres_segments_count(gen_in,in_matrix,_)
 bresenham.bres_segments_count(gen_out,out_matrix,_)
 track_matrix = (in_matrix + out_matrix)*100
 
+np.savetxt('track_matrix.txt', track_matrix, fmt='%d')
+
+
 # plt.imshow(track_matrix.T,origin="lower")
 # plt.show()
 

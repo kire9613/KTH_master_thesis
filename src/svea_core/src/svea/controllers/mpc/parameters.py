@@ -43,7 +43,7 @@ parameters = {
         low_lim = 1.0,
     ),
     "ZOH-good": Params(
-        P=np.diag([20, 20, 0.01, 500]),
+        P=np.diag([25, 25, 0.01, 500]),
         Q=np.diag([1, 1, 1e-12, 1000]),
         R=np.diag([1,1]),
         model_type = "linear",

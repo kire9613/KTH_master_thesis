@@ -11,6 +11,7 @@ from __future__ import division
 
 import rospy
 import numpy as np
+import os
 
 import rospy
 
@@ -56,6 +57,9 @@ collision_distance = 4
 # collision_distance = 5
 # timeout_rate = 1.0
 ###############################################################################
+dirname = os.path.dirname(__file__)
+filename = os.path.join(dirname, 'track_matrix.txt')
+track_matrix = np.loadtxt(filename, dtype=np.int32)
 
 class Node:
     """
@@ -223,6 +227,8 @@ class Node:
             final_height = ymax - ymin - 1
 
             map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
+            track_matr = track_matrix[xmin:xmax - 1, ymin:ymax - 1]
+            map_matr += track_matr
 
             rospy.loginfo("Intersected path found!")
 
