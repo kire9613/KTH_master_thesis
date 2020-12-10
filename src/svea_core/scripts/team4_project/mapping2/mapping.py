@@ -152,34 +152,61 @@ class Mapping:
         while scan_index < num_measures:
             # angle
             range = scan.ranges[scan_index]
-            if range > scan.range_min and range < scan.range_max/2 and angle < pi/2 and angle > -pi/2:
-                # coordinates in scan frame
-                x_scan_p = range * cos(angle) + 0.282
-                y_scan_p = range * sin(angle)
+            if range > scan.range_min and angle < pi/2 and angle > -pi/2:
+                if range < scan.range_max/2:
+                    # coordinates in scan frame
+                    x_scan_p = range * cos(angle) + 0.282
+                    y_scan_p = range * sin(angle)
 
-                # rotational transformation of scan coordinates
-                x_scan = x_scan_p * cos(robot_yaw) - y_scan_p * sin(robot_yaw)
-                y_scan = x_scan_p * sin(robot_yaw) + y_scan_p * cos(robot_yaw)
+                    # rotational transformation of scan coordinates
+                    x_scan = x_scan_p * cos(robot_yaw) - y_scan_p * sin(robot_yaw)
+                    y_scan = x_scan_p * sin(robot_yaw) + y_scan_p * cos(robot_yaw)
 
-                # translational transformation of scan coordinates
-                x_scan_world = robot_x + x_scan
-                y_scan_world = robot_y + y_scan
+                    # translational transformation of scan coordinates
+                    x_scan_world = robot_x + x_scan
+                    y_scan_world = robot_y + y_scan
 
-                x_scan_map = x_scan_world - origin_x
-                y_scan_map = y_scan_world - origin_y
-                x_index_e = int(x_scan_map/resolution)
-                y_index_e = int(y_scan_map/resolution)
+                    x_scan_map = x_scan_world - origin_x
+                    y_scan_map = y_scan_world - origin_y
+                    x_index_e = int(x_scan_map/resolution)
+                    y_index_e = int(y_scan_map/resolution)
 
-                # Update free cells in map
-                free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
-                for cell in free_cells:
-                    if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
-                         self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
-                         self.add_to_map(imap, cell[0], cell[1], self.free_space, map_info)
-                         x_index_list.append(cell[0])
-                         y_index_list.append(cell[1])
+                    # Update free cells in map
+                    free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
+                    for cell in free_cells:
+                        if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
+                            self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
+                            self.add_to_map(imap, cell[0], cell[1], self.free_space, map_info)
+                            x_index_list.append(cell[0])
+                            y_index_list.append(cell[1])
 
-                obs_ind_list.append((x_index_e,y_index_e))
+                    obs_ind_list.append((x_index_e,y_index_e))
+                else: 
+                    # coordinates in scan frame
+                    x_scan_p = scan.range_max/2 * cos(angle) + 0.282
+                    y_scan_p = scan.range_max/2 * sin(angle)
+
+                    # rotational transformation of scan coordinates
+                    x_scan = x_scan_p * cos(robot_yaw) - y_scan_p * sin(robot_yaw)
+                    y_scan = x_scan_p * sin(robot_yaw) + y_scan_p * cos(robot_yaw)
+
+                    # translational transformation of scan coordinates
+                    x_scan_world = robot_x + x_scan
+                    y_scan_world = robot_y + y_scan
+
+                    x_scan_map = x_scan_world - origin_x
+                    y_scan_map = y_scan_world - origin_y
+                    x_index_e = int(x_scan_map/resolution)
+                    y_index_e = int(y_scan_map/resolution)
+
+                    # Update free cells in map
+                    free_cells = self.raytrace((x_index_s,y_index_s), (x_index_e,y_index_e))
+                    for cell in free_cells:
+                        if self.is_in_bounds(grid_map, cell[0],cell[1], map_info):
+                            self.add_to_map(grid_map, cell[0], cell[1], self.free_space, map_info)
+                            self.add_to_map(imap, cell[0], cell[1], self.free_space, map_info)
+                            x_index_list.append(cell[0])
+                            y_index_list.append(cell[1])
 
             angle += scan.angle_increment
             scan_index += 1
