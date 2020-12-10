@@ -51,17 +51,14 @@ class BehaviourTree(pt.trees.BehaviourTree):
             tn.reset_planning_timeout()
         ])
 
+        collision_detected = RSequence("Collision", children=[
+            tn.obstacle_detected(),
+            tn.adjust_replan_speed(),
+            tn.replan_path()
+        ])
 
         set_speed_and_replan = RSequence("Driving", children=[
-            pt.composites.Selector('Adjust speed?', children=[
-                RSequence("Collision?", children=[
-                    tn.obstacle_detected(),
-                    tn.adjust_replan_speed()
-                ]),
-                RSequence("Drive", children=[
-                    tn.set_speed(tn.TARGET_VELOCITY),
-                ])
-            ]),
+            tn.set_speed(tn.TARGET_VELOCITY),
             tn.replan_path()
         ])
 
@@ -94,6 +91,7 @@ class BehaviourTree(pt.trees.BehaviourTree):
                 localization,
                 waypoint_checker,
                 timeout,
+                collision_detected,
                 set_speed_and_replan
             ])
         ])
