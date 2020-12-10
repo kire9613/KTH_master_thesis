@@ -238,10 +238,10 @@ class Node:
             map_matr[start_x - xmin, start_y - ymin] = -np.int16(1)
             map_matr[goal_x - xmin, goal_y - ymin] = -np.int16(2)
 
-            fig, ax1 = plt.subplots(1)
-            pos = ax1.imshow(map_matr.T,origin="lower")
-            fig.colorbar(pos, ax=ax1)
-            plt.show()
+            # fig, ax1 = plt.subplots(1)
+            # pos = ax1.imshow(map_matr.T,origin="lower")
+            # fig.colorbar(pos, ax=ax1)
+            # plt.show()
 
             map_slice = OccupancyGridUpdate()
             map_slice.header.stamp = rospy.Time.now()
