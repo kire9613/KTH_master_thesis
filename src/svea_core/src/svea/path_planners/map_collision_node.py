@@ -59,7 +59,7 @@ collision_distance = 4
 ###############################################################################
 dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, 'track_matrix.txt')
-track_matrix = np.loadtxt(filename, dtype=np.int32)
+track_matrix = np.loadtxt(filename, dtype=np.int16)
 
 class Node:
     """
@@ -119,7 +119,7 @@ class Node:
         self.oob_delimiter = max(self.global_width,self.global_height) + 1
         self.map_frame_id = 'map'
 
-        self.map_matrix = np.full((self.global_width, self.global_height), np.int8(50), dtype=np.int8)
+        self.map_matrix = np.full((self.global_width, self.global_height), np.int16(50), dtype=np.int16)
         self.path_lookup = np.zeros((self.global_width,self.global_height), dtype=np.int32)
         self.index_lookup = np.zeros((self.global_width,self.global_height), dtype=np.int32)
 
@@ -228,15 +228,20 @@ class Node:
 
             map_matr = self.map_matrix[xmin:xmax - 1, ymin:ymax - 1]
             track_matr = track_matrix[xmin:xmax - 1, ymin:ymax - 1]
-            map_matr += track_matr
+            map_matr = np.clip(track_matr+map_matr,None,100)
 
             rospy.loginfo("Intersected path found!")
 
             # print(start_x,goal_x,xmin,xmax)
             # print(start_y,goal_y,ymin,ymax)
 
-            map_matr[start_x - xmin, start_y - ymin] = -np.int8(1)
-            map_matr[goal_x - xmin, goal_y - ymin] = -np.int8(2)
+            map_matr[start_x - xmin, start_y - ymin] = -np.int16(1)
+            map_matr[goal_x - xmin, goal_y - ymin] = -np.int16(2)
+
+            fig, ax1 = plt.subplots(1)
+            pos = ax1.imshow(map_matr.T,origin="lower")
+            fig.colorbar(pos, ax=ax1)
+            plt.show()
 
             map_slice = OccupancyGridUpdate()
             map_slice.header.stamp = rospy.Time.now()
@@ -271,8 +276,8 @@ class Node:
         problem_matr = np.array(problem_map.data,dtype=np.float32).reshape(problem_map.width, problem_map.height,order="F") # TODO: Not sure about order here
         # plt.imshow(problem_matr.T,origin="lower")
         # plt.show()
-        sx,sy = np.where(problem_matr==-np.int8(1))
-        gx,gy = np.where(problem_matr==-np.int8(2))
+        sx,sy = np.where(problem_matr==-np.int16(1))
+        gx,gy = np.where(problem_matr==-np.int16(2))
         sx,sy = sx[0], sy[0]
         gx,gy = gx[0], gy[0]
         problem_matr[sx,sy] += 1
