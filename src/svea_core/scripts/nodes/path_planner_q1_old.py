@@ -127,7 +127,11 @@ class Path_logic():
                 print("New path has been calculated")   
                 self.A_star_activated = True
                 
+<<<<<<< HEAD
                 """traj_x = []
+=======
+                traj_x = []
+>>>>>>> 62240e9cb4f0f80eb6c73fc9a784da636474c3e0
                 traj_y = []
                 #plot estimated path
                 for i in range(len(new_path.estimated_path_x)-1):
@@ -135,7 +139,11 @@ class Path_logic():
                     traj_y.append(np.linspace(new_path.estimated_path_y[i], new_path.estimated_path_y[i+1]).tolist())
                 # #Makes the nested lists into a one dimensional array.
                 new_path.estimated_path_x = [val for sublist in traj_x for val in sublist]
+<<<<<<< HEAD
                 new_path.estimated_path_y = [val for sublist in traj_y for val in sublist]"""
+=======
+                new_path.estimated_path_y = [val for sublist in traj_y for val in sublist]
+>>>>>>> 62240e9cb4f0f80eb6c73fc9a784da636474c3e0
 
                                       
 

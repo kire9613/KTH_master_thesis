@@ -64,7 +64,11 @@ class Controller:
     def using_astar(self, msg):
         if msg.data == True:
             self.target_velocity = 0.6
+<<<<<<< HEAD
             self.k = 0.005
+=======
+            self.k = 0.004
+>>>>>>> 62240e9cb4f0f80eb6c73fc9a784da636474c3e0
         else:
             self.target_velocity = 1.0
             self.k = 0.8
