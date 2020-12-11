@@ -6,18 +6,16 @@ import time
 from nav_msgs.msg import OccupancyGrid
 from svea_msgs.msg import next_traj
 from svea.path_planners.path_requester import PathRequester
-from svea_msgs.msg import VehicleState
-from svea_msgs.msg import lli_ctrl
+from svea_msgs.msg import VehicleState, lli_ctrl, next_traj
 from std_msgs.msg import Bool
-#from geometry_msgs.PoseWithCovarianceStamped import
 #import matplotlib.pyplot as plt
 
 from svea_msgs.msg import slow_down
 
 number_of_laps = 2
 
-xs = [0.0, 1.4, 4.1, 6.48,  8.9, 18.1, 19.5, 18.6, 6.9, 4.8, 2.7, 1.0, -13.1, -13.7, -14.1, -13.5, -8.2, -7.4, -6.22, -4.6, 0.0]
-ys = [0.0, 0.0, 2.0, 1.98, -0.01, -1.2, 1.1,   3.5, 4.8, 6.8, 7.2, 5.2,  5.65,   4.9,  1.9,  1.1,   0.7,  3.14,  3.26,  0.8, 0.0]
+xs = [0.0, 1.4, 4.1, 6.4,  8.8, 18.1, 19.5, 18.6, 6.9, 4.8, 2.7, 1.0, -13.1, -13.9, -14.1, -13.5, -8.2, -7.3, -6.5, -4.6, 0.0]
+ys = [0.0, 0.0, 2.0, 1.7, -0.3, -1.2, 1.1,   3.5, 4.8, 6.8, 7.2, 5.2,  5.65,   4.94,  1.9,  1.1,   0.7,  3.6,  3.7,  0.8, 0.0]
 
 class Path_logic():
     def __init__(self):
@@ -36,7 +34,7 @@ class Path_logic():
         self.publisher_next_traj = rospy.Publisher('/TrajMessage', next_traj, queue_size = 1)
         self.pub = rospy.Publisher('/slow_down', slow_down, queue_size=1)
         self.look_ahead = 60 #60 # how many pixels forward the path should be estimated 
-        self.threshold_distance = 10 #15 trigger A* when distance to obstacle is less than a threshold
+        self.threshold_distance = 13 #15 trigger A* when distance to obstacle is less than a threshold
         self.threshold_wait = 1 #7 wait until car turns around obstacle and check if new obstacles are hidden
         self.count_laps = 0
         self.obs_N = 0
@@ -53,6 +51,8 @@ class Path_logic():
         self.remote_overwrite = False
         self.using_astar_publisher = rospy.Publisher('/using_astar', Bool, queue_size = 1)
         
+        self.origin, self.resolution = self.param_init()
+        
     def remote_control(self,msg):
         control = msg.ctrl        
         if control >= 4:
@@ -68,7 +68,18 @@ class Path_logic():
     
     def path_publisher(self, path):
         self.publisher_next_traj.publish(path)
-        
+    
+    def param_init(self):
+        """Initialization handles use with just python or in a launch file"""
+        # grab parameters from launch-file
+        origin_param = rospy.search_param('origin')
+        resolution_param = rospy.search_param('resolution')
+        origin = rospy.get_param(origin_param, [0, 0, 0])
+        resolution = rospy.get_param(resolution_param, 1)
+        if isinstance(origin, str):
+            origin = origin.split(',')
+            origin = [float(curr) for curr in origin]
+        return origin, resolution
 
     def get_inflated_map(self,msg):
         path_requester = PathRequester()
@@ -78,23 +89,39 @@ class Path_logic():
         resolution = map.info.resolution
         origin_x = map.info.origin.position.x
         origin_y = map.info.origin.position.y
-        
-        #self.inflated_not_reshaped = map.data
-        
         inflated_map = np.reshape(map.data, (height, width))
         self.to_print_map = inflated_map 
      
         self.current_x = int((self.state.x - origin_x)/resolution)
         self.current_y = int((self.state.y - origin_y)/resolution)
         slow_down_msg = slow_down()
-              
+        
+        """if not self.remote_overwrite:
+            print("PRINTING MAP")
+            plt.imshow(inflated_map)
+            plt.colorbar()
+            plt.show()"""        
 
-        for i in range(0,len(self.current_path.x_coordinates)):    
+        for i in range(0,len(self.current_path.x_coordinates)):
+            #Pixel on the path
             x_coordinate_pixel = int((self.current_path.x_coordinates[i] - origin_x)/resolution)            
             y_coordinate_pixel = int((self.current_path.y_coordinates[i] - origin_y)/resolution)             
             
             #Returns True if obstacle is on the path
             check = self.obstacle_path_check(inflated_map, x_coordinate_pixel, y_coordinate_pixel)
+            
+            #Check if path between current position and target is occupied by obstacle
+            if not check:
+                position = [self.current_x, self.current_y]
+                
+                path_to_target = np.linspace(position, self.target)
+                path_to_target = np.rint(path_to_target)
+                for point in path_to_target:
+                    #If it still throws errors change width and height
+                    check = self.obstacle_path_check(inflated_map, min(int(point[0]), width-1), min(int(point[1]), height-1))
+                    if check:
+                        break
+                
 
             if check and not self.sent and not self.remote_overwrite:
                 slow_down_msg.slow_down = True
@@ -107,23 +134,23 @@ class Path_logic():
                     x_path = self.traj_x
                     y_path = self.traj_y
                     target_x, target_y = self.get_target_ind(x_path, y_path, origin_x, origin_y, resolution)
-                    print("Target point estimated.")
+                    print("Estimated path is not completed.")
                 else:
                     x_path = self.current_path.x_coordinates
                     y_path = self.current_path.y_coordinates
-                    target_x, target_y = self.get_target_ind(x_path, y_path, origin_x, origin_y, resolution)  
+                    target_x, target_y = self.get_target_ind(x_path, y_path, origin_x, origin_y, resolution)
                 
-                # Find a new path and publish it             
+                # Find a new path and publish it                     
                 print("New obstacle observed. Calculating new path...")
                 new_path = path_requester.estimate_path([self.current_x, self.current_y],[target_x,target_y], map.data, width, height)
-                           
+                print("New path has been calculated")
+    
                 
+
                 if new_path == None:
                     slow_down_msg.slow_down = False
                     self.pub.publish(slow_down_msg)
                     break
-                print("New path has been calculated")   
-                self.A_star_activated = True
                 
                 """traj_x = []
                 traj_y = []
@@ -135,7 +162,7 @@ class Path_logic():
                 new_path.estimated_path_x = [val for sublist in traj_x for val in sublist]
                 new_path.estimated_path_y = [val for sublist in traj_y for val in sublist]"""
 
-                                      
+                self.A_star_activated = True                      
 
                 """self.obs_N+=1
                 if self.obs_N > 0:
@@ -165,15 +192,12 @@ class Path_logic():
                 
                 break
     
-
-    def update_inflated_map(self, msg):
-        self.inflated_not_reshaped = msg.data
-
     def check_laps(self):
         #TODO: make sure cars stops when it should stop
         err = np.sqrt((self.state.x - self.traj_x[-50])**2 + (self.state.y - self.traj_y[-50])**2)
         if err < 0.1:
             self.count_laps+=1
+        #print(self.count_laps)
 
     def get_target_ind(self, x_path, y_path, orx, ory, res):
         current_ind = self.find_position(x_path, y_path)
@@ -187,8 +211,18 @@ class Path_logic():
         target_x = int((x_path[target_ind] - orx)/res)  
         target_y = int((y_path[target_ind] - ory)/res)
 
+        #print(target_distance)
         return target_x, target_y
-
+    
+    def convertStateToPixel(self, point):
+        target = []
+        for i in range(len(point)):
+            target.append(int((point[i] - self.origin[i])/self.resolution))
+        return target
+    
+    def setTarget(self, msg):
+        self.target = self.convertStateToPixel([msg.x_coordinates[0], msg.y_coordinates[0]])
+    
     def obstacle_path_check(self, inflated_map, x, y):
         if (inflated_map[y,x] > 0): # check if obstacle is on the way
             if np.sqrt((self.current_x - x)**2 + (self.current_y -  y)**2) < self.threshold_distance: #  check distance to obstacle
@@ -271,5 +305,9 @@ if __name__ == '__main__':
     rospy.Subscriber('/SVEA/state',
                      VehicleState,
                      path_logic.current_position_callback, queue_size = 1)
+                     
+    rospy.Subscriber('/TargetPoint',
+                     next_traj,
+                     path_logic.setTarget, queue_size = 1)
 
     rospy.spin()

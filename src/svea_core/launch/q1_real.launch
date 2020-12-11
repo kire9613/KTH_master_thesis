@@ -34,7 +34,8 @@
     <node pkg="svea_core" type="state_to_pixels_map.py" name="state_to_pixels_map" output="screen" />
     <node pkg="svea_core" type="map_logic.py" name="map_logic" output="screen" />
     <node pkg="svea_core" type="speed_steering.py" name="speed_steering" output="screen" />
-    <node pkg="svea_core" type="control_filter.py" name="control_filter" output="screen" />
+    <!--node pkg="svea_core" type="control_filter.py" name="control_filter" output="screen" /-->
+    <node pkg="svea_core" type="control_filter_with_backing.py" name="control_filter" output="screen" />
     <node pkg="svea_core" type="republisher.py" name="republisher" output="screen" />
     <node pkg="svea_core" type="A_star.py" name="A_star" output="screen" />
 
