@@ -4,7 +4,7 @@ This folder contains the code of the Team 5 implementation of the EL2425 task.
 
 ## **Important to read if code review for Team 5 is to be done!** 
 
-The implementation done by Team 5 can mostly be found under the `svea_starter/src/svea_core` directory. At that location one will also find the particular *[`svea_starter/src/svea_core/README.md`](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core)* for the Team 5 implementation. Any specifics regarding the implementation can be found there.
+The implementation done by Team 5 can mostly be found under the *[`svea_starter/src/svea_core`](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core)* directory. Any specifics regarding the implementation can be found there.
 
 # Quick Guide To Start the Simulation
 Run one of two options in a terminal: 
