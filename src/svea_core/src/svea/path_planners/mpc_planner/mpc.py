@@ -89,10 +89,7 @@ class NonLinearMPC(object):
         self.T = self.solver.variable()
 
         for obstacle_edges in obstacles:
-            #self.lambdas.append(self.solver.variable(4, self.N + 1))
-            #self.mus.append(self.solver.variable(4, self.N + 1))
-
-            #Removed hardcoded matrix sizes
+            
             A, b = self._compute_convex_hull_equations(obstacle_edges)
             num_rowsA, num_colA = A.shape
             num_rowsG, num_colG = self.G.shape
@@ -110,7 +107,7 @@ class NonLinearMPC(object):
         self._add_inequality_constraints()
         self._add_cost_function()
 
-        #Removes the prints from the mpc solver
+        #Removes the prints from the mpc solver, and sets other settings.
         options = {
             'ipopt.print_level' : 0,
             'ipopt.mu_init' : 0.01,
@@ -143,7 +140,7 @@ class NonLinearMPC(object):
             [casadi.cos(d_yaw), casadi.sin(d_yaw),
              -casadi.sin(d_yaw), casadi.cos(d_yaw)]
         )
-        # Model
+        # Nonlinear state-space model based on 2D bicycle model:
         for k in range(self.N + 1):
             self.solver.subject_to(
                 [self.X[0, k + 1] == self.X[0, k] + dt * self.U
@@ -157,6 +154,7 @@ class NonLinearMPC(object):
             rotation = rot(self.X[2, k])
             rotation = casadi.reshape(casadi.vertcat(*rotation), 2, 2)
 
+            # Constraints on lambda, mu for obstacle avoidance. 
             for ind in range(len(self.lambdas)):
                 self.solver.subject_to(
                     casadi.mtimes(self.G.T, self.mus[ind][:, k]) + casadi.mtimes(
@@ -175,9 +173,6 @@ class NonLinearMPC(object):
             <= self.distance_tolerance
         )
 
-        #self.solver.subject_to(
-        #    casadi.fabs(self.goal_state[2] - self.X[2, -1]) <= self.angle_tolerance
-        #)
         self.solver.subject_to(self.T >= 0)
         self.solver.subject_to(self.speed_min <= self.U[0, :])
         self.solver.subject_to(self.U[0, :] <= self.speed_max)
@@ -246,6 +241,7 @@ class NonLinearMPC(object):
         try:
             result = self.solver.solve()
         except RuntimeError as e:
+            # Print solver status and constraint status if solver failed.
             print("status: ",self.solver.stats()["return_status"])
             print("debug X: ",self.solver.debug.value(self.X)) 
             print("debug U speed: ",self.solver.debug.value(self.U[0, :])) 
@@ -257,6 +253,7 @@ class NonLinearMPC(object):
             return None
 
         trajectory = result.value(self.X)
+        # Print status of solver and constraint status.
         print("status: ",self.solver.stats()["return_status"])
         print("debug X: ",self.solver.debug.value(self.X)) 
         print("debug U speed: ",self.solver.debug.value(self.U[0, :])) 

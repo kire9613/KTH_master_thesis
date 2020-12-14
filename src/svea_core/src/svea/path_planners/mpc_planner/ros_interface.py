@@ -13,7 +13,6 @@ class ROSInterface(object):
     """
 
     def __init__(self, x_traj,y_traj):
-        #rospy.init_node('planner')
 
         self.path_frame = rospy.get_param('~path_frame')
         self.rate = rospy.Rate(rospy.get_param('~publish_frequency'))
@@ -30,7 +29,6 @@ class ROSInterface(object):
         self.y_traj = y_traj
         self.current_speed = 0
         self.path_index = 0
-        #self.path_publisher = rospy.Publisher('~path', Path, queue_size=1)
         
     def set_goal_angles(self, angles):
         self.goal_angles = angles
@@ -78,8 +76,6 @@ class ROSInterface(object):
         path_msg.header.frame_id = self.path_frame
 
         poses = []
-        #added
-        #poses = Path.poses
         for ind in range(len(path)):
             pose = PoseStamped()
             pose.header.frame_id = self.path_frame
@@ -89,7 +85,6 @@ class ROSInterface(object):
             poses.append(pose)
 
 
-        #print("Poses",poses) # (!) added
         path_msg.poses = poses
         publisher.publish(path_msg)
 
@@ -114,16 +109,14 @@ class ROSInterface(object):
     def compute_goal(self, step_ahead):
         old_goal_state = self.goal_state
         traj_length = len(self.x_traj)
-        #print("searching for value", self._current_target_state[0], self._current_target_state[1])
 
         for i in range(0,traj_length-1):
-            #if (abs(self.x_traj[i] - self._current_target_state[0]) <1e-2) and (abs(self.y_traj[i] - self._current_target_state[1])) :
             if self.x_traj[i] == self._current_target_state[0]:
                 print("index found")
                 path_index = i
                 self.path_index = i
                 break
-            else: #index not found, might need to fix this further (!)
+            else: #index not found
                 path_index = self.path_index
 
         if path_index == 0:
@@ -131,14 +124,13 @@ class ROSInterface(object):
             
         if step_ahead + path_index > traj_length:
             goal_index = traj_length - 1 
-            #print("index is last index:",goal_index)
+            
         else:
             goal_index = step_ahead + path_index
-            #print("index:",goal_index)
-
+            
         x, y = self.x_traj[goal_index], self.y_traj[goal_index]
         
-         # check if index is valid otherwise get final value
+        # check if index is valid otherwise get final value
         if len(self.goal_angles) > goal_index:
             yaw = self.goal_angles[goal_index]
         else:
@@ -166,14 +158,10 @@ class ROSInterface(object):
         
         old_initial_state = self.initial_state
         #At the moment the inital state is hardcoded
-        # (!) uncommented this to get position from ROS
-        #x, y = [getattr(msg.pose.pose.position, coord) for coord in ('x', 'y')]
         x, y, yaw = [getattr(msg, coord) for coord in ('x', 'y','yaw')]
 
         self.initial_state = [x, y, yaw]
         self.current_speed = msg.v
-        
-        # self.initial_state = [self.x0,self.y0,self.theta0] #original 
 
         #self._has_endpoint_changed = True
 

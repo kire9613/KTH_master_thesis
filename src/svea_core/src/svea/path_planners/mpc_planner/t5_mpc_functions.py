@@ -52,7 +52,7 @@ def convert_mpc_path(path):
     return g_traj_x, g_traj_y
 
 def print_every_second( message, data):
-        # print once per second
+    # print once per second
     global print_time
     last_time = rospy.get_time()
     if (last_time - print_time)  > 1:

@@ -95,8 +95,6 @@ class PurePursuitController(object):
                 velocity_output = self.max_velocity
             if not self.emg_traj_running:
                 factor = (math.pi*0.5-abs(self.steering))/(math.pi*0.5)
-                #print("steering angle:", self.steering)
-                #print("decresing velocity by factor: ", factor, ", the velocity is now: ", velocity_output*factor)
         return  velocity_output*factor
 
     def find_target(self, state):
