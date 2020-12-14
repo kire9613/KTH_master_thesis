@@ -8,6 +8,8 @@ from svea_msgs.msg import emergency_break, slow_down, VehicleState
 
 '''
 Control filter that only lets through the control signal if emergency break is not enabled.
+If emergency break is enabled the car will reverse
+It will also go at a slower pace if the slow_down flag is raised. In the current implementation that means stopping.
 Potential upgrades would be to add steering around obstacles instead of just stopping
 Control is gotten from the /GetSpeedSteering service.
 '''
@@ -21,6 +23,7 @@ class ControlFilter:
 
 
     def __init__(self):
+        #Init variables
         self.control = ControlMessageResponse()
         self.emergency_break = emergency_break()
         self.slow_down = slow_down()
@@ -28,16 +31,27 @@ class ControlFilter:
         self.emergency_break_start_time = rospy.get_time()
 
     def update_control(self, control_msg):
+        #Update control to current value
         self.control = control_msg
 
     def set_flag(self, flag):
+        #Update emergency_break to current value
         self.emergency_break = flag
     
     def slow_down_flag(self, flag):
+        #Update slow_down to current value
         self.slow_down = flag
 
 
     def get_control(self, request):
+        '''
+        Return control as a service in the GetSpeedSteering service
+        The priority is as follows
+        1. If reversing from emergency break, do so
+        2. Stop if emergency break is on
+        3. Slow down if described to do so
+        4. Drive as normal along the path
+        '''
         emergency_break_backing_time = 1.8
         current_time = rospy.get_time()
         time_difference = current_time-self.emergency_break_start_time

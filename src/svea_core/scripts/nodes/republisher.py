@@ -12,6 +12,12 @@ chassis_height = 0.06 # [m] approx.
 path_publisher = rospy.Publisher('path_plan', Path, queue_size=2)
 target_publisher = rospy.Publisher('target', PointStamped, queue_size=2)
 
+'''
+The purpose of this class is to subscribe to different topics and then publish them under another topic as to
+make them visible in rviz
+'''
+
+
 def publish_target(msg):
     """
     Publish target point for visualization in rviz

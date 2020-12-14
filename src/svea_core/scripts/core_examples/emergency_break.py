@@ -5,8 +5,16 @@ import rospy
 import numpy as np
 import svea_msgs.msg
 from sensor_msgs.msg import LaserScan 
-from svea_msgs.msg import emergency_break 
+from svea_msgs.msg import emergency_break
+
+
+
+
 def callback(msg):
+    '''
+    Checks the angles described in angles and raises a flag if the distance is smaller than 0.3 m
+    It publishes to the /emergency_break topic
+    '''
     emergency_break_msg = emergency_break()
     angles=[-15,-10,-5,0,5,10,15] #Angles to check Lidar range
     emergency_break_msg.emergency_break = False
