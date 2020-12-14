@@ -54,7 +54,8 @@ Some fo the parameters that can be changed are:
 
 Obstacle mapping only occurs after discovering an obstacle within the emergency range. After emergency stop is activated, the car stops and maps its surroundings with the help from a lidar, within a certain distance to reduce computational complexity of the path planner. The obstacle mapper inflates the lidar points to a square with the same side length as the width of the car. The squares are inflated so that they are positioned at the same angle as the car is facing during the mapping. The solution can be studied *[here](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/controllers)* under the lidar_mapping function.
 
-
+ ![A* Path](t5_img/inflated_obstacles.png)
+ 
 ## PID Path Follower
 
 A simple PID path follower is used to control the vehicle in terms of actuated speed, and steering angle. The used solution is the original path follower, only with adjusted P and I gains. The path follower can be studied in *[this script](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/controllers)*. 
