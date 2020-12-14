@@ -11,20 +11,12 @@
     <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" />
     <arg name="start_pt" default= '0,0,0,0'/>
     <arg name="obstacles_list" default="$(find svea_core)/resources/params/race_track.yaml" />
-
-    <!--arg name="obstacles_list" default="$(find svea_core)/resources/params/track.yaml"/-->
-    <!--arg name="obstacles_list" default="$(find svea_core)/src/svea/path_planners/mpc_obstacles.yaml" /-->
-
     <group if="$(eval is_sim == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/SVEA_floor2.rviz" />
     </group>
 
     <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
     <rosparam command="load" file="$(find svea_core)/resources/params/race_track.yaml" />
-
-    <!--rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" /-->
-    <!-- Give different obstacles than to A* to simulate dynamic obstacles-->
-    <!--rosparam command="load" file="$(find svea_core)/src/svea/path_planners/mpc_obstacles.yaml" /-->
 
     <node pkg="svea_core" type="team_5_floor2.py" name="team_5_floor2" output="screen">
         <param name="start_pt" value="$(arg start_pt)"/>
@@ -34,7 +26,6 @@
         <param name="use_astar" value="$(arg use_astar)"/>
         <param name="use_mpc" value="$(arg use_mpc)"/>
         <param name="use_q1" value="$(arg use_q1)"/>
-
 
         <!--Start MPC path planner-->
         <rosparam file="$(find svea_core)/src/svea/path_planners/mpc_planner.yaml" command="load" />
