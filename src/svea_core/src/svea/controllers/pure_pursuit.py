@@ -140,7 +140,7 @@ class PurePursuitController(object):
         ellipse_b = self.emergency_distance*1
         ellipse_vector = ellipse_a*ellipse_b/np.sqrt((ellipse_a*np.cos(angles))**2 + (ellipse_b*np.sin(angles))**2)
         points = laserScan.ranges[min_index:max_index]
-        
+        points = [1000 if math.isnan(x) else x for x in points]
         if ( points < ellipse_vector).any() == True:
             self.emg_stop = True
 

@@ -16,6 +16,7 @@ from svea.track import Track
 from geometry_msgs.msg import PoseWithCovarianceStamped, PointStamped
 from nav_msgs.msg import Path
 from svea.path_planners.mpc_planner.ros_interface import ROSInterface
+from svea.path_planners.astar_ros_interface import ROSInterface as AstarROSInterface
 from svea.path_planners.mpc_planner.t5_mpc_functions import *
 
 __team__ = "Team 5"
@@ -101,7 +102,7 @@ def main():
     # Get ros parameters from launch file
     start_pt, is_sim, use_rviz, use_matplotlib, use_astar, use_mpc,  use_q1 = param_init()
 
-    # A* emergency settings 
+    # A* emergency settings for replanning
     emergency_settings = {
         "driving_distance": 0.25,
         "use_track": False,
@@ -114,8 +115,9 @@ def main():
         "use_q1": use_q1
         }
     
-    # extract trajectory
+    # Compute global path
     traj_x, traj_y = extract_trajectory(use_astar, use_q1)
+    # Split global path in two
     length = len(traj_x)
     middle_index = length//2
     traj_x0 = traj_x[:middle_index]
@@ -123,10 +125,19 @@ def main():
     traj_x1 = traj_x[middle_index:-1]
     traj_y1 = traj_y[middle_index:-1]
 
-    traj_theta = compute_angles(traj_x,traj_y)
+
+    
       # initialize ros interface
-    ros_interface = ROSInterface(traj_x,traj_y)
+    if use_mpc:  
+        ros_interface = ROSInterface(traj_x,traj_y)
+    else: 
+        ros_interface = AstarROSInterface(traj_x,traj_y)
+    
+    # Compute vehicle angles from astar path
+    traj_theta = compute_angles(traj_x,traj_y)
     ros_interface.set_goal_angles(traj_theta)
+
+    # Set global trajectory to first path
     traj_x,traj_y = traj_x0, traj_y0
 
     # select data handler based on the ros params
@@ -169,19 +180,20 @@ def main():
     rospy.Subscriber('/scan', LaserScan,svea.controller.emergency_stop)
     first_traj_complete = False
     while (not svea.is_finished and not rospy.is_shutdown()) or svea.controller.emg_traj_running:
-        tic = rospy.get_time() # get time
+        tic = rospy.get_time() # start timer
         state = svea.wait_for_state()
-
 
         if istate == 0: # IDLE state - waits here untill emergency stop
             svea.controller.target_velocity = target_velocity
             changed_astar_settings = False
-            step_ahead = 6
+            step_ahead = 6 # Set step ahead distance for replanning to set target state
             if svea.controller.emg_stop:
                 print("state 1: Mapping obstacles")
                 istate = 1 
         elif istate == 1: # Emergency stop activated - mapping obstacles
-            svea.controller.target_velocity = target_velocity*0.5
+            # Slow down when executing replanned trajectory
+            svea.controller.target_velocity = target_velocity*0.5 
+            # Perform mapping when car has stopped
             if ros_interface.current_speed < 0.01:
                 svea.controller.laser_mapping(ros_interface.initial_state)
                 if use_mpc:
@@ -195,33 +207,36 @@ def main():
                     istate = 0
                 
         elif istate == 2: # Replan with MPC
+            # Wait for target state and initial state values to update
             if  ros_interface._current_target_state != [0,0] and ros_interface.initial_state != None:
-                svea.controller.set_emg_traj_running(True)   
+                # Initialize replanning sequence
+                svea.controller.set_emg_traj_running(True)
+                rospy.wait_for_message('/target',PointStamped)
+                ros_interface.compute_goal(step_ahead) 
                 g_traj_x, g_traj_y, success = run_mpc_planner(ros_interface)
                 print("MPC Replanning Trajectory:")
                 if success:
-                    print("traj_x",g_traj_x)
-                    print("traj_y",g_traj_y)
-                    print("state 4")
-                    svea.update_traj(g_traj_x, g_traj_y)
+                    # Reduce distance for obstacle detection
                     svea.controller.emergency_distance = 0.25
+                    svea.update_traj(g_traj_x, g_traj_y)
                     svea.controller.emg_stop = False
+                    print("state 4: Following replanned path")
                     istate = 4
                 elif not backup_attempted:
+                    # Set backup time
+                    timeout = 2
                     istate = 5
-                    print("Backing up")
-                else: # do something here if fails
-                    replan_counter = replan_counter + 1
-                    svea.controller.set_emg_traj_running(False)
-                    if replan_counter >= 2:
-                        print("Replanned twice and failed!")
-                        break  
-                    else:
-                        print("Planning Failed - Replan with Astar")
-                        istate = 3
+                    print("state 5: Backing up!")
+                else: 
+                    svea.controller.set_emg_traj_running(False)  
+                    print("Replanned too many times - failed!!!")
+                    break  
+
                   
         elif istate == 3: # Replan with Astar
+            # Wait for target state and initial state values to update
             if  ros_interface._current_target_state != [0,0]  and ros_interface.initial_state != None:
+                # Initialize replanning sequence
                 svea.controller.set_emg_traj_running(True)
                 rospy.wait_for_message('/target',PointStamped)
                 ros_interface.compute_goal(step_ahead)
@@ -231,16 +246,19 @@ def main():
                 
                 print("Astar Replanning Trajectory:")
                 if success:
+                    # Reduce distance for obstacle detection
                     svea.controller.emergency_distance = 0.25
                     svea.controller.emg_stop = False
                     svea.update_traj(g_traj_x, g_traj_y)
                     print("state 4: Following replanned path")
                     istate = 4
                 elif not backup_attempted:
+                    # Set backup time
                     timeout = 2
                     istate = 5
                     print("state 5: Backing up!")
                 elif not changed_astar_settings:
+                    # Replan again with finer grid resolution
                     changed_astar_settings = True
                     emergency_settings = {
                                         "driving_distance": 0.2,
@@ -255,7 +273,7 @@ def main():
                                         }
                     print("Planning again with finer grid in Astar")
                     istate = 1 
-                else: # do something here if fails
+                else: 
                     svea.controller.set_emg_traj_running(False)  
                     print("Replanned too many times - failed!!!")
                     break  
@@ -270,14 +288,14 @@ def main():
                 istate = 5 
              
             if  svea.is_finished:
+                # Reset settings before swtiching to global path
                 replan_counter = 0
                 backup_attempted = False
                 svea.controller.emergency_distance = 1.0
-                svea.reset_isfinished() # sets is_finished to false
-                # extract trajectory
-                print("state 0: Switching back to global path")
+                svea.reset_isfinished() 
                 svea.update_traj(traj_x, traj_y)
                 svea.controller.set_emg_traj_running(False) 
+                print("state 0: Switching back to global path")
                 istate = 0
         elif istate == 5: # Initialize backup
             svea.controller.target_velocity = target_velocity
@@ -285,24 +303,21 @@ def main():
             svea.controller.backing_up = True     
             time_start = rospy.get_time()
             istate = 6
-        elif istate == 6: # pulse signal for 0.5 s on, 0.5 s off
-        
+        elif istate == 6: # pulse signal 0.5 s on, 0.5 s off (This is necessary on SVEA when going from 0 speed to be able to backup)      
             if rospy.get_time() - time_start > 0.5:
                 svea.controller.backing_up = False
             if rospy.get_time() - time_start > 1:
                 svea.controller.backing_up = True
                 istate = 7
         elif istate == 7: # Backing up for 2s
-           
             if rospy.get_time() - time_start > timeout:
                 svea.controller.backing_up = False
-                istate = 1 # Go to back to obstacle mapping
+                istate = 1 
                 print("state 1: Mapping obstacles")
                 
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
-
         svea.send_control(steering, velocity)
 
         # visualize data
@@ -312,7 +327,10 @@ def main():
             rospy.loginfo_throttle(1, state)
         toc = rospy.get_time() # stop timer
 
-        #rospy.loginfo("Scan time %f", toc-tic) # scan time of while loop
+        # Uncomment to check scan time of while loop
+        #rospy.loginfo("Scan time %f", toc-tic)
+
+        # Switching between paths in global planner
         if istate == 0 and svea.is_finished and not first_traj_complete:
             first_traj_complete = True
             svea.reset_isfinished()

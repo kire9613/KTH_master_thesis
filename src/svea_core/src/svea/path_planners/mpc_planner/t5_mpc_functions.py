@@ -7,10 +7,6 @@ from svea.path_planners.mpc_planner.main_planner import Planner
 
 def run_mpc_planner(ros_interface):
     tic = rospy.get_time()
-    print("entering while loop")
-    if ros_interface._current_target_state != [0,0] and ros_interface.initial_state != None:
-        ros_interface.compute_goal()
-   
     #Fetch mpc obstacles without initializing occupancy grid class
     parameter_names = ['obstacles']
     parameters = {
@@ -25,8 +21,6 @@ def run_mpc_planner(ros_interface):
     planner_name = ros_interface.planner_algorithm
     planner_parameters = ros_interface.get_planner_parameters()
     planner = Planner(mpc_obs, planner_name, planner_parameters)
-    print('Waiting for MPC')
-    #planner = Planner(occupancy_grid, planner_name, planner_parameters)
     print('Computing MPC path')
     initial_state = ros_interface.initial_state
     goal_state = ros_interface.goal_state
