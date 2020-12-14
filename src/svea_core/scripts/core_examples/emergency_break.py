@@ -22,7 +22,7 @@ def callback(msg):
     pub = rospy.Publisher('emergency_break', emergency_break, queue_size=10)
     
     for ang in angles:
-        ang_index=int(540+round(ang/coefficient))
+        ang_index=int(68+round(ang/coefficient))
         #print(msg.ranges[ang_index])
         if msg.ranges[ang_index] < 0.3:
             emergency_break_msg.emergency_break = True
