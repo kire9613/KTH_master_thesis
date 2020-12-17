@@ -1,262 +1,192 @@
-# SVEA Starter Suite
+# Purpose
+The purpose of this document is to give insight into how the different nodes of our SVEA implementation are supposed to interact with each other. It also gives explanations for what the purpose of the nodes are.
 
-## A short description
-This repo contains a basic library of python objects and scripts to make
-development on the Small-Vehicles-for-Autonomy (SVEA) platform simpler
-and cleaner.
+# Nodes
+The different nodes to be implemented are the following:
+- Svea
+- Emergency
+- Speed and Steering (Controller)
+- Control Filter
+- Path planner:
+  - Trajectory
+  - Obstacle avoidance
+- Obstacle detection
+- Map server
+- Map logic
 
-The design principle of this library is to help create projects that are
-more modular and easier to troubleshoot. As opposed to the standard
-approach of creating a large web of Subscriber/Publisher nodes, we modularly
-wrap different ROS entities in Python objects, while exposing only the useful
-features with object-oriented interfaces.
 
-## Useful to know before starting
-Before continuing to the next sections, consider taking some time to read up on
-two important concepts for this code base: the **Robotic Operating System (ROS)**
-and **Object Oriented Programming (OOP)**.
+# Vocab
+State representation is the coordinate system that the car sees and uses.
 
-To read up on ROS, check out the
-[ROS Start Guide](http://wiki.ros.org/ROS/StartGuide). However, do not spend
-too much time diving into the guide. The structure and tutorials are not very
-intuitive, but glossing over them will give a sense of what ROS is and how you
-are meant to use it. The rest of the learning curve is overcome by trying it out
-yourself.
+Pixel representation is the coordinate system that the map is given in. Each pixel is one step.
 
-To read up on OOP, check out Real Python's
-[introduction on OOP](https://realpython.com/python3-object-oriented-programming/).
-Focus on understanding why OOP exists and how it is used in Python, not
-necessarily how to create new classes themselves.
+Scaled pixel representation is the coordinate system that is a scaled down version of the pixel representation. The origin is still in the same place as the pixel representation as is different compared to the state representation.
 
-## Reporting Issues
-The **preferred** way to handle issues is for you to submit issues with the issue
-functionality at the top of this page. This allows for a couple benefits:
+## 1. SVEA
 
-1. other users will be able to  answer questions they have the solution to
-2. ensure questions are visible to all, so anyone else with the same question
-can find the answer right away
-3. to tie in version control into the issue handling
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Control|control_msg|Not Specified|Look up how it should be specified|
 
-This also means that it is good to check the issues page carefully before
-posting a new issue, in case someone else has also asked the same question
-before.
 
-# Installation
+#### Outputs
 
-## System Requirements
-This library is developed on and intended for systems running:
+|Name|Type|Data|Description|
+|---|---|---|---|
+|State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
+|Scan|Laser_Scan|Many|Distances in Vehicle_State coordinates|
 
-1. Ubuntu 18.04 (installation tutorial [here](https://ubuntu.com/tutorials/tutorial-install-ubuntu-desktop#1-overview))
-2. ROS Melodic (installation instructions [here](http://wiki.ros.org/melodic/Installation/Ubuntu))
-3. Python 2.7
+#### Parameters
 
-Python 2.7 will be made default when you install ROS. An easy way to check if
-Python 2.7 is the default version on your system is to open a terminal and run
+Add parameters if it has any.
 
-```bash
-python
-```
+#### Purpose
+This is the given node in the beginning that signifies the car.
 
-to make sure you see "Python 2.7" appear somewhere in the header of the text
-that appears afterwards.
 
-If you do not want to install Ubuntu onto your computer, consider installing a
-[virtual machine](https://www.osboxes.org/ubuntu/) or use
-[docker](https://docs.docker.com/install/) with Ubuntu 18.04 images.
 
-Some may need to install some additional python tools (install the **Python 2.7**
-versions):
+## 2. Emergency
 
-1. [numpy](https://scipy.org/install.html) **(You may need to update your version of numpy to the newest)** You can do this with `pip install numpy`
-2. [matplotlib](https://matplotlib.org/users/installing.html)
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
+|Scan|Laser_Scan|Many|Distances in Vehicle_State coordinates|
 
-The installation instructions later on will use `catkin build` instead of
-`catkin_make`, so you should also [install catkin tools using apt-get](https://catkin-tools.readthedocs.io/en/latest/installing.html#installing-on-ubuntu-with-apt-get).
+#### Outputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|STOP|boolean|boolean|Describes if the emergency break is on or off|
 
-If you had a pre-existing ROS Melodic installation, please run:
+#### Parameters
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Stop_distance|Float|d|Distance at which the emergency break should enable|
 
-```bash
-sudo apt update
-sudo apt upgrade
-```
+#### Purpose
+The purpose of this node is to stop the car if it gets too close to an object to protect it in case of accidents. Perhaps it could be added that instead of stopping, it should try to avoid the obstacle through steering.
 
-before continuing onto installing the library.
+## 3. Speed and Steering
 
-## Installing the library
-Start by going to the folder where you want the code to sit using terminal.
-For example, choose the home directory or a directory for keeping projects in.
-Once you are in the chosen directory, use the command:
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
+|Trajectory|Trajectory_Path|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
 
-```bash
-git clone https://github.com/KTH-SML/svea_starter
-```
+#### Outputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Control|control_msg|Not Specified|Look up how it should be specified|
+|Next_traj|boolean|boolean|Output if close to end of trajectory to generate next trajectory|
 
-to download the library. Then, a new directory will appear called
-`./svea_starter`. Go into the directory with command:
+#### Parameters
+|Name|Type|Data|Description|
+|---|---|---|---|
+|New_traj_distance|Float|percentage_to_next_traj|Percentage of trajectory left when the next trajectory should be calculated|
 
-```bash
-cd svea_starter
-```
+#### Purpose
+The purpose of this node is to calculate the appropriate speed and steering so that the car follows the trajectory fast and precise. It should also notify the path_planner node when it gets close to the end of the trajectory.
 
-To install all of the ROS dependencies that you are missing for this library run:
 
-```bash
-rosdep install --from-paths src --ignore-src -r -y
-```
 
-Finally, compile and link the libraries using:
+## 4. Control Filter
 
-```bash
-catkin build
-source devel/setup.bash
-rospack profile
-```
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Control|control_msg|Not Specified|Look up how it should be specified|
+|STOP|boolean|boolean|Describes if the emergency break is on or off|
 
-To make sure the libraries are linked in the future, also call (**you need to replace
-`<path-to-svea-starter>` with the file path to whever you cloned "svea_starter", e.g.
-`/home/nvidia/svea_starter/devel/setup.bash`**):
+#### Outputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Control|control_msg|Not Specified|Look up how it should be specified|
 
-```bash
-echo "source <path-to-svea-starter>/devel/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-```
+#### Parameters
+N/A
 
-**Note, you only need to do this once.**
+#### Purpose
+Controller to filter the speed to give depending on if the stop signal is on or not.
 
-# Usage
 
-The intended workflow with the code base is as follows:
-1. Write new features/software
-2. Debug the new contributions in simulation
-3. Perform basic tuning and adjustments in simulation
-4. Evaluate actual performance on a SVEA car
 
-The simulated vehicles provide identical interfaces and information patterns
-to the real SVEA cars, thus by following this workflow, development work
-should always start in simulation and code can be directly ported to the real
-cars with little effort. However, this does not mean the code will work on a
-real vehicle without further tuning or changes.
 
-There are three pre-written scripts to serve as examples of how to use the
-code base. See and read the source code in
-`svea_starter/src/svea_core/scripts/core_examples`.
+## 5. Path planner
 
-You can try them out by running one of the two commands:
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Occupancy_grid|Occupancy_grid|int[], dimensions|Occupancy grid describing where the obstacles are. Given in scaled pixel representation|
+|Next_traj|boolean|boolean|Output if close to end of trajectory to generate next trajectory|
 
-```bash
-roslaunch svea_core key_teleop.launch
-```
+#### Outputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Trajectory|Trajectory_Path|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
 
-for a keyboard teleop example. Once launched, you should see the following:
+#### Parameters
+Parameters for the path planner. Was thinking about parameters that defines how much the planner is allowed to deviate from the most optimal route and such.
 
-![key-teleop example](./media/key_teleop.png)
+The node should be given the trajectory coordinates in the beginning and number of laps. Need to define in which coordinate system the nodes need to be provided in.
 
-where you can use arrow keys to control the simulated SVEA car.
+#### Purpose
+Purpose is to calculate the path for which the car is supposed to drive along.
 
-For a pure pursuit example, call:
 
-```bash
-roslaunch svea_core pure_pursuit.launch
-```
 
-where you should see something that looks like:
+## 6. Obstacle detection
 
-![key-teleop example](./media/purepursuit.png)
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
+|Scan|Laser_Scan|Many|Distances in Vehicle_State coordinates|
 
-To run a more involved example, call:
+#### Outputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|State|coordinate_message|int8[x,y]|Coordinates where the car has seen obstacles. Given in pixel representation?|
 
-```bash
-roslaunch svea_core floor2.launch
-```
+#### Parameters
+Confidence increase level?
+Memory time
+#### Purpose
+Supposed to provide a message where it says where the car has seen obstacles during the last memory time number of seconds.
 
-where you should see something that looks like:
 
-![key-teleop example](./media/floor2_rviz.png)
 
-Now you are ready to read through the tutorials! You can find them in `svea_starter/docs/tutorials`.
+## 7. Map server
 
-## Going from simulation to real
+#### Inputs
+N/A
+#### Outputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Map|map|many|Occupancy grid of original map. Given in pixel representation|
 
-**Note, you only have to follow this section when running the real cars!**
+#### Parameters
+N/A
+#### Purpose
+Provides the original static map. Given from the beginning.
 
-Since the simulated SVEA cars are built to function very similarly to the real
-SVEA cars, the transfer from simulation to real vehicles is fairly simple!
 
-### Adding the low-level interface
 
-To your roslaunch file, add
+## 8. Map logic
 
-```xml
-<!--open serial connection for controlling SVEA-->
-<node pkg="rosserial_python" type="serial_node.py" name="serial_node">
-    <param name="port" value="/dev/ttyACM0"/>
-    <param name="baud" value="250000"/>
-</node>
-```
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Map|map|many|Occupancy grid of original map. Given in pixel representation|
+|State|coordinate_message|int8[x,y]|Coordinates where the car has seen obstacles. Given in pixel representation?|
 
-Then, you just have model mismatch to deal with.
+#### Outputs
+|Occupancy_grid|Occupancy_grid|int[], dimensions|Occupancy grid describing where the obstacles are. Given in scaled pixel representation|
 
+#### Parameters
+Scale
+obstacle inflation size
 
-### Running localization on the real SVEA
-
-Running the localization amounts to adding `localize.launch` to your project launch:
-
-```xml
-<include file="$(find svea_sensors)/launch/localize.launch">
-    <arg name="use_rs" value="true"/>
-    <arg name="file_name" value="$(arg map_file)"/>
-</include>
-```
-
-**Note**, `localize.launch` will run a map_server, so you will not need to include map server in your launch when running on the real vehicle. If you need to install more packages to run `localize.launch`, please refer to the installation instructions in `svea_sensors/README.md`.
-
-### RC Remote
-
-When the RC remote is not in override mode, it's inputs will still be received by the SVEA platform. This gives you the opportunity to use the remote in your project scripts, whether it's for debugging, data collection, or even imitation learning. The RC input is published to ```/lli/remote```.
-
-### Listening to ROS on another computer
-
-Since you will not be able to drive the SVEA cars with a display plugged in, it can be useful to link a computer that does have a display to the SVEA car's ROS network. This will let you use [RVIZ](http://wiki.ros.org/rviz) and [PlotJuggler](http://wiki.ros.org/plotjuggler) on the computer with a display while accessing the data streams on the SVEA car. This amounts to telling the computer with a display where the ROS master it should be listening to (in this case, it should listen to the ROS master running on the SVEA car) is located on the network. On both the SVEA car and the computer with a display, run:
-
-```bash
-. <svea_starter_root>/scripts/export_ros_ip.sh
-```
-
-You can test if this worked by launching something on the SVEA car in the same terminal where the export commands were run and then calling ```rostopic list``` on the computer with a display in the same terminal where the export commands were run. You should see the topics you expect to be on the SVEA car also available on the computer with a display. If this worked, you have some options for how you want to use it. You can either:
-1. call this script everytime you want to link the SVEA car and the computer with a display togther (the script only links the terminal window you run it in),
-2. add an [alias](https://mijingo.com/blog/creating-bash-aliases) to the end of the SVEA car and the computer's ```~/.bashrc``` to create a new bash command,
-3. you can add the contents of ```export_ros_ip.sh``` directly to the end of your ```~/.bashrc```,
-
-or some other preferred approach.
-
-## Documentation
-
-There is documentation available for the current SVEA API. To access it open
-docs/\_build/index.html in your favorite browser.
-
-# Contributing
-
-Interested in contributing to the code or features?
-
-Start by emailing:
-
-frankji@kth.se
-
-Adding stable and properly stylized code to an existing code base is a regular
-task for professional engineers in the tech world and is often a skill that is
-evaluated in programming interviews.
-
-To learn how to program and style Python code, refer to the following
-standardized style guide:
-
-[PEP 8 -- Style Guide for Python](https://www.python.org/dev/peps/pep-0008/#introduction)
-
-**TL;DR - "code is read much more often than it is written" -Guido/Pep 8, use
-4-space indents, each line must have < 80 characters (IMO), no uneccesary
-whitespace, use good naming systems, be readable, be logical.**
-
-As usual, practice makes perfect! Style guides take a little time to get used
-to, but once you overcome the learning curve, the rewards are worth it.
-If you are interested, consider using the SVEA code base to practice, as the
-style checking on contributions will be strict to ensure the code base is clean
-and user-friendly.
+#### Purpose
+Purpose is to provide a proper map used for pathfinding
