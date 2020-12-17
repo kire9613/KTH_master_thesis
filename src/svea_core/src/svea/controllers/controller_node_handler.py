@@ -16,6 +16,8 @@ Controller interface for path_following_sveas.
 The vehicle class requires a controller with a compute_control function to work.
 '''
 
+#TODO: Albin Comment
+
 class NodeController(object):
 
     k = 0.6  # look forward gain
@@ -35,8 +37,6 @@ class NodeController(object):
         self.is_finished = False
 
     def compute_control(self, state, target=None):
-
-        #print("Attempting request")
         try:
             control = self.control_client()
         except rospy.ServiceException as exc:
