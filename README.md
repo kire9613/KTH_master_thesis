@@ -138,23 +138,25 @@ Purpose is to calculate the path for which the car is supposed to drive along.
 
 ## 6. Obstacle detection
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
 |Scan|Laser_Scan|Many|Distances in Vehicle_State coordinates|
+|Map|map|Many|Occupancy grid of original map. Given in pixel representation|
 
-#### Outputs
+#### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
-|State|coordinate_message|int8[x,y]|Coordinates where the car has seen obstacles. Given in pixel representation?|
+|State|list of coordinate_messages|int8[x,y]|Coordinates where the car has seen obstacles. Given in pixel representation|
 
 #### Parameters
-Confidence increase level?
-Memory time
-#### Purpose
-Supposed to provide a message where it says where the car has seen obstacles during the last memory time number of seconds.
+|Name|Type|Data|Description|
+|---|---|---|---|
+|Scans_per_Rotation|Integer|number_of_rotations_per_scan|How many scans does the Lidar detect, simulation is 135 and real car is 1081|
 
+#### Purpose
+Transforms the Lidar readings into coordinates of the real world in order to place them correctly in the occupancy grid.
 
 
 ## 7. Map server
