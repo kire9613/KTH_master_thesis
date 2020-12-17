@@ -20,8 +20,8 @@ scans_per_rotation = 135 #135 for scan in sim, 1081 in real
 class Map_to_Pixels():
     def __init__(self):
         self.flag = False
-        self.min_angle = np.deg2rad(-45)
-        self.max_angle = np.deg2rad(45)
+        self.min_angle = np.deg2rad(-35)
+        self.max_angle = np.deg2rad(35)
         self.xs = []
         self.ys = []
         

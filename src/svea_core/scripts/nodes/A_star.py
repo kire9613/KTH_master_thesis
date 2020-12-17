@@ -9,6 +9,10 @@ from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap
 from svea.controllers.grid_type import Grid
 
+'''
+Node for A* pathfinding. 
+Added a smoothening function that eliminates edges in extimated trajectory
+'''
 
 class A_star():
 
@@ -75,7 +79,7 @@ class Node():
 
 def astar(ocupancy_grid, start, end):
     
-    #Timeout Threshold parameter    
+    #Timeout for A*    
     timeout_time = 5
     # Create start and end node
     start_node = Node(None, np.array(start))
@@ -98,10 +102,7 @@ def astar(ocupancy_grid, start, end):
         if (end_time.secs-start_time.secs >= timeout_time):
             print("Timeout happened")
             return None
-        #print(remote_overwrite)
-        # Interupter
-        #counter+=1
-        #if counter > 
+
         # Get the current node
         current_node = open_list[0]
         
@@ -120,7 +121,7 @@ def astar(ocupancy_grid, start, end):
             #print("Found the goal")
             path = []            
 
-            # Make smooth path 
+            # Iterate over path and create shortcuts if path is to edgy 
             checkPoint = current_node
             current = current_node.parent
             path.append(checkPoint.position)
@@ -187,24 +188,6 @@ def relevant_pix(path, grid):
             new_path.append(path[element])
     new_path.append(path[-1])
     return new_path
-
-"""def iterate_path(path_points):
-    connected_path = []
-    for i in range(0,len(path_points)-1):
-        point_A = path_points[i]
-        point_B = path_points[i+1]
-        while point_A[0] != point_B[0] and point_A[1] != point_B[1]:
-            connected_path.append(point_A)
-            if point_A[0] > point_B[0]:
-                point_A[0]-=1
-            if point_A[0] < point_B[0]:
-                point_A[0]+=1
-            if point_A[1] > point_B[1]:
-                point_A[1]-=1
-            if point_A[1] < point_B[1]:
-                point_A[1]+=1
-    connected_path.append(path_points[-1])
-    return connected_path"""
 
 def path_is_clear(grid ,start, end):
     x1 = start[0]
