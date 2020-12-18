@@ -143,7 +143,7 @@ Pure Pursuit is used to compute the steering angle. It does so, by continuously 
 
 To compute the velocity command u, a PID controller is used:
 
-<img src="https://render.githubusercontent.com/render/math?math=u = K_{p}e \plus K_{i}e_{sum} \+ K_{d}dedt">
+<img src="https://render.githubusercontent.com/render/math?math=u = K_{p}e %2B K_{i}e_{sum} %2B K_{d}dedt">
 
 where K_p, K_i and K_d are the proportional, integral and derivative gains. The variable e is the error between the target velocity and the actual velocity of the car at time t. The sum e_sum, represents the discrete form of the integral of the error up to time t, which can be represented as a discrete sum of the erros up to time t:
 
