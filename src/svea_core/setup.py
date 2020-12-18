@@ -11,6 +11,9 @@ setup_args = generate_distutils_setup(
               'svea.simulators',
               'svea.svea_managers',
               'svea.tests',
+	      'map',
+              'planner',
+              'sensor',
               ],
     package_dir={'': 'src',
                 }

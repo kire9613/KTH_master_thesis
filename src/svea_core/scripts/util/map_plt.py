@@ -18,7 +18,9 @@ map_meta = None
 def update_map(map_msg):
     global floor2_map, map_meta
     map_meta = map_msg.info
+    print(map_meta)
     map_data = map_msg.data
+    print(map_data)
 
     height = map_meta.height
     width = map_meta.width

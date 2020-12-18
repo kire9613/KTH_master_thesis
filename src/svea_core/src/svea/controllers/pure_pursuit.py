@@ -6,7 +6,7 @@ import math
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
-    Lfc = 0.4  # var 0.4 look-ahead distance
+    Lfc = 0.09  # var 0.4 look-ahead distance
     K_p = 1.5  #TODO speed control propotional gain
     K_i = 0.1  #TODO speed control integral gain
     K_d = 0.0  #TODO speed control derivitive gain
@@ -23,6 +23,7 @@ class PurePursuitController(object):
 
 	self.error = []
 	self.dt = 0.01
+        self.index = 0
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -37,6 +38,7 @@ class PurePursuitController(object):
             self.target = target
 
         tx, ty = self.target
+
         alpha = math.atan2(ty - state.y, tx - state.x) - state.yaw
         if state.v < 0:  # back
             alpha = math.pi - alpha
@@ -56,8 +58,24 @@ class PurePursuitController(object):
             if self.error == []:
                 e_prev = 0
             else:
-                e_prev = self.error[self.last_index - 1] 
-   
+                e_prev = self.error[self.last_index - 1]
+
+            try:
+              tx, ty = self.traj_x[self.index+2], self.traj_y[self.index+2]
+              dx = tx - state.x	
+              dy = ty - state.y	
+
+              teta = math.atan2(dy, dx)
+              delta_teta = abs(state.yaw - teta)
+
+              if delta_teta >= 0.5:
+                self.target_velocity = 0.5
+              else:
+                self.target_velocity = 0.6
+
+            except IndexError:
+              pass 
+             
             e = self.target_velocity - state.v
             e_sum = sum(self.error) + e*self.dt
             dedt = (e - e_prev) / self.dt
@@ -65,7 +83,12 @@ class PurePursuitController(object):
             self.error.append(e)
             self.last_index = self.last_index + 1 
 
-            u = self.K_p*e + self.K_i*e_sum + self.K_d*dedt	
+            u = self.K_p*e + self.K_i*e_sum + self.K_d*dedt
+
+            if u > 0.55:
+              u = 0.55
+            elif u < -0.55:
+              u = -0.55
             
             return u
 
@@ -94,10 +117,12 @@ class PurePursuitController(object):
         # terminating condition
         #TODO
 	if self.target != None:
-	  tx, ty = self.target #condition for distance between state and target position
+	  tx, ty = self.traj_x[-1], self.traj_y[-1] #condition for distance between state and target position
 	  dx = tx - state.x
 	  dy = ty - state.y 
 	  if math.sqrt(dx**2 + dy**2) < 0.1:
 	    self.is_finished = True
+
+        self.index = ind
 
         return ind

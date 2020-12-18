@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
-
 import rospy
 import numpy as np
+import matplotlib.pyplot as plt
+
+import sys
+import numpy
+numpy.set_printoptions(threshold=sys.maxsize)
 
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
@@ -11,18 +15,22 @@ from svea.controllers.pure_pursuit import PurePursuitController
 from svea.data import BasicDataHandler, TrajDataHandler, RVIZPathHandler
 from svea.models.bicycle import SimpleBicycleModel
 from svea.simulators.sim_SVEA import SimSVEA
+from svea.track import Track
 
-from math import radians, cos, sin
+from math import radians, cos, sin, hypot, atan2
 
-from svea.controllers.rrt import *
+from svea.planner.rrt import *
+from svea.planner.rrt_connect import *
+from svea.planner.rrt_star import *
 
-#import sys
-#sys.path.insert(1, 'Home/svea_starter/src/svea_core/resources/param')
-#from Home.svea_starter.src.svea_core.resources.param.read_obs import *
+#NMPC
+from svea.map.occupancy_grid import OccupancyGrid
+from svea.map.ros_interface import ROSInterface as MapROSInterface
+from svea.planner.ros_interface import ROSInterface
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
-target_velocity =  1.0 # [m/s]
+target_velocity =  1 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
@@ -50,6 +58,14 @@ traj_y4 = np.linspace(-4.15, -6.5)
 traj_x = np.concatenate((traj_x, traj_x4), axis = None)
 traj_y = np.concatenate((traj_y, traj_y4), axis = None)
 
+#xs = [-2.33, 4.04, 6.97, 8.6, 19.5, 19.7, -13.9, -14.3, -7.8, -7.73, -5.6]
+#ys = [-7.09, 2.3, 1.71, 0.23, -0.714, 3.26, 6.4, 1.5, 0.69, 3.62, 0.35]
+
+xs = [0, 1.81, 3.68, 6.71, 9.64, 19, 19.7, 6.54, 4.58, 2.38, 0.763, -13.9, -14.3, -7.8, -7.73, -5.2, -5.6]
+ys = [0, 0.147, 2.13, 2.29, -0.261, -0.79, 3.66, 4.59, 7.28, 7.68, 5.54, 6.4, 1.5, 0.69, 3.62, 3.65, 0.35]
+
+xs = [0, 18.7, 19.7, -13.5, -14.3, -7.8, -3.58]
+ys = [0, -0.727, 3.26, 6.04, 1.5, 1.74, 0.15]
 ###############################################################################
 
 ## INIT #######################################################################
@@ -83,6 +99,12 @@ def main():
     rospy.init_node('floor2_example')
     start_pt, is_sim, use_rviz, use_matplotlib = param_init()
 
+    #NMPC
+    ros_interface = ROSInterface()
+    occupancy_grid_parameters = MapROSInterface.get_occupancy_grid_parameters()
+    occupancy_grid = OccupancyGrid(**occupancy_grid_parameters)
+    MapROSInterface.publish(occupancy_grid)
+
     # select data handler based on the ros params
     if use_rviz:
         DataHandler = RVIZPathHandler
@@ -92,59 +114,82 @@ def main():
         DataHandler = BasicDataHandler
 
     if is_sim:
-
 	# start the simulation
         model_for_sim = SimpleBicycleModel(start_pt)
         simulator = SimSVEA(vehicle_name, model_for_sim,
-                            dt=dt, start_paused=True, run_lidar=True,
-                 publish_pose=True,
-                 publish_odometry=True).start()
+                            dt=dt, start_paused=True, run_lidar=True).start()
 
     # start pure pursuit SVEA manager
-
-
-
-    # Adding comment to test
-
-    x_t = [-5.63, 0, 3]
-    y_t = [-8.62, 0, 0]
-
-    #cur_path = os.path.dirname(__file__)
-    #print(cur_path)
-    #new_path = os.path.relpath('/resources/param/obstacles.yaml', cur_path)
-    #print(new_path)
-    #f = open('multi.py', "r")
-    #print(f.read()) 
-
-    traj_x1, traj_y1 = solution(start_pt.x, start_pt.y, -4.23, -10, [])
-
-    svea = SVEAPurePursuit(vehicle_name,
-                           LocalizationInterface,
-                           PurePursuitController,
-                           traj_x1, traj_y1,
-                           data_handler = DataHandler)
-    svea.start(wait=True)
-
+    
     if is_sim:
         # start simulation
         simulator.toggle_pause_simulation()
 
-    # simualtion loop
-    svea.controller.target_velocity = target_velocity
+    track = Track(vehicle_name, publish_track=True)
+    track.start()
 
+    # simualtion loop
     angle_lidar = [radians(angle) for angle in range(-135, 135, 2)]
 
-    j = 1
-    while not rospy.is_shutdown():
-	    while not svea.is_finished and not rospy.is_shutdown():
-		state = svea.wait_for_state()
+    f = 0
 
-		obs = []
+    while not rospy.is_shutdown():
+
+            if f == 0:
+
+              ros_interface.sleep()
+
+	      if not ros_interface.has_endpoint_changed:
+	         continue
+            
+              init = ros_interface.initial_state
+
+	      goal = [xs[1], ys[1]]
+
+	      traj_x, traj_y = compute_path_connect(init[0], init[1], goal[0], goal[1], occupancy_grid.obstacles, occupancy_grid.localmap)
+
+	      if traj_x[-1] == init[0]:
+		 print("reversed path")
+		 traj_x.reverse()
+		 traj_y.reverse()
+		    
+	      for i in range(len(xs)-2): 
+		 init = goal
+		 goal = [xs[i+2], ys[i+2]]
+		 t_x, t_y = compute_path_connect(init[0], init[1], goal[0], goal[1], occupancy_grid.obstacles, occupancy_grid.localmap)
+
+		 if t_x[-1] == init[0]:
+		    print("reversed path")
+		    t_x.reverse()
+		    t_y.reverse()
+
+		 traj_x = np.concatenate((traj_x, t_x), axis = None)
+		 traj_y = np.concatenate((traj_y, t_y), axis = None)
+
+            elif f == 1:
+              traj_x, traj_y = compute_path_connect(xs[-1], ys[-1], 0, 0, occupancy_grid.obstacles, occupancy_grid.localmap)
+
+	      if traj_x[-1] == init[0]:
+		 print("reversed path")
+		 traj_x.reverse()
+		 traj_y.reverse()
+
+	    svea = SVEAPurePursuit(vehicle_name, LocalizationInterface, PurePursuitController, traj_x, traj_y, data_handler = DataHandler)
+            svea.start(wait=True)
+            svea.controller.target_velocity = target_velocity
+
+	    replan = False
+	    try_replan = 0
+
+	    while not svea.is_finished and not rospy.is_shutdown():
+
+		state = svea.wait_for_state()
 		
 		# compute control input via pure pursuit
 		steering, velocity = svea.compute_control()
 		svea.send_control(steering, velocity)
 		rospy.loginfo_throttle(1, velocity)
+
 		# visualize data
 		if use_matplotlib or use_rviz:
 		    svea.visualize_data()
@@ -152,21 +197,84 @@ def main():
 		    rospy.loginfo_throttle(1, state)
 
 		if svea.lidar.scan != []:
-		    dist = svea.lidar.scan
+		    dist = np.array(svea.lidar.scan)
+                    
+                    obs_x = np.multiply(np.cos(angle_lidar+np.ones(135)*state.yaw), dist) + state.x*np.ones(135) 
+                    obs_y = np.multiply(np.sin(angle_lidar+np.ones(135)*state.yaw), dist) + state.y*np.ones(135)
 
-		    for i in range(0,135):
-			obs.append( (cos(angle_lidar[i])*dist[i] + state.x, sin(angle_lidar[i])*dist[i] + state.y) )
+                    obs_x = obs_x[np.logical_not(np.isnan(obs_x))] 
+                    obs_y = obs_y[np.logical_not(np.isnan(obs_y))]
+                    dist = dist[np.logical_not(np.isnan(dist))]
 
-	    svea.send_control(steering, 0)
-            
-	    traj_x2, traj_y2 = solution(state.x, state.y, x_t[j], y_t[j], [])
-	    print("hej")
+                    obs_x[obs_x > 32.9] = 32.9 
+                    obs_y[obs_y > 16.9] = 16.9 
 
-	    svea = SVEAPurePursuit(vehicle_name, LocalizationInterface, PurePursuitController, traj_x2, traj_y2, data_handler = DataHandler)
-    	    svea.start(wait=True)
-            svea.controller.target_velocity = target_velocity
+                    obs_x[obs_x < -30.5] = -30.5 
+                    obs_y[obs_y < -11.4] = -11.4 
 
-	    j = j +1
+                    obs = np.array([obs_x, obs_y])
+
+                    occupancy_grid.updatemap(dist, angle_lidar, obs.T, 2, 15, [state.x, state.y, state.yaw])
+
+                    if dist[68] < 5 or dist[67] < 3 or dist[69] < 3:
+
+                      target = svea.controller.target
+                      idx_target = svea.controller.index
+
+                      try:
+                        future_target3 = [traj_x[idx_target+3], traj_y[idx_target+3]]
+                        future_target2 = [traj_x[idx_target+2], traj_y[idx_target+2]]
+		        t_v2 = np.linspace(future_target2, future_target3, 100)
+		        t_i2 = occupancy_grid.array_to_index(t_v2)
+
+                        localmap = occupancy_grid.localmap
+
+		        for t in range(len(t_i2)):
+
+		          if localmap[t_i2[t][0], t_i2[t][1]] == 100 or localmap[t_i2[t][0]-1, t_i2[t][1]] == 100 or localmap[t_i2[t][0]+1, t_i2[t][1]] == 100 or localmap[t_i2[t][0], t_i2[t][1]-1] == 100 or localmap[t_i2[t][0], t_i2[t][1]+1] == 100 or localmap[t_i2[t][0]-1, t_i2[t][1]-1] == 100 or localmap[t_i2[t][0]+1, t_i2[t][1]+1] == 100 or localmap[t_i2[t][0]-1, t_i2[t][1]+1] == 100 or localmap[t_i2[t][0]+1, t_i2[t][1]-1] == 100:
+			    
+                            print("must replan")
+                            try_replan += 1
+
+                            if try_replan == 3:
+                              replan = True
+                              try_replan = 0
+
+	                      svea.send_control(steering, 0)
+
+                              try: 
+                                future_target = [traj_x[idx_target+7], traj_y[idx_target+7]]
+                                s = 7
+
+                              except IndexError:
+                                future_target = [traj_x[idx_target+5], traj_y[idx_target+5]]
+                                s = 5
+
+                              traj_x1, traj_y1 = compute_path(state.x, state.y, future_target[0], future_target[1], occupancy_grid.obstacles, occupancy_grid.localmap)
+
+                              if traj_x1 == None and s == 7:
+                                print("traj is none")
+                                future_target = [traj_x[idx_target+5], traj_y[idx_target+5]]
+                                traj_x1, traj_y1 = compute_path(state.x, state.y, future_target[0], future_target[1], occupancy_grid.obstacles, occupancy_grid.localmap)
+
+                              traj_x = np.concatenate((traj_x1, traj_x[idx_target+s:]), axis = None)
+                              traj_y = np.concatenate((traj_y1, traj_y[idx_target+s:]), axis = None)
+
+                              svea.update_traj(traj_x, traj_y)
+			    
+                            break
+
+                      except IndexError:
+                        pass
+
+            if f == 1:
+              break
+            f += 1
+
+    svea.send_control(steering, 0)
+
+    plt.imshow(occupancy_grid.localmap)
+    plt.show()
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")
