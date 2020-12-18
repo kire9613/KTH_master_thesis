@@ -22,7 +22,7 @@ Once you have run the GUI, a blank window with some buttons should appear. You s
 
 For our specific map, we form our known obstacles as convex sets, see the figure below as an example.
 
-![key-teleop example](./media/key_teleop.png) 
+![key-teleop example](./media/convex_map.png) 
 
 When the map is done, you should export and save it. A yaml file will be genereted, which consists of lists of vertices for each obstacle in the map. These lists are stored in the variable occupancy_grid.obstacles in the main file floor2_example.py. This variable is then used in the obstacle avoidance for the path planners, more specifically in the code utils.py, which can be found in /svea_starter/src/svea_core/src/svea/planner. There, with the help of the function _compute_convex_hull_equations, it converts every list of vertices to a condition
 

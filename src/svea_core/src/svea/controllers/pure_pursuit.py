@@ -48,8 +48,8 @@ class PurePursuitController(object):
 
     def compute_velocity(self, state):
         if self.is_finished:
-            # stop moning if trajectory done
-            return 0.0
+            u = 0
+            return u
 
         else:
             # speed control

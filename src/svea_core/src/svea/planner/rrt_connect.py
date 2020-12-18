@@ -32,21 +32,18 @@ class RrtConnect:
         self.utils = utils.Utils(obstacles, grid_data)
 
         self.x_range = (-15, 21)
-        #self.y_range = (-2, 9)
         self.obstacles = obstacles
 
-        #"""
-        k = -0.095
-        self.k = k
-        l1_s = k*self.s_start.x + 9
-        l2_s = k*self.s_start.x + 4.2
-        l3_s = k*self.s_start.x + 4.2
-        l4_s = k*self.s_start.x - 1.3
+        self.k = -0.095
+        l1_s = self.k*self.s_start.x + 9
+        l2_s = self.k*self.s_start.x + 4.2
+        l3_s = self.k*self.s_start.x + 4.2
+        l4_s = self.k*self.s_start.x - 1.3
 
-        l1_g = k*self.s_goal.x + 9
-        l2_g = k*self.s_goal.x + 4.2
-        l3_g = k*self.s_goal.x + 4.2
-        l4_g = k*self.s_goal.x - 1.3
+        l1_g = self.k*self.s_goal.x + 9
+        l2_g = self.k*self.s_goal.x + 4.2
+        l3_g = self.k*self.s_goal.x + 4.2
+        l4_g = self.k*self.s_goal.x - 1.3
 
         if l4_s <= self.s_start.y <= l3_s and l4_g <= self.s_goal.y <= l3_g:
            self.y_range = 43
@@ -56,7 +53,6 @@ class RrtConnect:
 
         else:
            self.y_range = 41
-        #"""
 
     def planning(self):
         for i in range(self.iter_max):
@@ -113,7 +109,6 @@ class RrtConnect:
 
         if np.random.random() > goal_sample_rate:
 
-            #"""
             rand_x = np.random.uniform(self.x_range[0], self.x_range[1])
 
 	    if self.y_range == 43:
@@ -128,12 +123,8 @@ class RrtConnect:
 	      y_max = self.k*rand_x + 9
               y_min = self.k*rand_x - 1.3
 
-            rand_y = np.random.uniform(y_min, y_max) #m=6.295, m=-8.963
+            rand_y = np.random.uniform(y_min, y_max)
             return Node((rand_x, rand_y))
-            #"""
-
-            #return Node((np.random.uniform(self.x_range[0] + delta, self.x_range[1] - delta),
-            #             np.random.uniform(self.y_range[0] + delta, self.y_range[1] - delta)))
 
         return sample_goal
 
@@ -186,7 +177,6 @@ def compute_path_connect(x0, y0, xt, yt, obstacles, grid_data):
 
     if path:
         print("Path found")
-	#del path[::2]
 
         path = smoothing.smooth(path, 0.99, 0.5, 0.001)
 

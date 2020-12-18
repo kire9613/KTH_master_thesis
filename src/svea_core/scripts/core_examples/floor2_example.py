@@ -2,11 +2,6 @@
 
 import rospy
 import numpy as np
-import matplotlib.pyplot as plt
-
-import sys
-import numpy
-numpy.set_printoptions(threshold=sys.maxsize)
 
 from svea.svea_managers.path_following_sveas import SVEAPurePursuit
 from svea.states import VehicleState
@@ -21,51 +16,20 @@ from math import radians, cos, sin, hypot, atan2
 
 from svea.planner.rrt import *
 from svea.planner.rrt_connect import *
-from svea.planner.rrt_star import *
 
-#NMPC
 from svea.map.occupancy_grid import OccupancyGrid
 from svea.map.ros_interface import ROSInterface as MapROSInterface
 from svea.planner.ros_interface import ROSInterface
 
 ## SIMULATION PARAMS ##########################################################
 vehicle_name = "SVEA"
-target_velocity =  1 # [m/s]
+target_velocity =  0.6 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
-xs = [-2.33, 10.48]
-ys = [-7.09, 11.71]
-
-traj_x1 = np.linspace(xs[0], xs[1])
-traj_y1 = np.linspace(ys[0], ys[1])
-
-traj_x2 = np.linspace(xs[1], 6)
-traj_y2 = np.linspace(ys[1], 15)
-
-traj_x = np.concatenate((traj_x1, traj_x2), axis = None)
-traj_y = np.concatenate((traj_y1, traj_y2), axis = None)
-
-traj_x3 = np.linspace(6, -7.33)
-traj_y3 = np.linspace(15, -4.15)
-
-traj_x = np.concatenate((traj_x, traj_x3), axis = None)
-traj_y = np.concatenate((traj_y, traj_y3), axis = None)
-
-traj_x4 = np.linspace(-7.33, -2.5)
-traj_y4 = np.linspace(-4.15, -6.5)
-
-traj_x = np.concatenate((traj_x, traj_x4), axis = None)
-traj_y = np.concatenate((traj_y, traj_y4), axis = None)
-
-#xs = [-2.33, 4.04, 6.97, 8.6, 19.5, 19.7, -13.9, -14.3, -7.8, -7.73, -5.6]
-#ys = [-7.09, 2.3, 1.71, 0.23, -0.714, 3.26, 6.4, 1.5, 0.69, 3.62, 0.35]
-
-xs = [0, 1.81, 3.68, 6.71, 9.64, 19, 19.7, 6.54, 4.58, 2.38, 0.763, -13.9, -14.3, -7.8, -7.73, -5.2, -5.6]
-ys = [0, 0.147, 2.13, 2.29, -0.261, -0.79, 3.66, 4.59, 7.28, 7.68, 5.54, 6.4, 1.5, 0.69, 3.62, 3.65, 0.35]
-
 xs = [0, 18.7, 19.7, -13.5, -14.3, -7.8, -3.58]
 ys = [0, -0.727, 3.26, 6.04, 1.5, 1.74, 0.15]
+
 ###############################################################################
 
 ## INIT #######################################################################
@@ -103,7 +67,6 @@ def main():
     ros_interface = ROSInterface()
     occupancy_grid_parameters = MapROSInterface.get_occupancy_grid_parameters()
     occupancy_grid = OccupancyGrid(**occupancy_grid_parameters)
-    MapROSInterface.publish(occupancy_grid)
 
     # select data handler based on the ros params
     if use_rviz:
@@ -214,7 +177,7 @@ def main():
 
                     obs = np.array([obs_x, obs_y])
 
-                    occupancy_grid.updatemap(dist, angle_lidar, obs.T, 2, 15, [state.x, state.y, state.yaw])
+                    occupancy_grid.updatemap(dist, obs.T, [state.x, state.y, state.yaw])
 
                     if dist[68] < 5 or dist[67] < 3 or dist[69] < 3:
 
@@ -273,14 +236,10 @@ def main():
 
     svea.send_control(steering, 0)
 
-    plt.imshow(occupancy_grid.localmap)
-    plt.show()
-
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished!")
 
     rospy.spin()
-
 
 if __name__ == '__main__':
     main()
