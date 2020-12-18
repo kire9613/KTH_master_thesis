@@ -152,15 +152,11 @@ class SimLidar(object):
             return self._obstacles
 
         obstacles_param = rospy.search_param('obstacles')
-        obstacles_from_param = rospy.get_param(obstacles_param, None)
+        self._obstacles = rospy.get_param(obstacles_param, None)
 
-        if type(obstacles_from_param) == type([]):
-            self._obstacles = obstacles_from_param
-            for obstacle_edges in self._obstacles:
-                # add last segment to close polygon
-                obstacle_edges += [obstacle_edges[0]]
-        else:
-            self._obstacles = []
+        for obstacle_edges in self._obstacles:
+            # add last segment to close polygon
+            obstacle_edges += [obstacle_edges[0]]
         return self._obstacles
 
     def _update_visible_edges(self):
