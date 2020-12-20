@@ -173,22 +173,34 @@ N/A
 #### Purpose
 Provides the original static map. Given from the beginning.
 
-
-
 ## 8. Map logic
 
 #### Inputs
 |Name|Type|Data|Description|
 |---|---|---|---|
-|Map|map|many|Occupancy grid of original map. Given in pixel representation|
-|State|coordinate_message|int8[x,y]|Coordinates where the car has seen obstacles. Given in pixel representation?|
+|Map|OccupancyGrid|many|Occupancy grid of original map. Given in pixel representation|
+|pixel_coordinates|map_pixel_coordinates|int8[x,y]|Coordinates where the car has seen obstacles. Given in pixel representation|
+|Track|||Coordinates where the tracks inside and outside boundaries are|
 
 #### Outputs
-|Occupancy_grid|Occupancy_grid|int[], dimensions|Occupancy grid describing where the obstacles are. Given in scaled pixel representation|
+|Name|Type|Data|Description|
+|---|---|---|---|
+|inflated_map|Occupancy_grid|int[], dimensions|Occupancy grid with static map, track and obstacles (all inflated). Given in scaled pixel representation|
 
 #### Parameters
-Scale
-obstacle inflation size
+
+- number_of_lidar_scans_until_publish: determines how many lidar scans should be included in each map instance. Higher values increase the detected objects corresponding pixels values (trust that there truly is an obstacle there) but can be set to 1 if no noise.
+
+- length_of_memory_list: how many map instances to store. This value in essence means that you will remember length_of_memory_list*number_of_lidar_scans_until_publish rotations from the lidar scan. Set to 1 if no noise.
+
+- occupied_space_threshold: the lowest value for what gets rated as a certain obstacle in the obstacle map (made up of all the map instances). 0 to 9 means all readings from the scan will be used as the confidence gets updated with 10 as incremental steps. 0-9 should be used if number_of_lidar_scans_until_publish = 1
+
+- car_radius_in_meters: the radious of the car in meters, can be changed to higher values to give more clerence for when driving around obstacles and from wals
+
+- inflation_for_static_map: how much the static wals should be inflated. As the cars lidar detects the nerby wals as well they will be inflated by car_radius_in_meters close to the car but this inflation helps when planing routs around courners for example.
+
+- rescaling_factor: can be set to any integer and rescales  the whole map by that factor. High values here are benefitial as it means A-star will be able to compute faster for example but it also means the precison of the optimal path becomes less.
 
 #### Purpose
-Purpose is to provide a proper map used for pathfinding
+Purpose is to provide a proper occupancy grid used for pathfinding
+
