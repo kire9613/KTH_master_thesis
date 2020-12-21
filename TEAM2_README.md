@@ -2,12 +2,11 @@
 
 ## System Requirements
 
-The system reuiqres the packages scipy, tqdm, matplotlib and numpy. To install them, run the following commands on the terminal:
+The system reuiqres the packages scipy, tqdm and numpy. To install them, run the following commands on the terminal:
 
 ```bash
 pip install scipy
 pip install tqdm
-pip install matplotlib
 pip install numpy
 ```
 
