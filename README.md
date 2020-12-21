@@ -207,7 +207,7 @@ Provides the original static map. Given from the beginning.
 #### Purpose
 Purpose is to provide a proper occupancy grid used for pathfinding
 
-## 1. A star
+## 9. A star
 
 #### Inputs
 |Name|Type|Data|Description|
