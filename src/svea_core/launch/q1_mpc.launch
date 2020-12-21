@@ -40,20 +40,8 @@
     </node>
     </group>
 
-    <!-- <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="screen" > -->
-    <!--     <!-1- <remap from="scan" to="scan" /> -1-> -->
-    <!--     <remap from="map" to="costmap_node/costmap/costmap" /> -->
-    <!--     <param name="odom_frame" value="odom" /> -->
-    <!--     <param name="base_frame" value="base_link" /> -->
-    <!-- </node> -->
-
     <node pkg="svea_core" type="tf_sim.py" name="tf_sim" output="screen" />
     <node pkg="tf" type="static_transform_publisher" name="base_link_2_laser" args="0.33 0 0 0 0 0 /base_link /laser 40"/>
-
-    <!-- Publishes the voxel grid to rviz for display -->
-    <!-- <node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer"> -->
-    <!--   <remap from="voxel_grid" to="costmap/voxel_grid"/> -->
-    <!-- </node> -->
 
     <remap from="map" to="empty_map"/>
     <arg name="empty_map_file" default="$(find svea_core)/resources/maps/empty.yaml" />
@@ -66,10 +54,5 @@
     <remap from="empty_map" to="map"/>
 
     <node pkg="svea_core" type="map_collision_node.py" name="map_collision_node" output="screen" />
-
-
-    <!-- <node pkg="svea_core" type="global_path_node.py" name="global_path_node" output="screen" /> -->    
-    <!-- <node pkg="svea_core" type="map_explore_node.py" name="explore_node" output="screen" /> -->
-    <!-- <node pkg="svea_core" type="collision_node.py" name="collision_node" output="screen" /> -->
 
 </launch>
