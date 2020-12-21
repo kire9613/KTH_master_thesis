@@ -39,10 +39,31 @@ When the path planning is done, it doesn't mean that one can use the path genera
 
 ### Sampling Domain
 
+In order to generate the path as fast as possible one should restrict the sampling domain. It means that depending on the location of the car, the RRT algorithms randomly sampled at a specified region instead of sampling anywhere in the space. This means that you are going to speed up the computation time in order to find a feasible path and thereby the time efficiency is achieved. Restricting the sampling domain is done by forcing the sampling between specified lines in the space. These straight lines was calculated by reading the point coordinates in the map and then interpolating straight lines between them, see the figure below.
+
+![key-teleop example](./media/sample.png)
+
 ### Obstacle Avoidance
+
+The most fundamental criteria is that the generated path should be obstacle free. This means that for every iteration in the RRT algorithm one should ensure that the added vertex to the tree is not located at the occupied space. In order to ensure this, the known obstacles in the map was modelled as polygon shaped obstacles. Modeling the obstacle, Q, as a polygon lead to the following representation of the occupied space
+
+<img src="https://render.githubusercontent.com/render/math?math=\mathbb{Q}^{m} =\{ y \in \R | A^{m}y \leq b^{m} \} ">
+
+Index “m” represent the m:th obstacle, y = (x,y) occupied coordinate in the map, A and b are obstacle matrices for m:th obstacle. This obstacle polygon representation allows us to check if the sampled point from RRT or RRT connect belongs to this set. If this is the case then this point is not going to be add as a vertex to the tree.
 
 ### Smoothing
 
+After a path is found, path smoothing can be applied to make a smoother, more direct route to the goal. Assume we already have an optimal path, but we wish to smooth the trajectory. For these equations, y represents a smoothed coordinate at time step i while x represents the original unsmoothed coordinate. The ith element of x refers to a list containing the x and y coordinates of an object at the ith time step
 
+<img src="https://render.githubusercontent.com/render/math?math=x_i = [ \, x, y] \,_{m} ">
+<img src="https://render.githubusercontent.com/render/math?math=y_i = [ \, x, y] \,_{m} ">
+
+In order to smooth the path we should do some updates based on the gradient ascent algorithm. The first update is based on smoothing the path with respect to the unsmoothed trajectory. 
+
+<img src="https://render.githubusercontent.com/render/math?math=y_i = y_i + \alpha(x_i - y_i) ">
+
+One can adjust the importance of the smoothing optimization with hyper parameter alpha. The higher the alpha, the more the coordinates should be smoothed, while the opposite will result in coordinates that have a greater adherence to the original unsmoothed set of coordinates. For the second update, we can update the smoothed coordinates in the direction that minimizes the deviation between adjacent smoothed coordinates. Beta acts like alpha in that is adjusts how much emphasis to put on the smoothed coordinate update.
+
+<img src="https://render.githubusercontent.com/render/math?math=y_i = y_i + \beta(y_{i+1} + y_{i-1} - 2y_i) ">
 
 
