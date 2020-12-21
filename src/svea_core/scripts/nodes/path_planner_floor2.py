@@ -41,6 +41,7 @@ class Path_logic():
         self.look_ahead = 25 # how many pixels forward the path should be estimated (in pix)
         self.threshold_distance = 15 # trigger A* when distance to obstacle is less than a threshold
         self.threshold_wait = 1 # defines how fast A* should be triggered when new obstacles are detected (1 means each pixel = 10 cm)
+        self.path_end_distance = 0.3  #Defines maximum distance from car to last trajectory point
         self.current_path = next_traj()
         self.current_path.x_coordinates = self.traj_x #Initialize current path as a main trajectory
         self.current_path.y_coordinates = self.traj_y #Initialize current path as a main trajectory
@@ -213,7 +214,7 @@ class Path_logic():
         if not self.A_star_path_done:
             threshold = np.sqrt((self.state.x - self.current_path.x_coordinates[-1])**2 + (self.state.y - self.current_path.y_coordinates[-1])**2)
             #Car is aproaching final trajectory point calculated by A*
-            if threshold < 0.3:
+            if threshold < self.path_end_distance:
                 self.A_star_path_done = True
                 self.sent = False
             #Release A* when car goes around a vissible obstacle

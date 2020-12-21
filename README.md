@@ -13,6 +13,7 @@ The different nodes to be implemented are the following:
 - Obstacle detection
 - Map server
 - Map logic
+- A star
 
 
 # Vocab
@@ -119,7 +120,6 @@ Controller to filter the speed to give depending on if the stop signal is on or 
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Occupancy_grid|Occupancy_grid|int[], dimensions|Occupancy grid describing where the obstacles are. Given in scaled pixel representation|
-|Next_traj|boolean|boolean|Output if close to end of trajectory to generate next trajectory|
 
 #### Outputs
 |Name|Type|Data|Description|
@@ -127,9 +127,12 @@ Controller to filter the speed to give depending on if the stop signal is on or 
 |Trajectory|Trajectory_Path|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
 
 #### Parameters
-Parameters for the path planner. Was thinking about parameters that defines how much the planner is allowed to deviate from the most optimal route and such.
-
-The node should be given the trajectory coordinates in the beginning and number of laps. Need to define in which coordinate system the nodes need to be provided in.
+- xs: Predifined x-coordinates for main trajectory.
+- ys: Predifined y-coordinates for main trajectory.
+- look_ahead: Defines how far away from car the trajectory should be estimated by A star
+- threshold_distance: Defines maximum distance between car and detected obstacle for A star to be activated
+- threshold_wait: Defines distance that car should acomplish before A star could be reinitialized. It helps to avoid unnecessary calculations while detcting hidden obstacles.
+- path_end_distance: Defines maximum distance from car to last trajectory point. Trajectory will be updated when distance between car and last trajectory point is less then path_end_distance.
 
 #### Purpose
 Purpose is to calculate the path for which the car is supposed to drive along.
@@ -203,4 +206,28 @@ Provides the original static map. Given from the beginning.
 
 #### Purpose
 Purpose is to provide a proper occupancy grid used for pathfinding
+
+## 1. A star
+
+#### Inputs
+|Name|Type|Data|Description|
+|---|---|---|---|
+| Start point | PathEstimator | int[] | Start point coordinates in pixel format|
+| Target point | PathEstimator | int[] | Target point coordinates in pixel format|
+| Occupancy grid | PathEstimator | int[] | Occupancy grid reshaped to a 1xn dimensional array|
+| Grid width | PathEstimator | int | Width of occupancy grid|
+| Grid height | PathEstimator | int | Height of occupancy grid|
+
+#### Outputs
+
+|Name|Type|Data|Description|
+|---|---|---|---|
+| Estimated path | int[] | int[] | Path calculated by A star|
+
+#### Parameters
+
+- timeout_time: Defines the time limit that makes A star to restart when timeout occures. When timeout is reached the A* will be restarted resulting in more robust path finding.
+
+#### Purpose
+This is the path finding algorithm that finds a suitable trajectory with given occupancy grid, start and target point
 
