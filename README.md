@@ -1,3 +1,23 @@
+# Description
+This repository contains Team 3's implementation of the project task in the Automatic Control Project Course (EL2425). The developed algorithm was tested and implemented on the provided SVEA platform. 
+
+The code is based around different nodes that handle different tasks, which was done to allow for a highly modular system. Key functions in the implemenation are the A*-algorithm which is used in the path planner and Map logic which provides an occupancy grid (inflated and rescaled) for the path planner. To follow the reference path provided by the path planner, a PID controller was used.
+
+# How to run
+There are two options to run the code for both the "floor2" and the "q1 floor" map, depending on simulation mode or real car mode. 
+
+To run the code in simulation mode for "floor2", run:
+
+    > roslaunch svea_core floor2.launch
+        
+To run the code in simulation mode for "q1 floor", run:    
+    
+    > roslaunch svea_core q1.launch
+    
+To run the code on the real car for map X, simply run X_real.launch e.g.,
+      
+    > roslaunch svea_core q1_real.launch
+
 # Purpose
 The purpose of this document is to give insight into how the different nodes of our SVEA implementation are supposed to interact with each other. It also gives explanations for what the purpose of the nodes are.
 
