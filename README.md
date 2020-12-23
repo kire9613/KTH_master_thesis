@@ -8,11 +8,11 @@ The code is based around different nodes that handle different tasks, which was 
 # How to run
 The implementation is based on a small number of libraries, which can be considered as core libraries to be able to use the SVEA platform. These libraries are
     
-    > numpy
-    > math
-    > rospy
-    > matplotlib
-
+    numpy
+    math
+    rospy
+    matplotlib
+    
 There are two options to run the code for both the "floor2" and the "q1 floor" map, depending on simulation mode or real car mode. 
 
 To run the code in simulation mode for "floor2", run:
