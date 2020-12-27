@@ -54,13 +54,13 @@ Scaled pixel representation is the coordinate system that is a scaled down versi
 
 ## 1. SVEA
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Control|control_msg|Not Specified|Look up how it should be specified|
 
 
-#### Outputs
+#### Publishers
 
 |Name|Type|Data|Description|
 |---|---|---|---|
@@ -78,13 +78,13 @@ This is the given node in the beginning that signifies the car.
 
 ## 2. Emergency
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
 |Scan|Laser_Scan|Many|Distances in Vehicle_State coordinates|
 
-#### Outputs
+#### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |STOP|boolean|boolean|Describes if the emergency break is on or off|
@@ -99,13 +99,13 @@ The purpose of this node is to stop the car if it gets too close to an object to
 
 ## 3. Speed and Steering
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
 |Trajectory|Trajectory_Path|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
 
-#### Outputs
+#### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Control|control_msg|Not Specified|Look up how it should be specified|
@@ -123,13 +123,13 @@ The purpose of this node is to calculate the appropriate speed and steering so t
 
 ## 4. Control Filter
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Control|control_msg|Not Specified|Look up how it should be specified|
 |STOP|boolean|boolean|Describes if the emergency break is on or off|
 
-#### Outputs
+#### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Control|control_msg|Not Specified|Look up how it should be specified|
@@ -145,12 +145,12 @@ Controller to filter the speed to give depending on if the stop signal is on or 
 
 ## 5. Path planner
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Occupancy_grid|Occupancy_grid|int[], dimensions|Occupancy grid describing where the obstacles are. Given in scaled pixel representation|
 
-#### Outputs
+#### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Trajectory|Trajectory_Path|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
@@ -193,9 +193,9 @@ Transforms the Lidar readings into coordinates of the real world in order to pla
 
 ## 7. Map server
 
-#### Inputs
+#### Subscribers
 N/A
-#### Outputs
+#### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Map|map|many|Occupancy grid of original map. Given in pixel representation|
@@ -207,14 +207,14 @@ Provides the original static map. Given from the beginning.
 
 ## 8. Map logic
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |Map|OccupancyGrid|many|Occupancy grid of original map. Given in pixel representation|
 |pixel_coordinates|map_pixel_coordinates|int8[x,y]|Coordinates where the car has seen obstacles. Given in pixel representation|
 |Track|||Coordinates where the tracks inside and outside boundaries are|
 
-#### Outputs
+#### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
 |inflated_map|Occupancy_grid|int[], dimensions|Occupancy grid with static map, track and obstacles (all inflated). Given in scaled pixel representation|
@@ -238,7 +238,7 @@ Purpose is to provide a proper occupancy grid used for pathfinding
 
 ## 9. A star
 
-#### Inputs
+#### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
 | Start point | PathEstimator | int[] | Start point coordinates in pixel format|
@@ -247,7 +247,7 @@ Purpose is to provide a proper occupancy grid used for pathfinding
 | Grid width | PathEstimator | int | Width of occupancy grid|
 | Grid height | PathEstimator | int | Height of occupancy grid|
 
-#### Outputs
+#### Publishers
 
 |Name|Type|Data|Description|
 |---|---|---|---|
