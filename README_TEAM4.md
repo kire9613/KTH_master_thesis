@@ -1,6 +1,7 @@
 # EL2425 TEAM4
 
 ## Short description
+The goal of this project...
 
 ## Requirements
 Before running the code for the first time run the commands
@@ -12,6 +13,25 @@ source ~/.bashrc
 ```
 
 ## Running the code
+
+### In simulation
+
+First, make sure the system is set up to run in simulation. Edit `svea_starter/src/svea_core/scripts/team4_project/team4.launch` and make sure `is_sim` is set to `true`. By running the launch script all nodes needed will be started. 
+
+In two different terminals, run:
+```
+roslaunch svea_core team4.launch
+```
+and 
+```
+rosrun svea_core start_pause.py
+```
+
+From the first command you will receive a whole bunch of prints from ROS, and after a few seconds you shall end up with something like:
+
+Next, in rviz, use `2D pose estimate` to give the car an initial pose. Then press *enter* in the terminal you ran `start_pause.py`. The car should start moving after finishing planning.
+
+### On the car
 
 First make sure the system is set up to run on hardware. Edit `svea_starter/src/svea_core/scripts/team4_project/team4.launch` and make sure `is_sim` is set to `false`. The system is configured to distribute the ROS nodes over multiple machines. Either add your computer(s) to the list of machines and select what nodes are launched on them, or remove the `machine=` part on all `node` tags to run everything on the SVEA.
 
@@ -36,11 +56,11 @@ In rviz, use `2D pose estimate` to give the car an initial pose. Then press *ent
 
 [behaviour_tree]: team4_readme_pages/figures/behaviour_tree.svg "Behaviour Tree"
 
-The behavior of the system is defined in a behavior tree. Using a behavior tree provides a reactive and modular structure. It is then easy to prioritize some behaviors over others, and to insert additional functionality. In order to give an overview of how the system works, let's have a look at the different parts of the behavior tree. A more detailed description of all subsystems is provided in separate readme files linked in the bottom of this page.
+The system consists of several ROS nodes performing different tasks. One node managing the mapping, one the planning and so on. Further, the behavior of the system is defined in a behavior tree. Using a behavior tree provides a reactive and modular structure. It is then easy to prioritize some behaviors over others, and to insert additional functionality. In order to give an overview of how the system works, let's have a look at the different parts of the behavior tree. A more detailed description of all subsystems mentioned is provided in separate readme files linked in the bottom of this page.
 
 #### Before Launching Behaviour Tree
 A global plan is calculated using a [RRT planner](team4_readme_pages/TEAM4_PATHPLANNING.md "TEAM4_PATHPLANNING"), planning a path from the cars initial position to a defined goal.
-This plan is done only with knowledge of the initial map of floor 2 and the polygons that defines the "virtual walls" defining the race track. The planner generates a list of waypoints defining a path, which is later used to generate a local plan.
+This plan is done only with knowledge of the initial map of floor 2 and the polygons that defines the "virtual walls" defining the race track. The planner generates a list of waypoints defining a path (seen as purple diamonds in the gif below), which is later used to generate a local plan (the yellow line in front of the car).
 
 #### Part 1 - Initialization
 When launching the behavior tree, the systems waits until all initialization processes are finished. This includes:
@@ -63,19 +83,25 @@ This part of the tree checks if the car have reached it's goal, that is if the c
 #### Part 4 - Planning Timeout
 Sometimes the [local planner](team4_readme_pages/TEAM4_PATHPLANNING.md "TEAM4_PATHPLANNING") might run into problems, if for example a waypoint is blocked by an obstacle, or if planning just happens to be extra difficult for the current target. Therefore a timeout is used in order to abort the planning process. If the timeout is activated, the following happens:
 * Move the current target waypoint along the line between the current and the next waypoint.
-When this is done, a new planning process will be started which hopefully not suffer from the same problem.
+When this is done, a new planning process will be started hoping that the new waypoint is not blocked.
 
 #### Part 5 - Obstacle Detection
-Along execution we search for collisions in the planned path...
+Along execution we are continiously searching for collisions in the planned path. For every point in the path we check if the point is located at a forbidden area where we are not allowed to drive. The status if the collision detection then is published to a topic */collision* that is read by other nodes that might be interested. The message published to the topic contains two fields: 
+```
+bool collision 
+geometry_msgs/Point collision_point
+```
+telling if there is a collision (True/False) and the coordinates of the collision point.
 
 #### Part 6 - Waypoint update
 ![](team4_readme_pages/figures/waypoint_timeout.gif )
 The local planner plans from the car position to a target waypoint. This target waypoint needs to be continuously updated when driving along the path. This is done by the following procedure:
 * First, check if the car is near a waypoint, otherwise we can keep the current target waypoint - *Is at waypoint*
 * If we are near a waypoint, we can update the target waypoint to be the next waypoint in the list. - *Update waypoint*
+By doing this we are iteration over the list of waypoint defining our global plan until we have reached out goal.
 
 #### Part 7 - Plan and Drive
-The car tries to calculate a new path as often as possible, that is, as long as no planning process is already running we call the local planner through *Replan path*. *Replan path* starts a [Hybrid A* planning](team4_readme_pages/TEAM4_PATHPLANNING.md "TEAM4_PATHPLANNING") process with start point as the cars position and a target waypoint. Every time a new planning process is initialized, the planner gets the latest [map](team4_readme_pages/TEAM4_MAPPING.md "TEAM4_MAPPING") which ensures that the latest plan also consider the latest obstacles that have been detected. As soon as a new path is returned, the old path is replaced with the new path.
+The car tries to calculate a new path as often as possible, that is, as long as no planning process is already running we call the local planner through *Replan path*. *Replan path* starts a [Hybrid A* planning](team4_readme_pages/TEAM4_PATHPLANNING.md "TEAM4_PATHPLANNING") process with start point as the cars position and a target waypoint. Every time a new planning process is initialized, the planner gets the latest [map](team4_readme_pages/TEAM4_MAPPING.md "TEAM4_MAPPING") which ensures that the latest plan consider the latest obstacles that have been detected. As soon as a new path is returned, the old path is replaced with the new path. As long there is a path available, the car drives along that path.
 
 ### Descriptions of subsystems
 * [Mapping](team4_readme_pages/TEAM4_MAPPING.md "TEAM4_MAPPING")
