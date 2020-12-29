@@ -1,10 +1,14 @@
 # EL2425 TEAM4
 
 ## Short description
-The goal of this project...
+The goal of this project was to create a solution making it possible for the SVEA car to autonomously drive along a given track in a safe manner avoiding unknown (and known) obstacles)
 
 ## Requirements
-Before running the code for the first time run the commands
+First, make sure you have followed the basic setup process for running the code in the main-branch of svea_starter given in the README. 
+
+Then for running the code of team4 a few more things needs to be installed.
+
+Before running the code for the first time run the commands:
 ```
 pip install py-trees==0.6.5
 sudo apt install python-rtree python-scipy
@@ -28,12 +32,46 @@ rosrun svea_core start_pause.py
 ```
 
 From the first command you will receive a whole bunch of prints from ROS, and after a few seconds you shall end up with something like:
+![alt text][run_sim]
 
-Next, in rviz, use `2D pose estimate` to give the car an initial pose. Then press *enter* in the terminal you ran `start_pause.py`. The car should start moving after finishing planning.
+[run_sim]: team4_readme_pages/figures/run_sim.png "Run Sim"
+
+Then, in rviz, use `2D pose estimate` to give the car an initial pose. Then press *enter* in the terminal you ran `start_pause.py`. The car should start moving after finishing planning.
+
+When system is running correctly you will se the car moving, and some feedback in the terminal:
+![alt text][run_sim3]
+
+[run_sim3]: team4_readme_pages/figures/sim3.png "Run Sim 3"
+
+![alt text][run_sim2]
+
+[run_sim2]: team4_readme_pages/figures/sim_2.png "Run Sim 2"
+
+Note: Sometims setting up the map and gobal planning might take a few minutes, if not earlier saved maps and plans are used. If for example the terminal hangs on *Planning path...* you just need to wait for the RRT to finnish, that is when the purple dimonda appearns in rviz. On the other side, if the termainal hangs at *Trach sucessfully initialized* probably you also miss the fat green polygons defining the track. Then you just need for those to appear.
 
 ### On the car
 
 First make sure the system is set up to run on hardware. Edit `svea_starter/src/svea_core/scripts/team4_project/team4.launch` and make sure `is_sim` is set to `false`. The system is configured to distribute the ROS nodes over multiple machines. Either add your computer(s) to the list of machines and select what nodes are launched on them, or remove the `machine=` part on all `node` tags to run everything on the SVEA.
+
+*** Some extra stuff ***
+
+To be able to run nodes on different machines also some setup of ssh-keys is needed. Otherwise the following steps regarding ssh keys can be skipped, then go directly to `roslaunch svea_core team4.launch`.
+
+Setting up ssh:
+* On the car, run: `cat ~/.ssh/id_rsa.pub och kopiera output`
+
+* On the machine to be used first run `sudo apt install openssh-server`. Edit the file `~/.ssh/authorized_keys` (create the file if it does not exist) and paste what you got from the command that was ran on the car. Finally run `chmod 600 ~/.ssh/authorized_keys`.
+
+* Edit `team4.launch` and define a machine tag for your machine: `<machine name="define a name" address="hostname.local" user="your computer user name" env-loader="path to remote-env.sh"/>`
+(output from running "hostname" in the terminal and add the string .local in the end). Then this machine tag can be used in the launchfile as described above.
+
+* Using this for the first time, manually connect to your computer from the SVEA car in order to make sure your computer is known by the car.
+
+Whit this setup done and with machines defined in the launch file, the code can then be ran following the instructons below. Make sure that all machines are connected to the SVEA network.
+
+*** End of extra stuff ***
+
+Now back to the normal procedure of launching the code.
 
 To run the code, you need to start three different programs. First, launch our code on the vehicle with:
 
