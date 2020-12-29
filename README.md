@@ -102,8 +102,9 @@ The purpose of this node is to stop the car if it gets too close to an object to
 #### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
-|State|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
-|Trajectory|Trajectory_Path|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
+|state|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
+|TrajMessage|next_traj|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
+|using_astar|Bool|Bool|Information if the car is using the astar trajectory or not|
 
 #### Publishers
 |Name|Type|Data|Description|
@@ -114,10 +115,12 @@ The purpose of this node is to stop the car if it gets too close to an object to
 #### Parameters
 |Name|Type|Data|Description|
 |---|---|---|---|
-|New_traj_distance|Float|percentage_to_next_traj|Percentage of trajectory left when the next trajectory should be calculated|
+|target_velocity|Float|Float|The target velocity while following the base line controller|
+|PID_params|Float|Float|The parameters for the PID controller|
+|k|Float|Float|Param for lookahead distance for steering|
 
 #### Purpose
-The purpose of this node is to calculate the appropriate speed and steering so that the car follows the trajectory fast and precise. It should also notify the path_planner node when it gets close to the end of the trajectory.
+The purpose of this node is to calculate the appropriate speed and steering so that the car follows the trajectory fast and precise.
 
 
 
