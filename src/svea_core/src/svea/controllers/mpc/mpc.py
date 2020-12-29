@@ -382,9 +382,6 @@ class MPC(object):
         if pind >= ind:
             ind = pind
 
-        #  TODO: Fake look ahead, change this later <20-11-20, rob> #
-        # ind += 1
-
         xref[0, 0] = cx[ind]
         xref[1, 0] = cy[ind]
         xref[2, 0] = cyaw[ind]
@@ -394,12 +391,6 @@ class MPC(object):
         travel = 0.0
 
         for i in range(self.Nt + 1):
-            # if dind==None:
-            #     travel += abs(sp[ind]) * self.dt
-            # else:
-            #     #  TODO: This is not working, sp[min(ind+dind,ncourse-1)] solves the
-            #     #  problem but the car doesn't go to a full stop then. <27-11-20, rob> #
-            #     travel += abs(sp[min(ind+dind,ncourse-1)]) * self.dt
             travel += abs(state[3]) * self.dt
             dind = int(round(travel / self.dl))
 
@@ -449,15 +440,12 @@ class MPC(object):
 
     def calc_nearest_index(self,state, pind):
         if state[0]==0.0 and state[1]==0.0:
-            #  TODO: Find way to wait until state properly initalized <17-11-20, rob> #
             rospy.loginfo("mpc.py: No state loaded")
             return 0, 0
         cx = self.traj_x
         cy = self.traj_y
         cyaw = self.traj_yaw
 
-        #  TODO: Search might have to include numbers in a backward direction
-        #  also <20-11-20, rob> #
         dx = [state[0] - icx for icx in cx[pind:(pind + self.N_IND_SEARCH)]]
         dy = [state[1] - icy for icy in cy[pind:(pind + self.N_IND_SEARCH)]]
 

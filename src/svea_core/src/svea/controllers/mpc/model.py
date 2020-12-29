@@ -156,7 +156,7 @@ class SVEAcar(object):
         xdot1  = v*ca.cos(yaw)
         xdot2  = v*ca.sin(yaw)
         xdot3  = v/self.L * ca.tan(delta)
-        xdot4  = a # TODO: Simulate ESC as in bicycle.py?
+        xdot4  = a
 
         dxdt = [xdot1,
                 xdot2,
