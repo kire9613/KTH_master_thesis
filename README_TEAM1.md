@@ -31,9 +31,9 @@ roslaunch svea_core q1_real.launch
 ## Flow of code
 
 When the launch file, “q1_mpc.launch”, for simulation is run, some of the important python files and packages that’s loaded are :
-q1_mpc_co_av.py 
-map_collision_node.py
-costmap_2d package
+  1. q1_mpc_co_av.py 
+  2. map_collision_node.py
+  3. costmap_2d package
 
 ## Parameter tuning
 
