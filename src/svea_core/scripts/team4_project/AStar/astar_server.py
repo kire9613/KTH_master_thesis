@@ -1,8 +1,23 @@
 #!/usr/bin/env python
 
+"""
+Hybrid A* algorithm performing path planning.
+Using content in dublins.py
+To be used as a ROS action service
+Input: ROS msg of type AStarAction: string frame_id
+                                    float32 x0 (plan from position (x0,y0) and heading theta0)
+                                    float32 y0
+                                    float32 theta0
+                                    float32 xt (plan to position (xt,yt) and heading thetat)
+                                    float32 yt
+                                    float32 thetat
+                                    bool smooth (smooth path True/False)
+Output: ROS msg of type AStarResult containing a Path pobject with the planned path.
+(Defined in folder /team4_msgs)
+"""
+
 import rospy
 from dublins import *
-from a_star import *
 from Queue import PriorityQueue
 from nav_msgs.msg import OccupancyGrid
 from math import hypot, pi, ceil
@@ -13,24 +28,27 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 from team4_project.mapping2.updatemap import UpdateMap
 
+# Used only for debug plotting
 N_GRID_X = 40
 N_GRID_Y = N_GRID_X//2
+
+# AStar params
 DELTA_T = 0.040     # time step, dt_max = 0.05 given max_vel = 1 m/s
 GOAL_RADIUS = 0.1   # Accepted deviation from goal position
 GOAL_ANGLE = pi   # Accepted deviation from goal theta
-SAMPLE_TIME = 0.01
-ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4]#[-pi/4, 0, pi/4]
-N_HEADINGS = 6
+ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4] # Search path in directions
+N_HEADINGS = 6 # len(angles)
 N_STEPS = 10        # number of steps with same control signal
-GRID_SIZE_X = 0     # initialized in solution
-GRID_SIZE_Y = 0     # initialized in solution
-OBJECTIVE = []      # initialized in solution
+OBJECTIVE = []      # planning objective, initialized in solution
+GRID_SIZE_X = 0     # map resolution, initialized in solution
+GRID_SIZE_Y = 0     # map resolution, initialized in solution
 
+# Dynamic illustration of planning procedure for debugging.
 DEBUG = False
-
 if DEBUG:
     import ass3_debug as dbg
 
+# For debugging
 plotter = None
 counter = 0
 
@@ -40,7 +58,6 @@ class Node:
     """
 
     def __init__(self, theta, x, y, cost, parent, control):
-        '''control is control signal applied to get to this node'''
 
         self.xd = int(x/GRID_SIZE_X) # discretized cord.
         self.yd = int(y/GRID_SIZE_Y)
@@ -48,10 +65,8 @@ class Node:
         self.x = x
         self.y = y
         self.cost = cost # cost to go from root
-        self.parent = parent
-        self.control = control
-
-        # Discretize heading
+        self.parent = parent # parent node
+        self.control = control # steering angle
 
         # Make sure theta is in [0, 2pi]
         while theta <= 0:
@@ -59,7 +74,7 @@ class Node:
         while theta > 2*pi:
             theta -= 2*pi
 
-        # discretizise heading
+        # Discretizise heading
         self.thetad = None
         for i in range(N_HEADINGS):
             if theta < (i+1)*2*pi/N_HEADINGS:
@@ -101,7 +116,9 @@ def searchQueue(openSet, node):
     return index, nodes
 
 def isObstacle(obj, n):
-    """ Check for collisions """
+    """ Check for collisions for node n,
+    obj is the action request msg defining planning objective
+    """
 
     status = obj._environment.safe(n.x,n.y)
     if status:
@@ -110,7 +127,9 @@ def isObstacle(obj, n):
         return True
 
 def isObstacle_2(obj, x,y):
-    """ Check for collisions """
+    """ Check for collisions for node n,
+    obj is the action request msg defining planning objective
+    """
 
     status = obj._environment.safe(x,y)
     if status:
@@ -124,18 +143,20 @@ def updateNeighbors(obs, openSet, closedSet, n):
     Do collision check
     """
 
+    # Iterate over angles used in path search
     for angle in ANGLES:
         xn, yn, thetan = n.x, n.y, n.theta
         safe = True
         for i in range(N_STEPS):
             xnew, ynew, thetan = step(obs, xn, yn, thetan, angle, DELTA_T)
-            """ check all nodes inbetween """
+            """ check all points transversed when going from (xn,yn) to (xnew,ynew) """
             if isObstacle_2(obs,xnew,ynew):
+                """ If collision - discard """
                 safe = False
                 break
             xn = xnew
             yn = ynew
-        cost = 1 if angle == 0 else 1.5#1.1
+        cost = 1 if angle == 0 else 1.5
 
         # Convert position to grid indices
         y_index = int((yn - obs._environment.origin_y)/obs._environment.resolution)
@@ -158,16 +179,17 @@ def updateNeighbors(obs, openSet, closedSet, n):
         # any kind of non-free space
         occupied_pos = np.concatenate(np.where(map_slice >= 100)).reshape((2, -1))
         if np.prod(occupied_pos.shape) > 0:
-            # Add a cost that is a function of the distance to the closest
-            # non-free cell
+            # Add a cost that is a function of the distance to the closest non-free cell
             distance = np.min(np.linalg.norm(occupied_pos - node_pos_in_slice, axis=0))
             # Avoid division by zero
             if distance == 0.0:
                 distance = 0.001
             cost += 1.5/distance**2
 
+        # Create new node
         nn = Node(thetan, xn, yn, n.cost+cost, n, angle)
 
+        # Check node status
         if not isClosed(closedSet, nn):
             if isObstacle(obs, nn) or not safe:
                 # Node in unusable path
@@ -196,6 +218,8 @@ def updateNeighbors(obs, openSet, closedSet, n):
                 openSet.put(node)
 
 def create_path_obj(path):
+    """ Creates Path object from path (list) """
+
     new_path = Path()
     new_path.header.frame_id = "map"
     new_path.poses = []
@@ -209,6 +233,12 @@ def create_path_obj(path):
     return new_path
 
 def smooth_path(environment, path):
+    """
+    Smoothing path:
+    Checks if it exists is a straight line without collisions between nodes.
+    If no collison - replace old path between nodes with a straight line.
+    """
+
     new_path = []
 
     ok_i = [1]
@@ -233,7 +263,6 @@ def smooth_path(environment, path):
             new_path_exists = True
             ok_i.append(i)
 
-
     if ok_i[-1] == len(path)-1:
         # insert first node
         p = (path[0][0],path[0][1])
@@ -244,6 +273,7 @@ def smooth_path(environment, path):
         new_path.append(p)
 
         return create_path_obj(new_path)
+
     elif ok_i[-1]+1 == len(path)-1:
         # insert first node
         p = (path[0][0],path[0][1])
@@ -268,40 +298,46 @@ def smooth_path(environment, path):
     return create_path_obj(new_path)
 
 class AStarAction(object):
-    # create messages that are used to publish feedback/result
+    # create messages that are used to publish feedback/result from action server
     _feedback = team4_msgs.msg.AStarFeedback()
     _result = team4_msgs.msg.AStarResult()
 
     def __init__(self, name):
         self._action_name = name
 
+        # Functions to get map
         self._map_srv = UpdateMap()
         self._map = self._map_srv.get_inflated_map()
         self._mapinfo = self._map_srv.get_map_info()
 
+        # Init map
         oc_map = rospy.wait_for_message('/map', OccupancyGrid)
         self._map = np.array(oc_map.data).reshape(oc_map.info.height,oc_map.info.width)
         self._mapinfo = [oc_map.info.width, oc_map.info.height, oc_map.info.resolution, oc_map.info.origin.position.x, oc_map.info.origin.position.y]
 
+        # Define action server
         self._as = actionlib.SimpleActionServer(self._action_name, team4_msgs.msg.AStarAction, execute_cb=self.execute_cb, auto_start = False)
         self._as.start()
 
     def execute_cb(self, goal):
+        """
+        Envoked when requesting path from action server.
+        """
+
         # helper variables
         r = rospy.Rate(1)
         self.success = True
 
-        # append the seeds for the fibonacci sequence
-        self._feedback.distance_to_goal = float(0)
-
         # publish info to the console for the user
         rospy.loginfo('%s: Executing, searching for path from (%f,%f) to (%f,%f)' % (self._action_name, goal.x0, goal.y0, goal.xt, goal.yt))
 
-        self._map = self._map_srv.get_inflated_map()
+        self._map = self._map_srv.get_inflated_map() # get latest map
+        # Init anvironment (map of environment) and planning objective
         env = Environment(self._map, self._mapinfo)
-        car = Objective(goal.xt, goal.yt, goal.thetat, goal.x0, goal.y0, goal.theta0, env)
+        objective = Objective(goal.xt, goal.yt, goal.thetat, goal.x0, goal.y0, goal.theta0, env)
 
-        path = self.run_astar(car,goal.smooth)
+        # Search for path
+        path = self.run_astar(objective,goal.smooth)
 
         if self.success:
             self._result.path = path
@@ -314,25 +350,20 @@ class AStarAction(object):
         openSet = PriorityQueue() # Set holding active nodes to search more path from
         closedSet = {} # Set holding dead nodes
 
-        controls = []
-        times = []
-
         GRID_SIZE_X = objective._environment.resolution
         GRID_SIZE_Y = objective._environment.resolution
-
+        nodes_in_path = []
         OBJECTIVE = objective # defines task to solve
 
         if DEBUG:
             dbg.plotMap(objective, N_GRID_X, N_GRID_Y, OBJECTIVE)
             dbg.show(objective)
-
-        if DEBUG:
             plotter = dbg.TreePlot(objective._environment, N_STEPS)
 
+        # Add start position node to set
         openSet.put((heur(objective.x0, objective.y0, objective.xt, objective.yt), Node(objective.theta0, objective.x0, objective.y0, 0, None, 0)))
 
         while not openSet.empty():
-
             if self._as.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
                 self._as.set_preempted()
@@ -345,7 +376,7 @@ class AStarAction(object):
                 if DEBUG:
                     plotter.closeNode(n)
 
-            # We have reached the goal
+            # If we have reached the goal
             if hypot(n.x-objective.xt, n.y-objective.yt) < GOAL_RADIUS and numpy.fabs(n.theta - objective.thetat) < GOAL_ANGLE:
                 if DEBUG:
                     plotter.markBestPath(n)
@@ -355,7 +386,6 @@ class AStarAction(object):
                 path.header.frame_id = "map"
                 path.poses = []
                 while n.parent is not None:
-                    controls.append(n.control)
                     nodes_in_path.append((n.x,n.y))
                     pose = PoseStamped()
                     pose.header.frame_id = "map"
@@ -363,21 +393,15 @@ class AStarAction(object):
                     pose.pose.position.y = n.y
                     path.poses.append(pose)
                     n = n.parent
-                controls.reverse()
                 nodes_in_path.reverse()
                 path.poses.reverse()
-
-                for i in range(len(controls)+1):
-                    times.append(i*N_STEPS*SAMPLE_TIME)
-
                 break
             else:
                 # Seach paths from node
                 updateNeighbors(objective, openSet, closedSet, n)
 
-        if not controls:
-            controls = [0]
-            times = [0, SAMPLE_TIME]
+        if nodes_in_path == []:
+            # Return empty path
             nodes_in_path = []
             path = Path()
             path.header.frame_id = "map"

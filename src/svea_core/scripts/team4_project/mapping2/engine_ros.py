@@ -27,6 +27,12 @@ import matplotlib.pyplot as plt
 
 
 class EngineROS:
+    """
+    ROS node handeling mapping
+    Manages map and adding updates from lidar scans.
+    Publishes latest map on topis /custom_map
+    """
+
     def __init__(self, map_frame_id, map_resolution, map_width, map_height,
                  map_origin_x, map_origin_y, map_origin_yaw, inflate_radius,
                  unknown_space, free_space, c_space, occupied_space, optional=None):
@@ -44,40 +50,32 @@ class EngineROS:
         self.polygon_space = 120
         self.radius = inflate_radius
 
+        # Class handeling updating of map
         self.__mapping = Mapping(self.polygon_space, unknown_space, free_space, c_space,
                                  occupied_space, inflate_radius, optional)
 
         self.default_map = rospy.wait_for_message('/map', OccupancyGrid)
         self.__map = rospy.wait_for_message('/map', OccupancyGrid)
         m = rospy.wait_for_message('/map', OccupancyGrid)
-        print(m.header)
-        print(m.info)
-
-        #self.__infl_map = None
-        #self.__map_sub = rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
 
         # Init map publishers
+        # Normal map
         self.__map_pub = rospy.Publisher('/custom_map', OccupancyGrid, queue_size=1,
                                          latch=True)
+        # Inflated map
         self.__infl_pub = rospy.Publisher('/infl_map', OccupancyGrid, queue_size=1,
                                          latch=True)
 
-        self.__map_upd_pub = rospy.Publisher('/map_upd_map', OccupancyGrid, queue_size=1,
-                                         latch=True)
-
-
+        # Map updates publishers publishing only updated parts of the map
         self.__map_updates_pub = rospy.Publisher("custom_map_updates",
                                                  OccupancyGridUpdate,
                                                  queue_size=10)
-
         self.__map_inflated_pub  = rospy.Publisher("infl_map_updates",
                                                  OccupancyGridUpdate,
                                                  queue_size=10)
 
+        # Publishing node setup status
         self.started_pub = rospy.Publisher('/node_started/mapping', Bool, latch=True, queue_size=5)
-
-
-        #self.__map_inflated_pub = rospy.Publisher('inflated_map', OccupancyGrid, queue_size=1, latch=True)
 
         # Subscribe to polygons typic
         self.pi_ok = False # Indicators for receiving polygons
@@ -97,13 +95,14 @@ class EngineROS:
 
         self.setup_ok = False
 
-        # publish map on /custom_map
-        self.__map_pub.publish(self.__map)
+        self.__map_pub.publish(self.__map) # publish map on topic /custom_map
         self.__infl_pub.publish(self.__map)
 
         if (os.path.isfile(os.path.dirname(os.path.realpath(__file__)) + "/default_map.txt")):
+            # read saved default map if exists
             self.set_map_from_file()
         else:
+            # create new default map and save
             self.add_polygons()
             while not self.added_polygons:
                 rospy.sleep(1)
@@ -129,7 +128,6 @@ class EngineROS:
             scan = rospy.wait_for_message("/scan", LaserScan)
             pose = rospy.wait_for_message("/state", VehicleState)
             pose = self.to_pose_stamped(pose)
-            #print("check for updates")
             self.check_for_updates(pose, scan)
 
     def write_map_to_file(self):
@@ -177,16 +175,18 @@ class EngineROS:
         rospy.loginfo("Read map from file done.")
 
     def track_callback_out(self, polygon):
+        """ Receiving from inner polygon topic """
+
         self.keep_outside_polygon = polygon
         rospy.sleep(3)
         self.pi_ok = True
-        #print("Inner polygon ok!")
 
     def track_callback_in(self, polygon):
+        """ Receiving from outer polygon topic """
+
         self.stay_inside_polygon = polygon
         rospy.sleep(3)
         self.po_ok = True
-        #print("Outer polygon ok!")
 
     def add_polygons(self):
         """
@@ -276,7 +276,7 @@ class EngineROS:
 
         d = np.array(self.__map.data).reshape(self.height, self.width)
 
-        radius = 1#self.radius
+        radius = 1 #self.radius
         # Add polygons to map
         x = min_x
         y = min_y
@@ -325,11 +325,10 @@ class EngineROS:
 
     def check_for_updates(self, pose, scan):
         """
-        If lidar scans and vehicle pose available
-        update map with detected Obstacles
-        publish updated map
+        If lidar scans and vehicle pose available:
+            - Update map with detected Obstacles
+            - Publish map updates
         """
-        #print("check for updates")
 
         map_info = [self.width, self.height, self.xo, self.yo, self.res]
         _, _, update, iupdate = self.__mapping.update_map(self.__map, self.__imap, pose, scan, map_info)

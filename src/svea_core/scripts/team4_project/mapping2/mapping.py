@@ -15,7 +15,7 @@ import rospy
 
 class Mapping:
     """
-    Map handeling class
+    Map handeling class with functions to update the map
     Functions:  Provide map updates from lidar scans
                 Inflate map
     """
@@ -36,11 +36,8 @@ class Mapping:
         self.__optional = optional
 
     def get_yaw(self, q):
-        """Returns the Euler yaw from a quaternion.
-        :type q: Quaternion
-        """
-        return atan2(2 * (q.w * q.z + q.x * q.y),
-                     1 - 2 * (q.y * q.y + q.z * q.z))
+        """ Returns the Euler yaw from a quaternion. """
+        return atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
 
     def raytrace(self, start, end):
         """Returns all cells in the grid map that has been traversed
@@ -80,7 +77,7 @@ class Mapping:
         return traversed
 
     def add_to_map(self, grid_map, x, y, value, map_info, inflate=False):
-        """Adds value to index (x, y) in grid_map if index is in bounds.
+        """ Adds value to index (x, y) in grid_map if index is in bounds.
         Returns weather (x, y) is inside grid_map or not.
         """
         if value not in self.allowed_values_in_map.values():
@@ -92,6 +89,7 @@ class Mapping:
         if self.is_in_bounds(grid_map, x, y, map_info):
             if not grid_map[y,x] == self.polygon_space or grid_map[y,x] == self.c_space:
                 grid_map[y,x] = value
+                # Add s-space arount obstacle cells in map
                 if inflate:
                     for xp in range(-self.radius,self.radius+1):
                         for yp in range(-self.radius,self.radius+1):
@@ -104,7 +102,7 @@ class Mapping:
         return False
 
     def is_in_bounds(self, grid_map, x, y, map_info):
-        """Returns weather (x, y) is inside grid_map or not."""
+        """ True if (x, y) is inside grid_map """
         width = map_info[0]
         height = map_info[1]
 
@@ -114,24 +112,19 @@ class Mapping:
         return False
 
     def update_map(self, grid_map, i_grid_map, pose, scan, map_info):
-        """
-        Create OccupancyGridUpdate from lidar scan info
-        Pose in map coordinates, type geometry_msgs.msg PoseStamped
-        Scan of type sensor_msgs.msg LaserScan
-        Map of type OccupancyGrid
-        map_inf = [width, height, x_origin, y_origin, resolution]
+        """ Add info from lidar scans to map
+        Inputs: - map/inflated_map as grid_map/i_grid_map. Map of type OccupancyGrid
+                - lidar scans in scan. Type sensor_msgs.msg LaserScan
+                - vehicle pose in pose. Pose in map coordinates, type geometry_msgs.msg PoseStamped
+                - map info (map params): [width, height, x_origin, y_origin, resolution]
+        Outputs: Updated maps and separate blocks of the updated parts of the map.
         """
 
-        #print("update_map")
         imap = deepcopy(grid_map)
 
         origin_x = map_info[2]
         origin_y = map_info[3]
         resolution = map_info[4]
-
-        # Adjust lidar pos. in relation to car
-        #pose.pose.position.y += 0.2#0.39
-        #pose.pose.position.x += 0.4#0.598
 
         # Current yaw of the robot
         robot_yaw = self.get_yaw(pose.pose.orientation)
@@ -153,10 +146,10 @@ class Mapping:
         while scan_index < num_measures:
             # angle
             range = scan.ranges[scan_index]
-            if range > scan.range_min and angle < pi/2 and angle > -pi/2:
-                if range < scan.range_max/2:
+            if range > scan.range_min and angle < pi/2 and angle > -pi/2: # restrict scan angles to e used
+                if range < scan.range_max/2: # restrict scan range to be used
                     # coordinates in scan frame
-                    x_scan_p = range * cos(angle) + 0.282
+                    x_scan_p = range * cos(angle) + 0.282 # Adjust lidar pos. in relation to car
                     y_scan_p = range * sin(angle)
 
                     # rotational transformation of scan coordinates
@@ -182,7 +175,7 @@ class Mapping:
                             y_index_list.append(cell[1])
 
                     obs_ind_list.append((x_index_e,y_index_e))
-                elif range < scan.range_max: 
+                elif range < scan.range_max:
                     # coordinates in scan frame
                     x_scan_p = scan.range_max/2 * cos(angle) + 0.282
                     y_scan_p = scan.range_max/2 * sin(angle)
@@ -215,11 +208,13 @@ class Mapping:
         # Update occupied cells in map
         for obs in obs_ind_list:
             if self.is_in_bounds(grid_map, obs[0],obs[1], map_info):
-                self.add_to_map(grid_map, obs[0], obs[1], self.occupied_space, map_info)
-                self.add_to_map(imap, obs[0], obs[1], self.occupied_space, map_info,inflate=True)
+                self.add_to_map(grid_map, obs[0], obs[1], self.occupied_space, map_info) # add to map
+                self.add_to_map(imap, obs[0], obs[1], self.occupied_space, map_info,inflate=True) # add to inflated map
                 x_index_list.append(obs[0])
                 y_index_list.append(obs[1])
 
+
+        # Create map updates
         x_index_list.sort()
         y_index_list.sort()
         min_x = x_index_list[0]

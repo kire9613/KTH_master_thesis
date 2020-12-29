@@ -8,6 +8,7 @@ import numpy as np
 
 class Objective(object):
     '''
+    Planning objective
     Holds start and target position
     Find solution in environment (map)
     '''
@@ -15,8 +16,7 @@ class Objective(object):
     def __init__(self, xt, yt, thetat, x0, y0, theta0, env):
 
         # set environment
-        # env = Environment(map, map_info)
-        self._environment = env
+        self._environment = env # map
 
         # target and start pos.
         self.x0 = x0
@@ -29,8 +29,8 @@ class Objective(object):
 def step(car, x, y, theta, phi, dt=0.01):
     '''
     Returns a new state (xn, yn, thetan),
-    given an initial state (x, y, theta) and control phi.
-    Numerical integration is done at a time step of dt [sec].
+    given an initial state (x, y, theta) and control phi (steering angle).
+    Numerical integration is done at a time step of dt seconds.
     '''
 
     #_update(self, state, accel, delta, dt)
@@ -43,21 +43,11 @@ def step(car, x, y, theta, phi, dt=0.01):
     yn = y + (v * np.sin(theta) * dt)
     thetan = theta + (v/L * np.tan(phi) * dt)
 
-    # state rate
-    #dx     = cos(theta)
-    #dy     = sin(theta)
-    #dtheta = tan(phi)
-
-    # new state (forward Euler integration)
-    #xn     = x     + dt*dx
-    #yn     = y     + dt*dy
-    #thetan = theta + dt*dtheta
-
     return xn, yn, thetan
 
 class Environment(object):
     '''
-    Environment described map
+    Environment described by map
     Functions:  Check for collision
                 Check for safe path
                 Check if point is inside map

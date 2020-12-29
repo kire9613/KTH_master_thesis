@@ -4,22 +4,28 @@ from engine_ros import EngineROS
 import rospy
 
 def main():
+    """
+    Calling ros engine to init mapping node "Mapper".
+    Defines parameters to be used for specific environments:
+    - q1, outside q1
+    - q1, outside q2
 
+    Switching between running q1/q2
+    - Comment/uncomment params below
+    - Change map, obstacles and track files in team4.launch
+    - Delete default_map.txt
     """
-    Script for testing mapping
-    """
-    # start track publisher
-    #track = Track("SVEA4", publish_track=True)
-    #track.start()
 
     map_frame_id = "map"
     map_resolution = 0.05
-    # q2
+
+    # Running outside q2
     #map_width = 721
     #map_height = 880
     #map_origin_x = -17.581444
     #map_origin_y = -22.876441
-    #q1
+
+    # Runing outside q1
     map_width = 1269
     map_height = 567
     map_origin_x = -30.55
