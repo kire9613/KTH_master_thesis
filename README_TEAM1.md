@@ -40,7 +40,8 @@ costmap_2d package
 There are several parameters that can be tuned. For the costmap, type
 ```bash
 rosed svea_core costmap_params.yaml
-```bash
+```
+
 for the real car or 
 ```bash
 rosed svea_core costmap_params_sim.yaml
