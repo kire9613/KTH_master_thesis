@@ -14,28 +14,35 @@ import matplotlib.pyplot as plt
 from team4_project.mapping2.updatemap import UpdateMap
 from rrt_node import raytrace
 
-max_nodes = 1000
-extension_range = 1.0
-radius = 0.105
+# RRT params
+max_nodes = 1000 # max nb nodes in RRT search tree
+extension_range = 1.0 # edge len in RRT search tree
 
 def get_next_goal(start, goal):
+    """
+    Plans a path from start to goal.
+    Uses RRT algorithm
+    """
+
     global grid_map
 
+    # map coordinate ranges
     bbx_min = [grid_map.info.origin.position.x,
                grid_map.info.origin.position.y]
     bbx_max = [bbx_min[0] + (grid_map.info.width * grid_map.info.resolution),
                bbx_min[1] + (grid_map.info.height * grid_map.info.resolution)]
 
+    # start and target positions
     root_position = np.array([[start[0], start[1]]])
     target_position = np.array([[goal[0], goal[1]]])
 
-    tree = RRT(root_position, target_position, bbx_min, bbx_max, radius, extension_range)
+    # Init RRT search tree
+    tree = RRT(root_position, target_position, bbx_min, bbx_max, extension_range)
 
-    best_dist = [None,float("inf")]
+    best_dist = [None,float("inf")] # Node with minimum distance to target
     success = False
     i = 0
     while i < max_nodes and not rospy.is_shutdown() and success == False:
-
         node = tree.expand_tree(grid_map)
         if node is None:
             continue
@@ -44,17 +51,27 @@ def get_next_goal(start, goal):
         dist = sqrt((goal[0]-node._position[0][0]) ** 2 + (goal[1]-node._position[0][1]) ** 2)
         if dist < best_dist[1]:
             best_dist = [node,dist]
-            if dist < 0.05:
+            if dist < 0.05: # If done
                 return node.get_path(grid_map.header.frame_id, grid_map)
 
-    return best_dist[0].get_path(grid_map.header.frame_id, grid_map)
+    return best_dist[0].get_path(grid_map.header.frame_id, grid_map) # return best path
 
 def get_path(start, goal):
+    """
+    Gets latest map and start planning path from start to goal
+    """
+
     global grid_map
-    grid_map = rospy.wait_for_message('/infl_map', OccupancyGrid)
+    grid_map = rospy.wait_for_message('/infl_map', OccupancyGrid) # get map to plan on
     return get_next_goal(start, goal)
 
+
+
+
+
 def map_callback(msg):
+    """ Only used for debugging, not part of final solution """
+
     global grid_map
     grid_map = msg
     print("Obstacles loaded, start plannig...")
@@ -90,6 +107,8 @@ def map_callback(msg):
     plt.show()
 
 def main():
+    """ Only used for debugging, not part of final solution """
+
     rospy.init_node("planner")
 
     map_service = UpdateMap()

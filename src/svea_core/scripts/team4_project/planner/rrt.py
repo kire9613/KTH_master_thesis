@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 
 from team4_project.planner.rrt_node import RRTNode, raytrace
-#from sensor import Sensor
 from rtree import index
 import random
 import numpy as np
@@ -9,89 +8,100 @@ from math import log
 
 
 class RRT:
-    def __init__(self, root_position, target_position, bbx_min, bbx_max, radius, extension_range, ):
-        self._bbx_min = bbx_min
-        self._bbx_max = bbx_max
-        self._radius = radius
-        self._extension_range = extension_range
+    """
+    RRT algorithm class searching for a peth from root position to target position.
+    Managing search-tree, samples points and adds to tree.
+    """
+
+    def __init__(self, root_position, target_position, bbx_min, bbx_max, extension_range, ):
+        self._extension_range = extension_range # edge len in tree
         self._sample_nr = 0
         self._target = target_position
+
+        # map coord. ranges
+        self._bbx_min = bbx_min
+        self._bbx_max = bbx_max
 
         # Create r-tree
         p = index.Property()
         p.dimension = 2
         self._tree = index.Index(properties=p)
 
+        # Insert root in tree
         self._id = 0
         self._root = self.create_new_node(root_position)
         self.insert(self._root, None)
 
     def sample(self):
+        """ Samples random point (biased towards target point) in environment and creates new node"""
+
         position = np.array([[0, 0]], dtype=np.float)
         for i in range(0, len(position[0])):
-            position[0][i] = random.uniform(self._bbx_min[i], self._bbx_max[i])
-        # Introduce bias towards a square centered in the target position
+            position[0][i] = random.uniform(self._bbx_min[i], self._bbx_max[i]) # get random point in environment
+
+        # Introduce bias towards the target position
         if self._sample_nr % 5 == 0:
-            #dist = 2.0
             dist = 1.0
-            position[0][0] = random.uniform(self._target[0][0] -dist, self._target[0][0] + dist)
-            position[0][1] = random.uniform(self._target[0][1] -dist, self._target[0][1] + dist)
+            position[0][0] = random.uniform(self._target[0][0] - dist, self._target[0][0] + dist)
+            position[0][1] = random.uniform(self._target[0][1] - dist, self._target[0][1] + dist)
         if self._sample_nr % 10 == 0:
             position[0][0] = self._target[0][0]
             position[0][1] = self._target[0][1]
+
         self._sample_nr += 1
         return self.create_new_node(position)
 
     def create_new_node(self, position):
+        """ Creates new RRT node """
         node = RRTNode(self._id, position)
         self._id += 1
         return node
 
     def expand_tree(self, grid_map):
-        new_node = self.sample()
+        """ Samples new node adn expands search tree """
 
+        new_node = self.sample()
         return self.extend(grid_map, new_node)
 
     def extend(self, grid_map, new_node):
         closest_node = self.get_closest(new_node)
-        new_node = self.restrict_distance(new_node, closest_node)
+        new_node = self.restrict_distance(new_node, closest_node) # extend tree towards sampled point new_node
 
         if self.valid_node(grid_map, new_node, closest_node):
             parent = closest_node
-
-            #near_nodes = self.get_near(new_node)
-            #if closest_node in near_nodes:
-            #    near_nodes.remove(closest_node)
-            #parent = self.choose_parent(
-            #    grid_map, sensor, l, near_nodes, closest_node, new_node)
-            #if parent in near_nodes:
-                #near_nodes.remove(parent)
             self.insert(new_node, parent)
-            #self.rewire(grid_map, sensor, l, near_nodes, new_node)
             return new_node
 
         return None
 
-    # def choose_parent(self, grid_map, sensor, l, near_nodes, closest_node, new_node):
-    #     max_score = new_node.score_with_parent(
-    #         closest_node, grid_map, sensor, l)
-    #     best_parent = closest_node
-    #     for node in near_nodes:
-    #         if self.valid_node(grid_map, new_node, node):
-    #             new_score = new_node.score_with_parent(
-    #                 node, grid_map, sensor, l)
-    #             if max_score < new_score:
-    #                 max_score = new_score
-    #                 best_parent = node
-    #     return best_parent
+    def get_closest(self, node):
+        """ Get tree-node in tree closest to node """
+        position = node.get_position()
+        hits = list(self._tree.nearest(
+            (position[0][0], position[0][1]), 1, objects=True))
+        assert(1 <= len(hits))
+        return hits[0].object
 
-    # def rewire(self, grid_map, sensor, l, near_nodes, new_node):
-    #     for node in near_nodes:
-    #         if self.valid_node(grid_map, node, new_node):
-    #             if node.score(grid_map, sensor, l) < node.score_with_parent(new_node, grid_map, sensor, l):
-    #                 self.update(node, new_node)
+    def restrict_distance(self, node, closest_node):
+        """
+        Restrict distance between parent node and children to extention_range
+        Modifies node position to be in direction of sampled point with a maximum distance of extention_range
+        from parent node.
+        """
+        origin = closest_node.get_position()
+        direction = node.get_position() - origin # vector from closest_node to node
+
+        # if distance from closest_node to sample gt extension_range
+        # add edge to tree in direction towards sampled node, with distance extension_range from parent node
+        if np.linalg.norm(direction) > self._extension_range:
+            direction = self._extension_range * direction / np.linalg.norm(direction)
+            node.set_position(origin + direction) # modified node position
+
+        return node
 
     def valid_node(self, grid_map, node, parent):
+        """ Returns True if all points between node and parent not causes collision with obstacle (value 0) in map. Else False. """
+
         node_position = node.get_position()
         node_map_coord = [(node_position[0][0] - grid_map.info.origin.position.x) / grid_map.info.resolution,
                           (node_position[0][1] - grid_map.info.origin.position.y) / grid_map.info.resolution]
@@ -102,7 +112,6 @@ class RRT:
 
         start = np.array([parent_map_coord], dtype=np.float)
         end = np.array([node_map_coord], dtype=np.float)
-        # radius_in_grid = (self._radius / grid_map.info.resolution) + 3
 
         t = raytrace((start[0][0], start[0][1]), (end[0][0], end[0][1]))
         if 1 < len(t):
@@ -116,72 +125,12 @@ class RRT:
 
         return True
 
-    def distance_to_line_segment(self, start, end, point):
-        length = np.linalg.norm(end - start)
-        np.linalg.norm
-
-        if 0 == length:
-            return np.linalg.norm(start - point)
-
-        t = max(0, min(1, np.dot(np.reshape(point - start, 2),
-                                 np.reshape(end - start, 2)) / (length ** 2)))
-        projection = start + (t * (end - start))
-
-        return np.linalg.norm(point - projection)
-
     def insert(self, node, parent):
-        self.update(node, parent)
+        """ Insert node in tree """
+        self.update(node, parent) # Set node parent
         position = node.get_position()
         self._tree.insert(
             node.get_id(), (position[0][0], position[0][1]), obj=node)
 
     def update(self, node, new_parent):
         node.set_parent(new_parent)
-
-    def erase(self, node):
-        if node.has_children():
-            pass  # TODO: Throw error
-
-        node.set_parent(None)
-        # Remove from tree
-        position = node.get_position()
-        self._tree.delete(
-            node.node_id, (position[0][0], position[0][1]))
-
-    def get_closest(self, node):
-        # Get the closest node
-        position = node.get_position()
-        hits = list(self._tree.nearest(
-            (position[0][0], position[0][1]), 1, objects=True))
-        assert(1 <= len(hits))
-        return hits[0].object
-
-    def get_near(self, node):
-        # Get nodes that are nearby
-        position = node.get_position()
-        bbx = (position[0][0] - self._extension_range, position[0][1] - self._extension_range,
-               position[0][0] + self._extension_range, position[0][1] + self._extension_range)
-        hits = self._tree.intersection(bbx, objects=True)
-        nodes = []
-        for hit in hits:
-            nodes.append(hit.object)
-        return nodes
-
-    def restrict_distance(self, node, closest_node):
-        origin = closest_node.get_position()
-        direction = node.get_position() - origin
-
-        if np.linalg.norm(direction) > self._extension_range:
-            direction = self._extension_range * direction / np.linalg.norm(direction)
-            node.set_position(origin + direction)
-
-        return node
-
-    def get_nodes(self, grid_map):
-        bbx = (grid_map.info.origin.position.x, grid_map.info.origin.position.y, grid_map.info.origin.position.x + (grid_map.info.width *
-                                                                                                                    grid_map.info.resolution), grid_map.info.origin.position.y + (grid_map.info.height * grid_map.info.resolution))
-        hits = self._tree.intersection(bbx, objects=True)
-        nodes = []
-        for hit in hits:
-            nodes.append(hit.object)
-        return nodes

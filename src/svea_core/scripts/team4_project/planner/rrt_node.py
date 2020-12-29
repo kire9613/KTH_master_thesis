@@ -46,21 +46,17 @@ def raytrace(start, end):
 
 
 class RRTNode:
+    """
+    Define nodes used in RRT search-tree.
+    - Includes help functions for updatig nodes and getting node info.
+    - Functions to get path from node to root.
+    """
+
     def __init__(self, node_id, position):
         self._node_id = node_id
-
         self._position = position
-
         self._parent = None
         self._children = []
-
-        self._cost = None
-        self.__cost_parent = None
-
-        self._score = None
-        self.__score_parent = None
-
-        self._gain = None
 
     def __del__(self):
         self.set_parent(None)
@@ -97,54 +93,6 @@ class RRTNode:
     def get_children(self):
         return self._children
 
-    def get_num_children(self):
-        return len(self._children)
-
-    def has_children(self):
-        return 0 < len(self._children)
-
-    def cost(self):
-        if not self.has_parent():
-            self._cost = 0
-            return self._cost
-
-        if self.__cost_parent is not None and self.__cost_parent == self._parent:
-            return self._cost
-
-        self._cost = self.cost_with_parent(self.get_parent())
-
-        self.__cost_parent = self._parent
-
-        return self._cost
-
-    def cost_with_parent(self, parent):
-        return parent.cost() + self.distance(parent)
-
-    def constrain_angle(self, angle):
-        angle = fmod(angle + pi, 2 * pi)
-        if angle < 0:
-            angle += 2 * pi
-        return angle - pi
-
-    def rad_bounded(self, value):
-        value = fmod(value + pi, 2 * pi)
-        if 0 > value:
-            value += 2 * pi
-        return value - pi
-
-    def distance(self, node):
-        if not node.has_parent():
-            return np.linalg.norm(node.get_position() - self._position)
-        else:
-            node_position = node.get_position()
-            node_parent_position = node.get_parent().get_position()
-            node_yaw = atan2(node_position[0][1] - node_parent_position[0]
-                             [1], node_position[0][0] - node_parent_position[0][0])
-            yaw = atan2(self._position[0][1] - node_position[0]
-                        [1], self._position[0][0] - node_position[0][0])
-            yaw_diff = self.rad_bounded(yaw - node_yaw)
-            return hypot(np.linalg.norm(node.get_position() - self._position), yaw_diff)
-
     def set_position(self, position):
         self._position = position
 
@@ -152,6 +100,11 @@ class RRTNode:
         return self._position
 
     def get_path(self, frame_id, grid_map):
+        """
+        Returns path to node self
+        path is list of Posestamped poses
+        """
+
         path = []
 
         current_node = self
@@ -195,6 +148,12 @@ class RRTNode:
         return path
 
     def smooth_path(self, path, grid_map):
+        """
+        Smoothing path
+        Searching for straight lines between nodes not colliding with obstacles.
+        If such line found, replace path between those nodes with a straight line
+        """
+
         new_path = []
 
         ok_i = [1]
