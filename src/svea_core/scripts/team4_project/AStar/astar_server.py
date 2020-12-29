@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 """
+The code in this file is based on code from lab in DD2410 introduction to Robotics
+written by members of team4, with some modifications suitable for this project.
+
 Hybrid A* algorithm performing path planning.
 Using content in dublins.py
 To be used as a ROS action service

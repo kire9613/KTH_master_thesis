@@ -14,22 +14,21 @@ class RRT:
     """
 
     def __init__(self, root_position, target_position, bbx_min, bbx_max, extension_range, ):
-        self._extension_range = extension_range # edge len in tree
+        self.edge_len = extension_range # edge len in tree
         self._sample_nr = 0
         self._target = target_position
 
         # map coord. ranges
-        self._bbx_min = bbx_min
-        self._bbx_max = bbx_max
+        self._xmin = bbx_min
+        self._xmax = bbx_max
 
         # Create r-tree
         p = index.Property()
         p.dimension = 2
         self._tree = index.Index(properties=p)
-
         # Insert root in tree
         self._id = 0
-        self._root = self.create_new_node(root_position)
+        self._root = self.new_node(root_position)
         self.insert(self._root, None)
 
     def sample(self):
@@ -37,7 +36,7 @@ class RRT:
 
         position = np.array([[0, 0]], dtype=np.float)
         for i in range(0, len(position[0])):
-            position[0][i] = random.uniform(self._bbx_min[i], self._bbx_max[i]) # get random point in environment
+            position[0][i] = random.uniform(self._xmin[i], self._xmax[i]) # get random point in environment
 
         # Introduce bias towards the target position
         if self._sample_nr % 5 == 0:
@@ -49,17 +48,16 @@ class RRT:
             position[0][1] = self._target[0][1]
 
         self._sample_nr += 1
-        return self.create_new_node(position)
+        return self.new_node(position)
 
-    def create_new_node(self, position):
+    def new_node(self, position):
         """ Creates new RRT node """
         node = RRTNode(self._id, position)
         self._id += 1
         return node
 
     def expand_tree(self, grid_map):
-        """ Samples new node adn expands search tree """
-
+        """ Samples new node and expands search tree """
         new_node = self.sample()
         return self.extend(grid_map, new_node)
 
@@ -93,8 +91,8 @@ class RRT:
 
         # if distance from closest_node to sample gt extension_range
         # add edge to tree in direction towards sampled node, with distance extension_range from parent node
-        if np.linalg.norm(direction) > self._extension_range:
-            direction = self._extension_range * direction / np.linalg.norm(direction)
+        if np.linalg.norm(direction) > self.edge_len:
+            direction = self.edge_len * direction / np.linalg.norm(direction)
             node.set_position(origin + direction) # modified node position
 
         return node
@@ -105,11 +103,9 @@ class RRT:
         node_position = node.get_position()
         node_map_coord = [(node_position[0][0] - grid_map.info.origin.position.x) / grid_map.info.resolution,
                           (node_position[0][1] - grid_map.info.origin.position.y) / grid_map.info.resolution]
-
         parent_position = parent.get_position()
         parent_map_coord = [(parent_position[0][0] - grid_map.info.origin.position.x) / grid_map.info.resolution,
                             (parent_position[0][1] - grid_map.info.origin.position.y) / grid_map.info.resolution]
-
         start = np.array([parent_map_coord], dtype=np.float)
         end = np.array([node_map_coord], dtype=np.float)
 
@@ -118,7 +114,6 @@ class RRT:
             for (t_x, t_y) in t[1:]:
                 if 0 != grid_map.data[t_y * grid_map.info.width + t_x]:
                     return False
-
         # Check last node
         if 0 != grid_map.data[int(end[0][1]) * grid_map.info.width + int(end[0][0])]:
             return False
@@ -129,8 +124,7 @@ class RRT:
         """ Insert node in tree """
         self.update(node, parent) # Set node parent
         position = node.get_position()
-        self._tree.insert(
-            node.get_id(), (position[0][0], position[0][1]), obj=node)
+        self._tree.insert(node.get_id(), (position[0][0], position[0][1]), obj=node)
 
     def update(self, node, new_parent):
         node.set_parent(new_parent)

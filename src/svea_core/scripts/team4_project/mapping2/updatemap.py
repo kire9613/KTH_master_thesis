@@ -9,29 +9,34 @@ import thread
 class UpdateMap:
     """
     Help class for adding local gridmap updates to global map
+    Used by other parts of the system to continously get the latest map.
     """
 
     def __init__(self):
 
         rospy.loginfo("Init UpdateMap")
 
-        map = rospy.wait_for_message('/custom_map', OccupancyGrid)
+        map = rospy.wait_for_message('/custom_map', OccupancyGrid) # default map
+
+        # map properties
         self.height = map.info.height
         self.width = map.info.width
         self.resolution = map.info.resolution
         self.origin_x = map.info.origin.position.x
         self.origin_y = map.info.origin.position.y
         self.map_info = map.info
+
+        # inflated and normal map
         self.gridmap = np.array(map.data).reshape(self.height,self.width)
         self.infl_gridmap = np.array(map.data).reshape(self.height,self.width)
 
+        # map subscribers
         thread.start_new_thread( self.subscriber, ("custom_map_updates", OccupancyGridUpdate, self.update_map))
         thread.start_new_thread( self.subscriber, ("infl_map_updates", OccupancyGridUpdate, self.update_infl_map))
 
-        #self.__update_map_sub = rospy.Subscriber("map_updates", OccupancyGridUpdate, self.update_map)
-        #self.__update_infl_map_sub = rospy.Subscriber("infl_map_updates", OccupancyGridUpdate, self.update_infl_map)
         rospy.loginfo("Map updater running!")
 
+        # map params
         self.occupied_space = 1
         self.polygon_space = 120
         self.c_space = 90
@@ -41,9 +46,12 @@ class UpdateMap:
         return self.map_info
 
     def subscriber(self, topic, type, callback):
+        """ Defines a subscriber listening to topic with msg of type type, connects callback function to subscriber. """
         rospy.Subscriber(topic, type, callback)
 
     def update_infl_map(self, iupdate):
+        """ Adds inflated map updates to the inflated map. """
+
         min_x = iupdate.x
         min_y = iupdate.y
         max_x = min_x + iupdate.width - 1
@@ -51,6 +59,8 @@ class UpdateMap:
         self.infl_gridmap[min_y:(max_y+1), min_x:(max_x+1)] = np.array(iupdate.data).reshape(iupdate.height,iupdate.width)
 
     def update_map(self, update):
+        """ Adds map updates to the normal map. """
+
         min_x = update.x
         min_y = update.y
         max_x = min_x + update.width - 1
@@ -92,6 +102,7 @@ class UpdateMap:
         return deepcopy(self.infl_gridmap)
 
     def show_map(self):
+
         plt.imshow(self.gridmap)
         plt.show()
 

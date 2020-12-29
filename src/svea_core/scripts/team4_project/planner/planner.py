@@ -67,7 +67,7 @@ def get_path(start, goal):
 
 
 
-
+# Only used for debugging, not part of final solution.
 
 def map_callback(msg):
     """ Only used for debugging, not part of final solution """

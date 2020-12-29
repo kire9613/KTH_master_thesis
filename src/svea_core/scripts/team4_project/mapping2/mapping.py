@@ -1,4 +1,12 @@
 # Python standard library
+
+"""
+Code used by the mapping node is partly based on code from lab in DD2410
+Introduction to Robotics written by: @author: Daniel Duberg (dduberg@kth.se).
+Further, code produced by team4 members in DD2410 submisions, together with modifications
+to make the code usable for this project, is also part of the mapping node code.
+"""
+
 from math import cos, sin, atan2, fabs, sqrt, pi
 
 # Numpy

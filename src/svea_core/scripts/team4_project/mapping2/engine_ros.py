@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+"""
+Code used by the mapping node is partly based on code from lab in DD2410
+Introduction to Robotics written by: @author: Daniel Duberg (dduberg@kth.se).
+Further, code produced by team4 members in DD2410 submisions, together with modifications
+to make the code usable for this project, is also part of the mapping node code.
+"""
+
 # Python standard library
 import copy
 import numpy as np

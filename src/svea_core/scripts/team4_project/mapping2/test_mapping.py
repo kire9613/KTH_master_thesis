@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+"""
+Code used by the mapping node is partly based on code from lab in DD2410
+Introduction to Robotics written by: @author: Daniel Duberg (dduberg@kth.se).
+Further, code produced by team4 members in DD2410 submisions, together with modifications
+to make the code usable for this project, is also part of the mapping node code.
+"""
+
 from engine_ros import EngineROS
 import rospy
 
@@ -13,6 +20,7 @@ def main():
     Switching between running q1/q2
     - Comment/uncomment params below
     - Change map, obstacles and track files in team4.launch
+    - Change start_pt in team4.launch
     - Delete default_map.txt
     """
 
