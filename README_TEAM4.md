@@ -124,7 +124,7 @@ Sometimes the [local planner](team4_readme_pages/TEAM4_PATHPLANNING.md "TEAM4_PA
 When this is done, a new planning process will be started hoping that the new waypoint is not blocked.
 
 #### Part 5 - Obstacle Detection
-Along execution we are continiously searching for collisions in the planned path. For every point in the path we check if the point is located at a forbidden area where we are not allowed to drive. The status if the collision detection then is published to a topic */collision* that is read by other nodes that might be interested. The message published to the topic contains two fields: 
+Along execution we are continiously searching for collisions in the planned path. For every point in the path we check if the point is located at a forbidden area where we are not allowed to drive. The status of the collision detection is then published to a topic */collision* that is read by other nodes that might be interested. The message published to the topic contains two fields: 
 ```
 bool collision 
 geometry_msgs/Point collision_point
