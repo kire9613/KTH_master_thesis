@@ -38,7 +38,7 @@ From the first command you will receive a whole bunch of prints from ROS, and af
 
 Then, in rviz, use `2D pose estimate` to give the car an initial pose. Then press *enter* in the terminal you ran `start_pause.py`. The car should start moving after finishing planning.
 
-When system is running correctly you will se the car moving, and some feedback in the terminal:
+When system is running correctly you will se the car moving, and you get some feedback in the terminal:
 ![alt text][run_sim3]
 
 [run_sim3]: team4_readme_pages/figures/sim3.png "Run Sim 3"
@@ -47,7 +47,7 @@ When system is running correctly you will se the car moving, and some feedback i
 
 [run_sim2]: team4_readme_pages/figures/sim_2.png "Run Sim 2"
 
-Note: Sometims setting up the map and gobal planning might take a few minutes, if not earlier saved maps and plans are used. If for example the terminal hangs on *Planning path...* you just need to wait for the RRT to finnish, that is when the purple dimonda appearns in rviz. On the other side, if the termainal hangs at *Trach sucessfully initialized* probably you also miss the fat green polygons defining the track. Then you just need for those to appear.
+Note: Sometims setting up the map and gobal planning might take a few minutes if previously saved maps and plans are not used. If for example the terminal gets stuck on *Planning path...* you just need to wait for the RRT to finish. When the purple diamonds appear in rviz the planner is done. On the other hand, if the terminal shows *Track sucessfully initialized* for a while, you probably also miss the fat green polygons defining the track in the map. When those to appear, the map has been successfully constructed with the inflated polygons.
 
 ### On the car
 
@@ -55,7 +55,7 @@ First make sure the system is set up to run on hardware. Edit `svea_starter/src/
 
 *** Some extra stuff ***
 
-To be able to run nodes on different machines also some setup of ssh-keys is needed. Otherwise the following steps regarding ssh keys can be skipped, then go directly to `roslaunch svea_core team4.launch`.
+If you want to be able to run nodes on different machines than the SVEA itself, some setup of ssh-keys is needed. Otherwise the following steps regarding ssh keys can be skipped, then go directly to `roslaunch svea_core team4.launch`.
 
 Setting up ssh:
 * On the car, run: `cat ~/.ssh/id_rsa.pub och kopiera output`
