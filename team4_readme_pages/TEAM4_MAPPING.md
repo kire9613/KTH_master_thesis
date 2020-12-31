@@ -76,6 +76,3 @@ Updates to the map are received by two subscribers listening to the topics *infl
 ![alt text][infl_map_example]
 
 [infl_map_example]: figures/infl1.png "Inflated map example"
-
-## Obstacle Detection
-To be done...
