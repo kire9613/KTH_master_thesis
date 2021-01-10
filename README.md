@@ -50,7 +50,7 @@ State representation is the coordinate system that the car sees and uses.
 
 Pixel representation is the coordinate system that the map is given in. Each pixel is one step.
 
-Scaled pixel representation is the coordinate system that is a scaled down version of the pixel representation. The origin is still in the same place as the pixel representation as is different compared to the state representation.
+Scaled pixel representation is the coordinate system that is a scaled down version of the pixel representation. The origin is still at the same place as the pixel representation, as it is different compared to the state representation.
 
 ## 1. SVEA
 
@@ -163,7 +163,7 @@ Controller to filter the speed to give depending on if the stop signal is on or 
 - ys: Predifined y-coordinates for main trajectory.
 - look_ahead: Defines how far away from car the trajectory should be estimated by A star
 - threshold_distance: Defines maximum distance between car and detected obstacle for A star to be activated
-- threshold_wait: Defines distance that car should acomplish before A star could be reinitialized. It helps to avoid unnecessary calculations while detcting hidden obstacles.
+- threshold_wait: Defines distance that car should acomplish before A star could be reinitialized. It helps to avoid unnecessary calculations while detecting hidden obstacles.
 - path_end_distance: Defines maximum distance from car to last trajectory point. Trajectory will be updated when distance between car and last trajectory point is less then path_end_distance.
 
 #### Purpose
@@ -228,7 +228,7 @@ Provides the original static map. Given from the beginning.
 
 - length_of_memory_list: how many map instances to store. This value in essence means that you will remember length_of_memory_list*number_of_lidar_scans_until_publish rotations from the lidar scan. Set to 1 if no noise.
 
-- occupied_space_threshold: the lowest value for what gets rated as a certain obstacle in the obstacle map (made up of all the map instances). 0 to 9 means all readings from the scan will be used as the confidence gets updated with 10 as incremental steps. 0-9 should be used if number_of_lidar_scans_until_publish = 1
+- occupied_space_threshold: the lowest value for what gets rated as a certain obstacle in the obstacle map depending on how many times a point was detected by the Lidar(made up of all the map instances). 0 to 9 means all readings from the scan will be used as the confidence gets updated with 10 as incremental steps. 0-9 should be used if number_of_lidar_scans_until_publish = 1
 
 - car_radius_in_meters: the radious of the car in meters, can be changed to higher values to give more clerence for when driving around obstacles and from wals
 
