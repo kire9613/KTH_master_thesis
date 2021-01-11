@@ -31,9 +31,9 @@ roslaunch svea_core q1_real.launch
 ## Flow of code
 
 When the launch file, “q1_mpc.launch”, for simulation is run, some of the important python files and packages that’s loaded are :
-  1. q1_mpc_co_av.py 
-  2. map_collision_node.py
-  3. costmap_2d package
+  1. q1_mpc_co_av.py : this is the main file which is responsible for setting up and building tge solver for the MPC. 
+  2. map_collision_node.py : This file corresponds to the collision detection and check node. This is resposible for starting the new path planning algorithm in case of an obstacle
+  3. costmap_2d package : This is the ros package used which the collision node uses to detect the obstacles based on the cost of the same.
 
 ## Parameter tuning
 
