@@ -44,6 +44,10 @@ The different nodes to be implemented are the following:
 - Map logic
 - A star
 
+Node structure could be represented by the following figure:
+
+![key-teleop example](./media/node_structure.png)
+
 
 # Vocab
 State representation is the coordinate system that the car sees and uses.
@@ -163,7 +167,7 @@ Controller to filter the speed to give depending on if the stop signal is on or 
 - ys: Predifined y-coordinates for main trajectory.
 - look_ahead: Defines how far away from car the trajectory should be estimated by A star
 - threshold_distance: Defines maximum distance between car and detected obstacle for A star to be activated
-- threshold_wait: Defines distance that car should acomplish before A star could be reinitialized. It helps to avoid unnecessary calculations while detecting hidden obstacles.
+- threshold_wait: Defines distance that car should acomplish before A star could be reinitialized. It helps to avoid unnecessary calculations while detecting hidden obstacles. There a hidden obstacle is an obstacle that is hidden behind an allready detected obstacle. 
 - path_end_distance: Defines maximum distance from car to last trajectory point. Trajectory will be updated when distance between car and last trajectory point is less then path_end_distance.
 
 #### Purpose
@@ -239,6 +243,10 @@ Provides the original static map. Given from the beginning.
 #### Purpose
 Purpose is to provide a proper occupancy grid used for pathfinding
 
+Following figure illustrates the envirenment as it seen by the car:
+
+![key-teleop example](./media/mapping.png)
+
 ## 9. A star
 
 #### Subscribers
@@ -262,4 +270,9 @@ Purpose is to provide a proper occupancy grid used for pathfinding
 
 #### Purpose
 This is the path finding algorithm that finds a suitable trajectory with given occupancy grid, start and target point
+
+Following figures illustrate how the A* path finding algorithm works before and after path smoothing is applied:
+
+![key-teleop example](./media/A_star.png)
+![key-teleop example](./media/A_star_smoothing.png)
 
