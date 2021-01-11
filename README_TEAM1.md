@@ -73,30 +73,30 @@ The current state of the vehicle, along with references that are dynamically gen
 Local planning is started when an obstacle, detected by the mapping routine, intersects the current path plan. The detection system works by translating the current path to a matrix representing the map and with ones wherever the path is and zeros everywhere else. This matrix is then multiplied with the map produced by the mapping, i.e. costmap2d node. If this matrix-multiplication produces any values over a certain threshold a collision is registered and the map (with obstacles, goal and start position) is sent to an A* planner implemented in c++ which produces a new piece of trajectory which is then spliced in to the overall path plan.
 
 ## Global Path finder 
-Our Svea car loades a global path and picks out reference points of it used in the race. It is important that the global path is feasible for the car and that it keeps a safe distance to any mapped obstacle. 
+Our Svea car loads a global path and picks out reference points used in the race. It is important that the global path is feasible for the car and that it keeps a safe distance to any mapped obstacle. 
 
-### About the RRT algorithm
-The global path finder uses a RRT Algorithm that loads a track or an obstacle list and finds a safe way to a set target point. This RRT Algorithm respects the maximum yaw angle of the car and saves the previous yaw angle in every step. Because of the fact that the RRT algorithm always finds a solution in infinite time, respecting the yaw gives it also always a feasible solution. in reservation if the set target points are put in a feasible position with respect to the start point. Since the RRT algorithm is not guaranteed to give the optimal solution I manipulated the algorithm a bit to ‘’black list’’ nodes that led to a dead end. 
+### About the RRT Algorithm
+The global path finder uses a RRT Algorithm that loads a track or an obstacle list and finds a safe way to a set target point. This RRT Algorithm respects the maximum yaw angle of the car and saves the previous yaw angle in every step. Because of the fact that the RRT algorithm always finds a solution (but in infinite time). Respecting the yaw gives it also always a feasible solution regarding the car. In reservation if the set target points are put in a feasible position with respect to the start point. This is why we chose to not use the A* algorithm that does not guarantee to always find a path. A second reason is that A* works discreetly and we would like to respect the curvatures of the car. Also RRT* was considered easier to implement. Since the RRT algorithm is not guaranteed to give the optimal solution we manipulated the algorithm a bit to ‘’black list’’ nodes that led to a dead end.
 
-### How to run the code
-The code contains two important files, one named RRT_Team1.py and the other named GlobalPathfinder.py. GlobalPathfinder.py is the main file, here you run the code. For this particular code setup you also need Track.py and a map.pickle file. The first one contains the corner coordinates of the track and the second contains the occupancy map as a pickle file. You run the code through the GlobalPathfinder.py file with the command  
+### How to run the global path finder
+The code contains two important files, one named RRT_Team1.py and the other named GlobalPathfinder.py. GlobalPathfinder.py is the ''main file'' for the path finder, here you run the code to get your path. For this particular code-setup you also need Track.py and a map.pickle file. The first one contains the corner coordinates of the track and the second contains the occupancy map as a pickle file. You run the code through the GlobalPathfinder.py file with the following command  
 ```bash
 rosrun svea_core GlobalPathfinder.py
 ```
 As default is the code loading the given track and some loaded target points along the way. 
 
 ### Adjustment of RRT parameters example 
-At the beginning of the main code you are about to choose if you would like to load the track, the obstacle map or both. In addition there are also parameters that are available for tuning. Those are find by tapping in the following command
+At the beginning of the main code you are about to choose to load the track, the obstacle map or both. In addition there are also parameters that are available for tuning. Those are find by tapping the following command in your python command window
 
 ```bash
 rosrun svea_core GlobalPathfinder.py --help
 ```
 
-To change a particular parameter one could enter this command,
+Upon the typing, a short description is visible. It describes the different tuning parameters. Namely step length, radius of mapped obstacles and distance to goal tolerance. If you decrease the step length a lot will the algorithm take longer computational time and is more likely to get stuck in front of an obstacle. If you instead increase the step length will the computation time decrease but the algorithm are likely to not find any possible solutions since all step ends too close to an obstacle. The radius of the mapped obstacles ensures that the path stays at a safe distance. If the radius is too large the algorithm will not find its path through tight places and if the radius is too small it will give the car a dangerous path too close to walls and obstacles. The last parameter is judging when the algorithm believes that it finds it target point, if you increase this one will the path change direction before it hits the target point along the way. To change a particular parameter one could enter this command,
 
 ```bash
 rosrun svea_core GlobalPathfinder.py --step_length 30 --step_size 45 
 ```
 
 ### Future improvements 
-If more time existed there would be an interest to go through with the discrete solution that would make the global pathfinder faster. With a faster compilation it is more convenient to catch minor errors and to develop more. Then it would also be nice to load the global path finder in the beginning of the whole svea start up. In the path finding solution now does the user have to set target points along the way manually, that would be nice to be pointed out somehow automatically.
+If more time existed there would be an interest to go through with the discrete solution that would make the global pathfinder faster. With a faster compilation it is more convenient to catch minor errors and to do developments. Further on it would be nice to load the global path finder in the beginning of the whole Svea start up. In the current path finding solution requires to set target points along the way manually, that would be nice to be pointed out somehow automatically.
