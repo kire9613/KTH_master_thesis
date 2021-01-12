@@ -93,5 +93,17 @@ A simple PID path follower is used to control the vehicle in terms of actuated s
 
 
 ## MPC Implementation
-The code can also be used having MPC as the emergency replanner. This setting can be toggled in each launch file, but is is by default set to `False`. Note: for the MPC to work on the car, the computer on the car needs to have all the CASADI-dependencies including the optimization solver IPOPT installed. 
+
+The code can also be used having MPC as the emergency replanner instead of A*. Note that MPC was not used in the final competition. This setting can be toggled in each launch file, but it is by default set to False. 
+
+This version of the path planner uses nonlinear Model Predictive Control (NMPC). Compared to the normal MPC we have a nonlinear system model and nonlinear constraints. Our solution uses a 2D bicycle model as vehicle model and the optimization is done over the driving time and input cost (speed and steering). The optmization problem is implemented as follows:
+ ![MPC](t5_img/MPC_clip.png)
+
+The MPC code is inspired by the advanced MPC tutorial, which in turn was developed around the work of Javier Cerna, who implemented the algorithm presented in: 
+*[Autonomous Parking Using Optimization-Based Collision Avoidance](https://ieeexplore.ieee.org/abstract/document/8619433?casa_token=ucsjm_yAuYwAAAAA:z2aOWGgeAMVmnDCxZEKl1fvfMKCMqqA9bfroQkBJNuEFaPUyFGshMGMeRkLJcIV8TVN1xEn0yQ)*.
+
+
+Note: for the MPC to work on the car, the computer on the car needs to have all the CASADI-dependencies including IPOPT.
+
+
 
