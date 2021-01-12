@@ -7,12 +7,11 @@
 import sys
 import os
 import random
-import rospy
-import argparse # TODO NEED THIS ???
+#import rospy
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-import svea.models.bicycle 
+import svea.models.bicycle
 from math import hypot, sqrt
 from nav_msgs.msg import OccupancyGrid  
 
@@ -33,8 +32,6 @@ def solution(car, start, target, ax, args):
     global NodeList, countis, Blacklist, tick
     done = False
 
-    print(args.obs_radius)
-
     countis = 0
     dist2 = -1
 
@@ -43,7 +40,7 @@ def solution(car, start, target, ax, args):
     tick = 1
     
     count = 7000 # how many node attempts before shutting down 
-    first_step = 5 # First stepsize, why is this not a regular step? TODO test if I can change to regular stepsize
+    first_step = 5 # First stepsize
 
     # one step in the beginning.
 
@@ -119,7 +116,7 @@ def GetNearestListNode(nodeList, rnd):
         dist = ((x_list - rnd.x) ** 2 + (y_list - rnd.y) ** 2) ** 0.5
 
         if dist <= mindist: # updates the smallest distance 
-            mindist = dist # TODO could be exchanged to index_min = np.argmin(distkand)
+            mindist = dist 
             j = i
     return nodeList[j], dist
 
@@ -234,8 +231,6 @@ def get_best_child(car, nearest_node, rnd, ax, args):
         theta = thetakand[index_min]
         phi = phikand[index_min]
 
-
-        # Now I delete the kandidates but I might not need because they get overwrite TODO
         del xkand[:]
         del ykand[:]
         del thetakand[:]
@@ -286,3 +281,6 @@ def get_random_position(NodeList, dist1, dist2, target):
 
     return random_p
 
+if __name__ == '__main__':
+
+    print('Please play me by running the GlobalPathfinder.py file!')

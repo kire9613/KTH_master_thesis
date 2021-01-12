@@ -1,13 +1,12 @@
 #!/usr/bin/env python2
-from svea.states import VehicleState # Prova radera bara!
+from svea.states import VehicleState
 import pickle
 import os
-#from RRT_Team1 import solution
 import matplotlib.pyplot as plt
 import numpy as np
+from RRT_Team1 import solution
 import argparse
 from Track import *
-#from FILENAME import raytrace
 
 
 dirname = os.path.dirname(__file__)
@@ -234,6 +233,4 @@ def parser():
 if __name__ == '__main__':
 
     args = parser()
-    from RRT_Team1 import solution
-    print(args.obs_radius)
     main(args)
