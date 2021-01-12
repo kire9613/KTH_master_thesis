@@ -62,7 +62,7 @@ Notable steps that the algorithm goes through to generate a path are.
 2. Grid the solution space based on the coordinates of the obstacles
 3. Cap the number of nodes expanded such that the search does not go on for too long 
 
-In other ways than above mentioned the implementation follows the A* algorithm structure. For more information see a more detailed description on *[A* specifically](https://en.wikipedia.org/wiki/A*_search_algorithm)*. The algorithm implementation can be studied *[here](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/path_planners/astar.py)*. 
+In other ways than above mentioned the implementation follows the A* algorithm structure. For more information see a more detailed description on *[A* specifically](https://en.wikipedia.org/wiki/A*_search_algorithm)*. The algorithm implementation can be studied in the astar.py script available *[in this directory](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/path_planners/astar.py)*. 
 
 In order to test the A* planner to see how the global planner will plan the path around the track run:
 
@@ -82,14 +82,14 @@ Some of the parameters in `astar.py` that can be changed are:
 
 ## Lidar Obstacle Mapping 
 
-Obstacle mapping only occurs after discovering an obstacle within the emergency range. After emergency stop is activated, the car stops and maps its surroundings with the help from a lidar. Only obstacles within a certain distance and angle range. The obstacle mapper inflates the lidar points to a square with the same side length as the width of the car. The squares are inflated so that they are positioned at the same angle as the car is facing during the mapping. The solution can be studied *[here](https://github.com/KTH-SML/svea_starter/blob/team5_master/src/svea_core/src/svea/controllers/pure_pursuit.py)* under the lidar_mapping function.
+Obstacle mapping only occurs after discovering an obstacle within the emergency range. After emergency stop is activated, the car stops and maps its surroundings with the help from a lidar. Only obstacles within a certain distance and angle range. The obstacle mapper inflates the lidar points to a square with the same side length as the width of the car. The squares are inflated so that they are positioned at the same angle as the car is facing during the mapping. The solution can be studied in pure_pursuit.py script *[in this directory](https://github.com/KTH-SML/svea_starter/blob/team5_master/src/svea_core/src/svea/controllers/pure_pursuit.py)* under the lidar_mapping function.
 
  ![Obstacles](t5_img/inflated_obstacles.png)	
 
 
 ## PID Path Follower
 
-A simple PID path follower is used to control the vehicle in terms of actuated speed, and steering angle. The controller that is used is the original path follower from `controllers/pure_pursuit.py`, with adjustments on P, I gains, and anti-windup. The path follower can be studied in *[this script](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/controllers)*. 
+A simple PID path follower is used to control the vehicle in terms of actuated speed, and steering angle. The controller that is used is the original path follower from `controllers/pure_pursuit.py`, with adjustments on P, I gains, and anti-windup. The path follower can be studied in pure_pursit.py script in *[this directory](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/controllers)*. 
 
 
 ## MPC Implementation
