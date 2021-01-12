@@ -18,7 +18,7 @@ class ROSInterface(object):
         self.initial_state = None
         self.goal_state = None
         self._has_endpoint_changed = False
-        self._current_target_state = [0,0] #needs to be not None
+        self._current_target_state = [0,0] 
         self.goal_angles = []
         self.x_traj = x_traj
         self.y_traj = y_traj
@@ -39,18 +39,19 @@ class ROSInterface(object):
         self._current_target_state = [x, y]
 
     def compute_goal(self, step_ahead):
+        # Compute target point from step ahead distance
         old_goal_state = self.goal_state
         traj_length = len(self.x_traj)
-        #print("searching for value", self._current_target_state[0], self._current_target_state[1])
+
 
         for i in range(0,traj_length-1):
-            #if (abs(self.x_traj[i] - self._current_target_state[0]) <1e-2) and (abs(self.y_traj[i] - self._current_target_state[1])) :
+            
             if self.x_traj[i] == self._current_target_state[0]:
                 print("index found")
                 path_index = i
                 self.path_index = i
                 break
-            else: #index not found, might need to fix this further (!)
+            else: #index not found
                 path_index = self.path_index
 
         if path_index == 0:
@@ -58,10 +59,10 @@ class ROSInterface(object):
             
         if step_ahead + path_index > traj_length:
             goal_index = traj_length - 1 
-            #print("index is last index:",goal_index)
+            
         else:
             goal_index = step_ahead + path_index
-            #print("index:",goal_index)
+            
 
         x, y = self.x_traj[goal_index], self.y_traj[goal_index]
         
@@ -81,8 +82,6 @@ class ROSInterface(object):
         }
         if not are_nodes_close_enough(**kwargs):
             self._has_endpoint_changed = True
-        #else:
-            #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
 
 
     def cb_initial_state(self, msg):
@@ -92,17 +91,10 @@ class ROSInterface(object):
         """
         
         old_initial_state = self.initial_state
-        #At the moment the inital state is hardcoded
-        # (!) uncommented this to get position from ROS
-        #x, y = [getattr(msg.pose.pose.position, coord) for coord in ('x', 'y')]
         x, y, yaw = [getattr(msg, coord) for coord in ('x', 'y','yaw')]
 
         self.initial_state = [x, y, yaw]
         self.current_speed = msg.v
-        
-        # self.initial_state = [self.x0,self.y0,self.theta0] #original 
-
-        #self._has_endpoint_changed = True
 
         kwargs = {
             'first_node': old_initial_state,
@@ -115,7 +107,7 @@ class ROSInterface(object):
             self._has_endpoint_changed = True
         else:
             self._has_endpoint_changed = False
-            #rospy.loginfo('[planner] Nodes are close enough. Won\'t replan')
+            
 
 
     @staticmethod

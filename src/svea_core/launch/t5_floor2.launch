@@ -1,7 +1,5 @@
-
- <!--Launch file for floor2 in simulation-->
-
 <?xml version="1.0"?>
+ <!--Launch file for floor2 in simulation-->
 <launch>
     <!--Parameter settings-->
     <arg name="start_pt" default= '-2.73, -7.3, 0.8978652, 0'/>

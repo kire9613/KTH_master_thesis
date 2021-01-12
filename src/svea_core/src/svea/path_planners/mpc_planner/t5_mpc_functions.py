@@ -6,6 +6,8 @@ from svea.path_planners.mpc_planner.ros_interface import ROSInterface
 from svea.path_planners.mpc_planner.main_planner import Planner
 
 def run_mpc_planner(ros_interface):
+    # Runs MPC Path planner
+
     tic = rospy.get_time()
     #Fetch mpc obstacles without initializing occupancy grid class
     parameter_names = ['obstacles']
@@ -41,6 +43,7 @@ def run_mpc_planner(ros_interface):
         return [],[], False
 
 def convert_mpc_path(path):
+    # Convert path to list
     print('Getting MPC path')
     g_traj_x = []
     g_traj_y = []
@@ -60,6 +63,7 @@ def print_every_second( message, data):
         print_time = last_time   
 
 def compute_angles(x_traj,y_traj):
+    # Compute angles of path
     theta_traj = []
     for i in range(0,len(x_traj)-1):
         theta_traj.append(np.arctan2((y_traj[i+1] - y_traj[i]),(x_traj[i+1] - x_traj[i])))

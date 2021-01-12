@@ -1,6 +1,5 @@
- <!--Launch file for q1 in simulation-->
-
 <?xml version="1.0"?>
+ <!--Launch file for q1 in simulation-->
 <launch>
     <!--Parameter settings-->
     <arg name="use_q1" default="true"/>

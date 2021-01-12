@@ -9,6 +9,7 @@ import rospy
 
 
 def generateTrajectory( astar_settings,x0,y0,theta0, xt,yt,plotBool, file = None):
+    # Generate path trajectory from initial position to goal position
     ###########################################################################
     # define parameters and initialize variables: #
 
@@ -116,6 +117,7 @@ class gridpt(object):
 
 
     def generate_children(self,settings,list_obs_x,list_obs_y):
+        # Expand nodes for Astar
         safety_dist = settings["safety_distance"]
         new_pose = []
         for dTheta in ([-math.pi/8, -math.pi/12, 0, math.pi/12, math.pi/8 ]):
@@ -142,6 +144,8 @@ class gridpt(object):
                 self.children.append([gridpt(settings,child[0],child[1],child[2],self.xt,self.yt),child[3],closest_distance_to_obstacle]) # attach and create new node to list w the corresponding steeering angle and cost
 
 def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
+    # Main Astar algorithm
+    
     print('calling A*')
 
     global grid, dl, xlb, ylb
@@ -217,6 +221,7 @@ def A_star(xt,yt,x0,y0,theta0,list_obs_x,list_obs_y, settings):
         endnodeTheta = 0 
         print('\n Astar Failed - could not find trajectory')      
     return xtraj,ytraj,success, endnodeTheta
+
 def __main__(): 
     xt, yt = 15.5,4.3
     x0, y0, theta0 = 1, 0, 0

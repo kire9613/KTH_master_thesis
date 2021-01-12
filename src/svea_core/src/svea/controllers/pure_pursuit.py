@@ -42,6 +42,7 @@ class PurePursuitController(object):
         rospy.set_param('/team_5_floor2/lidar_obstacles',[]) # parameter to keep obstacles
 
     def compute_angle(self):
+        # Computes angle range to be used for obstacle detection
         self.emg_angle_range =  np.arctan2((self.width + 0.5),(2*self.emergency_distance))
         print("emergency angle in rad", self.emg_angle_range)
 
@@ -49,6 +50,7 @@ class PurePursuitController(object):
         self.emg_traj_running = running 
 
     def compute_control(self, state, target=None):
+        # Computes velocity and steering angle
         if self.backing_up:
             return 0,-0.6
         elif self.emg_stop:
@@ -127,13 +129,15 @@ class PurePursuitController(object):
         return ind, dist
 
     def emergency_stop(self, laserScan):
-        
+        # Checks if obstacle is too close
+
         # Compute index ranges for emergency stop scan
         min_index =  int(round((-self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
         max_index =  int(round((self.emg_angle_range - laserScan.angle_min)/laserScan.angle_increment))
         
         angles = np.linspace(-self.emg_angle_range,self.emg_angle_range,max_index-min_index)
 
+        # Define obstacle detection ellipse
         ellipse_a = (self.width + 0.05)/2
         ellipse_b = self.emergency_distance*1
         ellipse_vector = ellipse_a*ellipse_b/np.sqrt((ellipse_a*np.cos(angles))**2 + (ellipse_b*np.sin(angles))**2)
@@ -146,7 +150,7 @@ class PurePursuitController(object):
 
         
     def laser_mapping(self,state):
-        
+        # Mapping obstacles from laser scan to map
         laserScan = self.laser_scan
 
         min_index =  int(round((-self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
@@ -207,55 +211,11 @@ class PurePursuitController(object):
 
         self.publish_obstacles(iobstacles_list)
 
-    def laser_mapping_points(self,state): # REMOVE LATER if not used!!!!
-        
-        laserScan = self.laser_scan
-
-        min_index =  int(round((-self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
-        max_index =  int(round((self.mapping_angle - laserScan.angle_min)/laserScan.angle_increment))
-
-        # Find indices of laserscans that make up our obstacle
-        if min == max:
-            indices = np.where(np.array(laserScan.ranges[min_index]) < self.mapping_distance)
-        else: 
-            indices = np.where(np.array(laserScan.ranges[min_index:max_index]) < self.mapping_distance)
-        
-        #Get svea's pose
-        svea_x = state[0]
-        svea_y = state[1]
-        yaw = state[2]
-
-        #Calculate lidar pose in map frame             
-        length = self.lidar_to_base 
-        lidar_coord = [svea_x+length*math.cos(yaw), svea_y+length*math.sin(yaw)]
-
-        #Mapping dynamic obstacles
-        obs_points = []
-        idx_list = []
-        for idx in indices[0]:  
-            idx = idx + min_index
-            idx_list.append(idx)
-            #calculate angle to laser point
-            angle = laserScan.angle_min + idx*laserScan.angle_increment
-            #coordinate of the laser point/obstacle
-            lidar_range = laserScan.ranges[idx]
-            obs_coord = [lidar_coord[0]+lidar_range*math.cos(yaw+angle), lidar_coord[1]+lidar_range*math.sin(yaw+angle)]
-            obs_points.append(obs_coord)
-
-        # Update list of obstacles with the new obstacle 
-        
-        obstacles_list = []
-        obstacles_list.append(obs_points)
-        try:
-            rospy.delete_param('/team_5_floor2/lidar_obstacles')
-        except KeyError:
-            print("value not set")
-        rospy.set_param('/team_5_floor2/lidar_obstacles',obstacles_list)
-        self.publish_obstacles(obstacles_list)
-
     def publish_obstacles(self, obstacles_list):
+        # Publish obstacles to be seen with Rviz
         Interface = MapROSInterface()
         Interface.publish(obstacles_list)
 
     def reset_isfinished(self):
-            self.is_finished = False
+        #Reset is_fininshed flag
+        self.is_finished = False
