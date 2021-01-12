@@ -6,6 +6,13 @@ This folder contains the code of the Team 5 implementation of the EL2425 task.
 
 The implementation done by Team 5 can mostly be found under the *[`svea_starter/src/svea_core`](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core)* directory. Any specifics regarding the implementation can be found there.
 
+Make sure casadi and numpy packages are installed. To install these using pip run:
+
+    > pip install casadi 
+and 
+
+    > pip install numpy
+
 # Quick Guide To Start the Simulation
 Run one of two options in a terminal: 
 
@@ -39,7 +46,25 @@ The state machine decision logic is visualized by the following figure:
 
 ## A* Path Planner
 
-A hybrid A* algorithm is used for path planning both globally and around encountered obstacles. The algorithm implementation can be found in the *[path planner directory](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/path_planners)*. In order to test the A* planner to see how the global planner will plan the path around the track run:
+A hybrid A* algorithm is used for path planning both globally and around encountered obstacles. 
+
+Notable things about the implementation: 
+* The hybrid A* uses the Euclidean distance to the goal coordinate as a heuristic when choosing which node to expand further. 
+* Expand the nodes wrt. current pose. 
+* The cost function is given by the following equation
+
+ ![A* Cost Function](t5_img/astarcostfunction.png)
+
+Where N is the number of segments the road has. This cost function penalizes big steering angles to avoid sharp turns, it penalizes longer paths, and it penalizes vicinity to obstacles, which results in paths more likely to be generated in the middle of corridors.  
+
+Notable steps that the algorithm goes through to generate a path are.
+1. Create points between polygon vertices that A* uses as obstacles 
+2. Grid the solution space based on the coordinates of the obstacles
+3. Cap the number of nodes expanded such that the search does not go on for too long 
+
+In other ways than above mentioned the implementation follows the A* algorithm structure. For more information see a more detailed description on *[A* specifically](https://en.wikipedia.org/wiki/A*_search_algorithm)*. The algorithm implementation can be studied *[here](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/path_planners/astar.py)*. 
+
+In order to test the A* planner to see how the global planner will plan the path around the track run:
 
     > python src/svea/path_planners/astar.py
 
@@ -57,7 +82,7 @@ Some of the parameters in `astar.py` that can be changed are:
 
 ## Lidar Obstacle Mapping 
 
-Obstacle mapping only occurs after discovering an obstacle within the emergency range. After emergency stop is activated, the car stops and maps its surroundings with the help from a lidar. Only obstacles within a certain distance and angle range. The obstacle mapper inflates the lidar points to a square with the same side length as the width of the car. The squares are inflated so that they are positioned at the same angle as the car is facing during the mapping. The solution can be studied *[here](https://github.com/KTH-SML/svea_starter/tree/team5_master/src/svea_core/src/svea/controllers)* under the lidar_mapping function.
+Obstacle mapping only occurs after discovering an obstacle within the emergency range. After emergency stop is activated, the car stops and maps its surroundings with the help from a lidar. Only obstacles within a certain distance and angle range. The obstacle mapper inflates the lidar points to a square with the same side length as the width of the car. The squares are inflated so that they are positioned at the same angle as the car is facing during the mapping. The solution can be studied *[here](https://github.com/KTH-SML/svea_starter/blob/team5_master/src/svea_core/src/svea/controllers/pure_pursuit.py)* under the lidar_mapping function.
 
  ![Obstacles](t5_img/inflated_obstacles.png)	
 
