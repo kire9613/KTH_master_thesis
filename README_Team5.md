@@ -1,6 +1,6 @@
 # Team 5 - Source Code [EL2425 HT20-1]
 ## A short description
-This folder contains the code of the Team 5 implementation of the EL2425 task.
+This folder contains the code of the Team 5 implementation of the EL2425 task. The task was to write software that enabled a small remotely operated vehicle to avoid unknown obstacles given a map of its surroundings. The vehicle is equipped with a 2D lidar scanner and an IMU sensor. The main features of the implementation were the decision logic (which involved a state machine), obstacle mapping, and A* path planning. 
 
 ## **Important to read if code review for Team 5 is to be done!** 
 
