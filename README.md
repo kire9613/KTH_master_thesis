@@ -91,7 +91,7 @@ This is the given node in the beginning that signifies the car.
 #### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
-|STOP|boolean|boolean|Describes if the emergency break is on or off|
+|emergency_break|boolean|boolean|Describes if the emergency break is on or off|
 
 #### Parameters
 |Name|Type|Data|Description|
@@ -107,14 +107,13 @@ The purpose of this node is to stop the car if it gets too close to an object to
 |Name|Type|Data|Description|
 |---|---|---|---|
 |state|Vehicle_State|x, y, v, yaw|Coordinates in Vehicle_State System|
-|TrajMessage|next_traj|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
+|Trajectory|Trajectory_Path|int8[x,y]|Sequence of coordinates for the trajectory. Given in scaled pixel representation|
 |using_astar|Bool|Bool|Information if the car is using the astar trajectory or not|
 
 #### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
-|Control|control_msg|Not Specified|Look up how it should be specified|
-|Next_traj|boolean|boolean|Output if close to end of trajectory to generate next trajectory|
+|Control|control_msg|float32 speed, float32 steering|speed and steering input from the controller|
 
 #### Parameters
 |Name|Type|Data|Description|
@@ -133,21 +132,21 @@ The purpose of this node is to calculate the appropriate speed and steering so t
 #### Subscribers
 |Name|Type|Data|Description|
 |---|---|---|---|
-|Control|control_msg|Not Specified|Look up how it should be specified|
-|STOP|boolean|boolean|Describes if the emergency break is on or off|
+|Control|control_msg|float32 speed, float32 steering|speed and steering input from the controller|
+|emergency_break|boolean|boolean|Describes if the emergency break is on or off|
 
 #### Publishers
 |Name|Type|Data|Description|
 |---|---|---|---|
-|Control|control_msg|Not Specified|Look up how it should be specified|
+|Control|control_msg|float32 speed, float32 steering|speed and steering input from the controller|
 
 #### Parameters
 N/A
 
 #### Purpose
-Controller to filter the speed to give depending on if the stop signal is on or not.
-
-
+Control filter that only lets through the control signal if emergency break is not enabled.
+If emergency break is enabled the car will reverse
+It will also go at a slower pace if the slow_down flag is raised. In the current implementation that means stopping.
 
 
 ## 5. Path planner
