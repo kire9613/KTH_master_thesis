@@ -14,21 +14,12 @@ from svea_msgs.srv import ControlMessage
 '''
 Controller interface for path_following_sveas.
 The vehicle class requires a controller with a compute_control function to work.
+The compute_control function is called from the svea node and is a function that is required from the controller
+This function returns the control from a servie that is called GetSpeedSteering and that is published by the control filter.
 '''
 
-#TODO: Albin Comment
-
 class NodeController(object):
-
-    k = 0.6  # look forward gain
-    Lfc = 0.4  # look-ahead distance
-    K_p = 1  #TODO speed control propotional gain
-    K_i = 0.1  #TODO speed control integral gain
-    K_d = 0  #TODO speed control derivitive gain
-    L = 0.324  # [m] wheel base of vehicle
-    threshold = 0.2
-    checkpointsTouched = False
-
+    
     def __init__(self, vehicle_name=''): 
         rospy.wait_for_service('/GetSpeedSteering')
         self.control_client = rospy.ServiceProxy('/GetSpeedSteering', ControlMessage, persistent=True)
