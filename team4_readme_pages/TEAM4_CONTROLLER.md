@@ -15,4 +15,4 @@ or by expanding the operator as
 The benefit of using this form of anti-windup instead of simply disabling the integral part once it has passed a threshold is that the controller determines by itself when anti windup has to be enabled. If the threshold is applied manually there might be feasible references that the system can not track since the threshold has been put too tight.
 
 ## Steering Control
-The path the car has to follow consists of an ordered list of points. The steering controller looks a distance ahead on the path and steers towards that point. This is the same controller that was provided by the course as an example.
+The path the car has to follow consists of an ordered list of points. The steering controller looks a distance ahead on the path and steers towards that point. This is the same controller that was provided by the course as an example (see pure_pursuit.py).
