@@ -1,7 +1,7 @@
 # EL2425 TEAM4
 
 ## Short description
-The goal of this project was to create a solution making it possible for the SVEA car to autonomously drive along a given track in a safe manner avoiding unknown (and known) obstacles)
+The goal of this project was to create a solution making it possible for the SVEA car to autonomously drive along a given track in a safe manner avoiding unknown (and known) obstacles
 
 ## Requirements
 First, make sure you have followed the basic setup process for running the code in the main-branch of svea_starter given in the README. 
@@ -15,6 +15,7 @@ sudo apt install python-rtree python-scipy
 echo 'export PYTHONPATH="$PYTHONPATH:$(rospack find svea_core)/scripts"' >> ~/.bashrc
 source ~/.bashrc
 ```
+Also remember to build the code: `catkin build`
 
 ## Running the code
 
@@ -58,7 +59,7 @@ First make sure the system is set up to run on hardware. Edit `svea_starter/src/
 If you want to be able to run nodes on different machines than the SVEA itself, some setup of ssh-keys is needed. Otherwise the following steps regarding ssh keys can be skipped, then go directly to `roslaunch svea_core team4.launch`.
 
 Setting up ssh:
-* On the car, run: `cat ~/.ssh/id_rsa.pub och kopiera output`
+* On the car, run: `cat ~/.ssh/id_rsa.pub` copy the output.
 
 * On the machine to be used first run `sudo apt install openssh-server`. Edit the file `~/.ssh/authorized_keys` (create the file if it does not exist) and paste what you got from the command that was ran on the car. Finally run `chmod 600 ~/.ssh/authorized_keys`.
 
@@ -89,6 +90,24 @@ rviz -d svea_starter/src/svea_core/scripts/team4_project/rviz.rviz
 In rviz, use `2D pose estimate` to give the car an initial pose. Then press *enter* in the terminal you ran `start_pause.py`. The car should start moving after finishing planning.
 
 ## System description
+
+#### Behaviour Trees
+
+Our system is based on a behaviour tree. A behaviour tree is hierarchial and reacting allowing the system to prioritize different task and react to specific events. The behaviour tree also makes the system modular easy to maintain.
+
+The behaviour tree is built up by nodes in form of: 
+* Fallbacks **?** (reed as *or*)
+* Sequences **->** (reed as *and*) 
+* Tree leafs (function calls or conditions) 
+
+The tree is continously ticked from the top, checking the status of the nodes in the tree from left to right, eg. checking what the different nodes returns. 
+
+* The leafs returns either *true*, *false* or *running* telling wether a condition is *true* or *false*, or if a function associated with the leaf returned *true*, *false* or is still *running*. 
+* Fallbacks and sequences handels the flow in the tree, interpreted as *and*/*or* conditions, prioritizing the different leafs and subtrees. 
+* A sequence ticks all it's children sequentially from left to right and return *true* if all children returns *true*. As soon as one children returns *false* also the sequence node returns *false*.
+* A fallback also ticks all it's children sequentially from left to right, but instead returns *true* as soon as one children returns *true*. If all children to the fallback node returns *false*, also the fallback node returns *false*.
+
+#### The system
 
 ![alt text][behaviour_tree]
 
