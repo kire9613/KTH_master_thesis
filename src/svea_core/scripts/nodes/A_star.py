@@ -7,7 +7,7 @@ from svea_msgs.srv import PathEstimator, PathEstimatorResponse
 from svea_msgs.msg import VehicleState
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap
-from svea.controllers.grid_type import Grid
+from svea.path_planners.grid_type import Grid
 
 '''
 Node for A* pathfinding. 
