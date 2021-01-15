@@ -22,7 +22,7 @@ Rviz should open and you should see the map. Use 2D pose estimate to initialize 
 
 ## Run System in Reality
 
-To run the system in reality, you have to modify the [launch file](https://github.com/KTH-SML/svea_starter/blob/team2_master/src/svea_core/launch/floor2.launch) in the car. Set is_sim to False and comment line 16 (the one related to map_server). Add the following lines to your launch file:
+To run the system in reality, you have to modify the launch file [svea_starter/blob/team2_master/src/svea_core/launch/floor2.launch](https://github.com/KTH-SML/svea_starter/blob/team2_master/src/svea_core/launch/floor2.launch) in the car. Set is_sim to False and comment line 16 (the one related to map_server). Add the following lines to your launch file:
 
 ```bash
 <!--open serial connection for controlling SVEA-->
@@ -37,7 +37,7 @@ To run the system in reality, you have to modify the [launch file](https://githu
 </include>
 ```
 
-When the launch file has been modified, the program is ready to run. However, when running the program in the car for the first time you need to go to /svea_starter/src/svea_sensors in the terminal and run the following command:
+When the launch file has been modified, the program is ready to run. However, when running the program in the car for the first time you need to go to /src/svea_sensors in the terminal and run the following command:
 
 ```bash
 sudo bash grant_hardware_permisions.sh
@@ -67,7 +67,7 @@ As in the simulation, rviz should open and you should see the map. Use 2D pose e
 
 When the program has been launched from the terminal, it starts to initialize some processes and then waits for the user to initilize the car's position with 2d pose estimate. Thereafter, the global planner starts to find a path from the start to the goal poisiton. When the path has been genereted, the system starts to go into a loop where it first always checks if it has reached the goal or not. If it has not reached the goal, then it computes the desired control signals (genereted from path tracker) to track the path. While doing so, it simultaneously scans the environment with a LIDAR sensor and updates the map with the LIDAR data. The LIDAR data consists of distances from the car to the obstacles that the LIDAR has detected for each beam (135 beams in total). After updating the map, the system runs the replanning algorithm. It executes all the mentioned steps above in one time step, in order to repeat them, where it starts by checking if it has reached the goal or not. When the car has reached the goal, it sets the speed to zero and waits for the user to terminate the program.
 
-The code for main system can be found in /svea_starter/src/svea_core/scripts/core_examples/floor2_examples.py. For a further description of the subsystems such as path planning or path tracking, see the sections below.
+The code for main system can be found in [svea_starter/src/svea_core/scripts/core_examples/floor2_examples.py](https://github.com/KTH-SML/svea_starter/blob/team2_master/svea_starter/src/svea_core/scripts/core_examples/floor2_examples.py). For a further description of the subsystems such as path planning or path tracking, see the sections below.
 
 # Map Representation
 
@@ -95,7 +95,7 @@ For our specific map, we form our known obstacles as convex sets, see the figure
 
 ![key-teleop example](./media/convex_map.png) 
 
-When the map is done, you should export and save it. A yaml file will be genereted, which consists of lists of vertices for each obstacle in the map. These lists are stored in the variable occupancy_grid.obstacles in the main file floor2_example.py. This variable is then used in the obstacle avoidance for the path planners, more specifically in the code utils.py, which can be found in /svea_starter/src/svea_core/src/svea/planner. There, with the help of the function _compute_convex_hull_equations, it converts every list of vertices to a condition
+When the map is done, you should export and save it. A yaml file will be genereted, which consists of lists of vertices for each obstacle in the map. These lists are stored in the variable occupancy_grid.obstacles in the main file floor2_example.py. This variable is then used in the obstacle avoidance for the path planners, more specifically in the code utils.py, which can be found in [/svea_starter/src/svea_core/src/svea/planner](https://github.com/KTH-SML/svea_starter/blob/team2_master/svea_starter/src/svea_core/src/svea/planner). There, with the help of the function _compute_convex_hull_equations, it converts every list of vertices to a condition
 
 <img src="https://render.githubusercontent.com/render/math?math=Ax \leq b">
 
@@ -128,11 +128,11 @@ The alghorithm can be summarized in the following procedure:
       10. localmap(node) = 100
 ``` 
 
-You can find the code for occupancy grid in /svea_starter/src/svea_core/src/svea/map/occupancy_grid.py. Note that you need to install tqdm.
+You can find the code for occupancy grid in [svea_starter/src/svea_core/src/svea/map/occupancy_grid.py](https://github.com/KTH-SML/svea_starter/blob/team2_master/svea_starter/src/svea_core/src/svea/map/occupancy_grid.py). Note that you need to install tqdm.
 
 # Path Planning
 
-The system uses two seperate path planners, a local planner and a global planner. As a global path planner, it uses RRT Connect and as a local path planner it uses the usual RRT. You can find the codes for those tasks under svea_starter/src/svea_core/src/svea/planner. Other scripts that they depend on are utils.py and smoothing.py, which you can find in the same dictionary. The script utils.py, provide the path planners the position of the obstacles and if a collision will occur or not when following the genereated path. The script smoothing.py, smoothes the path that is genereted from the path planner. 
+The system uses two seperate path planners, a local planner and a global planner. As a global path planner, it uses RRT Connect and as a local path planner it uses the usual RRT. You can find the codes for those tasks under [svea_starter/src/svea_core/src/svea/planner](https://github.com/KTH-SML/svea_starter/blob/team2_master/svea_starter/src/svea_core/src/svea/planner). Other scripts that they depend on are utils.py and smoothing.py, which you can find in the same dictionary. The script utils.py, provide the path planners the position of the obstacles and if a collision will occur or not when following the genereated path. The script smoothing.py, smoothes the path that is genereted from the path planner. 
 
 ## Local Planner - RRT
 
@@ -222,7 +222,7 @@ One can adjust the importance of the smoothing optimization with hyper parameter
   
 # Path Tracker
 
-The path tracker generetes two control signals to follow the desired path. One control signal for the seering angle and one for the velocity are genereted. The steering angle is computed with Pure Pursuit and the velocity command is computed with PID controller, see the subsections below. The code for the path tracker can be found in /svea_starter/src/svea_core/src/svea/controllers/pure_pursuit.py. 
+The path tracker generetes two control signals to follow the desired path. One control signal for the seering angle and one for the velocity are genereted. The steering angle is computed with Pure Pursuit and the velocity command is computed with PID controller, see the subsections below. The code for the path tracker can be found in [svea_starter/src/svea_core/src/svea/controllers/pure_pursuit.py](https://github.com/KTH-SML/svea_starter/blob/team2_master/svea_starter/src/svea_core/src/svea/controllers/pure_pursuit.py). 
 
 ## Steering Controller
 
@@ -252,6 +252,6 @@ The controller also uses saturation for the control signal u. This is to make su
 
 # Replanning
 
-For replanning, the car simultaneously checks the LIDAR distances for angles -2, 0 and +2 degrees as it follows the planned path. If the distance for -2 or +2 degree is less than 3m or if the distance for 0 degree is less than 5m, then the car checks if it's trajectory will collide with an obstacle. To do that, it checks if its path between its second and third target will traverse an obstacle. It does this, by indexing the path between the second and third target and checks if the corresponding indeces are occupied or not in the occupancy grid. It also looks at the neighbouring indeces to make sure that it has some margin from the unknown obstacles. However, to reduce the sensitivy of the replanning algorithm, a threshold is introduced. If the system realize that it must replan 3 timesteps repeatedly, then it acutally starts to replan. Then it stops and use RRT (which has information of the updated map) to replan 7 (if possible) or 5 targets ahead. The procedure for the replanning can be found in the main file /svea_starter/src/svea_core/scripts/core_examples/floor2_example.py.
+For replanning, the car simultaneously checks the LIDAR distances for angles -2, 0 and +2 degrees as it follows the planned path. If the distance for -2 or +2 degree is less than 3m or if the distance for 0 degree is less than 5m, then the car checks if it's trajectory will collide with an obstacle. To do that, it checks if its path between its second and third target will traverse an obstacle. It does this, by indexing the path between the second and third target and checks if the corresponding indeces are occupied or not in the occupancy grid. It also looks at the neighbouring indeces to make sure that it has some margin from the unknown obstacles. However, to reduce the sensitivy of the replanning algorithm, a threshold is introduced. If the system realize that it must replan 3 timesteps repeatedly, then it acutally starts to replan. Then it stops and use RRT (which has information of the updated map) to replan 7 (if possible) or 5 targets ahead. The procedure for the replanning can be found in the main file [svea_starter/src/svea_core/scripts/core_examples/floor2_example.py](https://github.com/KTH-SML/svea_starter/blob/team2_master/svea_starter/src/svea_core/scripts/core_examples/floor2_example.py).
 
  
