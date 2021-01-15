@@ -76,4 +76,3 @@ class PurePursuitController(object):
         #TODO
 
         return ind
-
