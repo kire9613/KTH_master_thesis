@@ -13,17 +13,17 @@ DEBUG = False
 if DEBUG:
     import ass3_debug as dbg
 
-N_GRID_X = 40
-N_GRID_Y = N_GRID_X//2
-GOAL_RADIUS = 1.5   # re-set in solution
-GOAL_ANGLE = 0      # re-set in solution
-SAMPLE_TIME = 0.01
-ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4]#[-pi/4, 0, pi/4]
-N_HEADINGS = 6
-N_STEPS = None    # initialized in solution
-GRID_SIZE_X = 0   # initialized in solution
-GRID_SIZE_Y = 0   # initialized in solution
-OBJECTIVE = [] # initialized in solution
+N_GRID_X = 40       # For debug plot
+N_GRID_Y = N_GRID_X//2  # For debug plot
+GOAL_RADIUS = 1.5   # radius of goal point (if inside == at goal)
+GOAL_ANGLE = 0      # heading at goal point
+SAMPLE_TIME = 0.01  
+ANGLES = [-pi/4,-pi/8,0,pi/8,pi/4]  # discretized directions
+N_HEADINGS = 6    
+N_STEPS = None      # number of steps in one direction, initialized later
+GRID_SIZE_X = 0     # grid dimension, initialized later 
+GRID_SIZE_Y = 0     # grid dimension, initialized later
+OBJECTIVE = []      # definition of task, initialized later
 
 plotter = None
 counter = 0
