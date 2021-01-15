@@ -1,7 +1,7 @@
 # EL2425 TEAM4
 
 ## Short description
-The goal of this project was to create a solution making it possible for the SVEA car to autonomously drive along a given track in a safe manner avoiding unknown (and known) obstacles
+The goal of this project was to create a solution making it possible for the SVEA car to autonomously drive along a given track in a safe manner avoiding unknown (and known) obstacles. The code for the prooject is contained in the folder `svea_starter/src/svea_core/scripts/team4_project`, see rest of readme for a description of what the different parts do.
 
 ## Requirements
 First, make sure you have followed the basic setup process for running the code in the main-branch of svea_starter given in the README. 
