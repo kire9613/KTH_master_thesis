@@ -147,8 +147,7 @@ def updateNeighbors(obs, openSet, closedSet, n):
                 continue
 
             i, nodes = searchQueue(openSet, nn)
-            nnPriority = (nn.cost + 3*heur(nn.x, nn.y, obs.xt, obs.yt), nn)#(nn.cost + heur(nn.x, nn.y, obs.xt, obs.yt), nn)
-
+            nnPriority = (nn.cost + 3*heur(nn.x, nn.y, obs.xt, obs.yt), nn)
             # Save node
             if i != -1:
                 if nn.cost < nodes[i][1].cost:
