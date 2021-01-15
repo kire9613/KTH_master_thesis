@@ -93,19 +93,19 @@ In rviz, use `2D pose estimate` to give the car an initial pose. Then press *ent
 
 #### Behaviour Trees
 
-Our system is based on a behaviour tree. A behaviour tree is hierarchial and reacting allowing the system to prioritize different task and react to specific events. The behaviour tree also makes the system modular easy to maintain.
+Our system is based on a behaviour tree. A behaviour tree is hierarchial and reacting allowing the system to prioritize different task and react to specific events. The behaviour tree also makes the system modular and easy to maintain.
 
 The behaviour tree is built up by nodes in form of: 
-* Fallbacks **?** (reed as *or*)
-* Sequences **->** (reed as *and*) 
+* Fallbacks **?** (read as *or*)
+* Sequences **->** (read as *and*) 
 * Tree leafs (function calls or conditions) 
 
-The tree is continously ticked from the top, checking the status of the nodes in the tree from left to right, eg. checking what the different nodes returns. 
+The tree is continously ticked from the top, checking the status of the nodes in the tree from left to right, i.e. checking what the different nodes returns. 
 
 * The leafs returns either *true*, *false* or *running* telling wether a condition is *true* or *false*, or if a function associated with the leaf returned *true*, *false* or is still *running*. 
-* Fallbacks and sequences handels the flow in the tree, interpreted as *and*/*or* conditions, prioritizing the different leafs and subtrees. 
-* A sequence ticks all it's children sequentially from left to right and return *true* if all children returns *true*. As soon as one children returns *false* also the sequence node returns *false*.
-* A fallback also ticks all it's children sequentially from left to right, but instead returns *true* as soon as one children returns *true*. If all children to the fallback node returns *false*, also the fallback node returns *false*.
+* Fallbacks and sequences handle the flow in the tree, interpreted as *and*/*or* conditions, prioritizing the different leafs and subtrees. 
+* A sequence ticks all it's children sequentially from left to right and returns *true* if all children return *true*. As soon as one child returns *false* also the sequence node returns *false*.
+* A fallback also ticks all it's children sequentially from left to right, but instead returns *true* as soon as one child returns *true*. If all children of the fallback node return *false*, also the fallback node returns *false*.
 
 #### The system
 
