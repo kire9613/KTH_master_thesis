@@ -1,8 +1,3 @@
-"""
-RRT_CONNECT_2D
-@author: huiming zhou
-"""
-
 import os
 import sys
 import math
@@ -23,17 +18,18 @@ class RrtConnect:
     def __init__(self, s_start, s_goal, step_len, goal_sample_rate, iter_max, obstacles, grid_data):
         self.s_start = Node(s_start)
         self.s_goal = Node(s_goal)
-        self.step_len = step_len
-        self.goal_sample_rate = goal_sample_rate
-        self.iter_max = iter_max
-        self.V1 = [self.s_start]
-        self.V2 = [self.s_goal]
+        self.step_len = step_len # how far away a new node can be
+        self.goal_sample_rate = goal_sample_rate # how often we should sample a random point
+        self.iter_max = iter_max # maximum iterations
+        self.V1 = [self.s_start] # tree expanding from start 
+        self.V2 = [self.s_goal] # tree expanding from goal
 
-        self.utils = utils.Utils(obstacles, grid_data)
-
-        self.x_range = (-15, 21)
+        self.utils = utils.Utils(obstacles, grid_data) # for obstacle avoidance
         self.obstacles = obstacles
 
+        self.x_range = (-15, 21)
+
+        # divide the map in four different lines for faster sampling and direct path
         self.k = -0.095
         l1_s = self.k*self.s_start.x + 9
         l2_s = self.k*self.s_start.x + 4.2
@@ -45,6 +41,7 @@ class RrtConnect:
         l3_g = self.k*self.s_goal.x + 4.2
         l4_g = self.k*self.s_goal.x - 1.3
 
+        # assign range for y-axis depending on the start and goal position
         if l4_s <= self.s_start.y <= l3_s and l4_g <= self.s_goal.y <= l3_g:
            self.y_range = 43
 
@@ -56,10 +53,14 @@ class RrtConnect:
 
     def planning(self):
         for i in range(self.iter_max):
+            # generate a random point
             node_rand = self.generate_random_node(self.s_goal, self.goal_sample_rate)
+            # find the nearest node in start tree to the random point
             node_near = self.nearest_neighbor(self.V1, node_rand)
+            # move towards the random point from the nearest neighbor, create a new node where you end up
             node_new = self.new_state(node_near, node_rand)
 
+            # collision avoidance
             if node_new and not self.utils.is_collision(node_near, node_new):
                 self.V1.append(node_new)
                 node_near_prim = self.nearest_neighbor(self.V2, node_new)
@@ -98,6 +99,8 @@ class RrtConnect:
 
     @staticmethod
     def is_node_same(node_new_prim, node_new):
+        "Checks if nodes are the same"
+
         if node_new_prim.x == node_new.x and \
                 node_new_prim.y == node_new.y:
             return True
@@ -105,11 +108,13 @@ class RrtConnect:
         return False
 
     def generate_random_node(self, sample_goal, goal_sample_rate):
-        delta = self.utils.delta
+        "Generate a random point in the map"
 
         if np.random.random() > goal_sample_rate:
 
             rand_x = np.random.uniform(self.x_range[0], self.x_range[1])
+
+            # sample in the assigned range for y-axis
 
 	    if self.y_range == 43:
 	      y_max = self.k*rand_x + 4.2
@@ -130,10 +135,14 @@ class RrtConnect:
 
     @staticmethod
     def nearest_neighbor(node_list, n):
+        "Given a tree of nodes and a point, it return the node that is closest to the point."
+
         return node_list[int(np.argmin([math.hypot(nd.x - n.x, nd.y - n.y)
                                         for nd in node_list]))]
 
     def new_state(self, node_start, node_end):
+        "Given a start node, it moves towards the end node and return the position that it ends up in."
+
         dist, theta = self.get_distance_and_angle(node_start, node_end)
 
         dist = min(self.step_len, dist)
@@ -145,6 +154,8 @@ class RrtConnect:
 
     @staticmethod
     def extract_path(node_new, node_new_prim):
+        "Extracts the path from the given trees. Connects path from start and end tree."
+
         path1 = [(node_new.x, node_new.y)]
         node_now = node_new
 
@@ -163,6 +174,8 @@ class RrtConnect:
 
     @staticmethod
     def get_distance_and_angle(node_start, node_end):
+        "Calculates distance and angle between two nodes."
+
         dx = node_end.x - node_start.x
         dy = node_end.y - node_start.y
         return math.hypot(dx, dy), math.atan2(dy, dx)
@@ -172,12 +185,14 @@ def compute_path_connect(x0, y0, xt, yt, obstacles, grid_data):
     x_start = (x0, y0)  # Starting node
     x_goal = (xt, yt)  # Goal node
 
+    # create rrt connect object and start planning algorithm
     rrt_conn = RrtConnect(x_start, x_goal, 0.4, 0.05, 20000, obstacles, grid_data)
     path = rrt_conn.planning()
 
     if path:
         print("Path found")
 
+        # smooth path
         path = smoothing.smooth(path, 0.99, 0.5, 0.001)
 
         traj_x = []

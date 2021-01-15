@@ -160,7 +160,6 @@ class SimLidar(object):
         return self._obstacles
 
     def _update_visible_edges(self):
-        # TODO
         if self._last_visibility_pos is None:
             self._last_visibility_pos = self._lidar_position
         elif np.all(self._last_visibility_pos == self._lidar_position):

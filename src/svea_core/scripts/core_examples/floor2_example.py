@@ -26,11 +26,11 @@ vehicle_name = "SVEA"
 target_velocity =  0.6 # [m/s]
 dt = 0.01 # frequency of the model updates
 
-#TODO: create a trajectory that goes around the track
+###############################################################################
+
+# setpoints for trajectory
 xs = [0, 18.7, 19.7, -13.5, -14.3, -7.8, -3.58]
 ys = [0, -0.727, 3.26, 6.04, 1.5, 1.74, 0.15]
-
-###############################################################################
 
 ## INIT #######################################################################
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
@@ -63,7 +63,6 @@ def main():
     rospy.init_node('floor2_example')
     start_pt, is_sim, use_rviz, use_matplotlib = param_init()
 
-    #NMPC
     ros_interface = ROSInterface()
     occupancy_grid_parameters = MapROSInterface.get_occupancy_grid_parameters()
     occupancy_grid = OccupancyGrid(**occupancy_grid_parameters)
@@ -81,8 +80,6 @@ def main():
         model_for_sim = SimpleBicycleModel(start_pt)
         simulator = SimSVEA(vehicle_name, model_for_sim,
                             dt=dt, start_paused=True, run_lidar=True).start()
-
-    # start pure pursuit SVEA manager
     
     if is_sim:
         # start simulation
@@ -91,13 +88,14 @@ def main():
     track = Track(vehicle_name, publish_track=True)
     track.start()
 
-    # simualtion loop
     angle_lidar = [radians(angle) for angle in range(-135, 135, 2)]
 
     f = 0
 
+    # simualation loop
     while not rospy.is_shutdown():
 
+            # if first time, wait for user to set initial position with 2D pose estimate 
             if f == 0:
 
               ros_interface.sleep()
@@ -109,6 +107,7 @@ def main():
 
 	      goal = [xs[1], ys[1]]
 
+              # compute path with global planner
 	      traj_x, traj_y = compute_path_connect(init[0], init[1], goal[0], goal[1], occupancy_grid.obstacles, occupancy_grid.localmap)
 
 	      if traj_x[-1] == init[0]:
@@ -130,6 +129,7 @@ def main():
 		 traj_y = np.concatenate((traj_y, t_y), axis = None)
 
             elif f == 1:
+              # compute path with global planner
               traj_x, traj_y = compute_path_connect(xs[-1], ys[-1], 0, 0, occupancy_grid.obstacles, occupancy_grid.localmap)
 
 	      if traj_x[-1] == init[0]:
@@ -137,6 +137,7 @@ def main():
 		 traj_x.reverse()
 		 traj_y.reverse()
 
+            # start pure pursuit SVEA manager
 	    svea = SVEAPurePursuit(vehicle_name, LocalizationInterface, PurePursuitController, traj_x, traj_y, data_handler = DataHandler)
             svea.start(wait=True)
             svea.controller.target_velocity = target_velocity
@@ -144,6 +145,7 @@ def main():
 	    replan = False
 	    try_replan = 0
 
+            # drive car
 	    while not svea.is_finished and not rospy.is_shutdown():
 
 		state = svea.wait_for_state()
@@ -151,7 +153,6 @@ def main():
 		# compute control input via pure pursuit
 		steering, velocity = svea.compute_control()
 		svea.send_control(steering, velocity)
-		rospy.loginfo_throttle(1, velocity)
 
 		# visualize data
 		if use_matplotlib or use_rviz:
@@ -160,6 +161,8 @@ def main():
 		    rospy.loginfo_throttle(1, state)
 
 		if svea.lidar.scan != []:
+
+                    # compute obstacle coordinates from lidar data
 		    dist = np.array(svea.lidar.scan)
                     
                     obs_x = np.multiply(np.cos(angle_lidar+np.ones(135)*state.yaw), dist) + state.x*np.ones(135) 
@@ -177,14 +180,17 @@ def main():
 
                     obs = np.array([obs_x, obs_y])
 
+                    # update occupancy grid
                     occupancy_grid.updatemap(dist, obs.T, [state.x, state.y, state.yaw])
 
+                    # check if obstacle in range +-2 degrees are less than 3m or 5m
                     if dist[68] < 5 or dist[67] < 3 or dist[69] < 3:
 
                       target = svea.controller.target
                       idx_target = svea.controller.index
 
                       try:
+                        # compute future targets in trajectory
                         future_target3 = [traj_x[idx_target+3], traj_y[idx_target+3]]
                         future_target2 = [traj_x[idx_target+2], traj_y[idx_target+2]]
 		        t_v2 = np.linspace(future_target2, future_target3, 100)
@@ -192,6 +198,7 @@ def main():
 
                         localmap = occupancy_grid.localmap
 
+                        # check if trajectory will collide with an obstacle
 		        for t in range(len(t_i2)):
 
 		          if localmap[t_i2[t][0], t_i2[t][1]] == 100 or localmap[t_i2[t][0]-1, t_i2[t][1]] == 100 or localmap[t_i2[t][0]+1, t_i2[t][1]] == 100 or localmap[t_i2[t][0], t_i2[t][1]-1] == 100 or localmap[t_i2[t][0], t_i2[t][1]+1] == 100 or localmap[t_i2[t][0]-1, t_i2[t][1]-1] == 100 or localmap[t_i2[t][0]+1, t_i2[t][1]+1] == 100 or localmap[t_i2[t][0]-1, t_i2[t][1]+1] == 100 or localmap[t_i2[t][0]+1, t_i2[t][1]-1] == 100:
@@ -199,12 +206,14 @@ def main():
                             print("must replan")
                             try_replan += 1
 
+                            # threshold for replanning
                             if try_replan == 3:
                               replan = True
                               try_replan = 0
 
 	                      svea.send_control(steering, 0)
 
+                              # compute destination for local planner, which is 5 or 7 steps ahead in the trajectory from the current position
                               try: 
                                 future_target = [traj_x[idx_target+7], traj_y[idx_target+7]]
                                 s = 7
@@ -213,16 +222,20 @@ def main():
                                 future_target = [traj_x[idx_target+5], traj_y[idx_target+5]]
                                 s = 5
 
+                              # compute path with local planner
                               traj_x1, traj_y1 = compute_path(state.x, state.y, future_target[0], future_target[1], occupancy_grid.obstacles, occupancy_grid.localmap)
 
+                              # if no path found with 7 steps ahead were found, try with 5 steps ahead
                               if traj_x1 == None and s == 7:
                                 print("traj is none")
                                 future_target = [traj_x[idx_target+5], traj_y[idx_target+5]]
+                                # compute path with local planner
                                 traj_x1, traj_y1 = compute_path(state.x, state.y, future_target[0], future_target[1], occupancy_grid.obstacles, occupancy_grid.localmap)
 
                               traj_x = np.concatenate((traj_x1, traj_x[idx_target+s:]), axis = None)
                               traj_y = np.concatenate((traj_y1, traj_y[idx_target+s:]), axis = None)
 
+                              # update trajectory
                               svea.update_traj(traj_x, traj_y)
 			    
                             break

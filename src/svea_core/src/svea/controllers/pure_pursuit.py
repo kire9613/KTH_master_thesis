@@ -6,10 +6,10 @@ import math
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
-    Lfc = 0.09  # var 0.4 look-ahead distance
-    K_p = 1.5  #TODO speed control propotional gain
-    K_i = 0.1  #TODO speed control integral gain
-    K_d = 0.0  #TODO speed control derivitive gain
+    Lfc = 0.09  # look-ahead distance
+    K_p = 1.5  # speed control propotional gain
+    K_i = 0.1  # speed control integral gain
+    K_d = 0.0  # speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
 
     def __init__(self, vehicle_name=''):
@@ -53,7 +53,6 @@ class PurePursuitController(object):
 
         else:
             # speed control
-            #TODO
 
             if self.error == []:
                 e_prev = 0
@@ -61,6 +60,9 @@ class PurePursuitController(object):
                 e_prev = self.error[self.last_index - 1]
 
             try:
+              # swith velocities depending on path is curvy or straight by calculating the angle between car position and future target 2 
+              # steps ahead
+
               tx, ty = self.traj_x[self.index+2], self.traj_y[self.index+2]
               dx = tx - state.x	
               dy = ty - state.y	
@@ -68,6 +70,7 @@ class PurePursuitController(object):
               teta = math.atan2(dy, dx)
               delta_teta = abs(state.yaw - teta)
 
+              # condition for angle to consider if path is curvy or straight
               if delta_teta >= 0.5:
                 self.target_velocity = 0.5
               else:
@@ -76,6 +79,7 @@ class PurePursuitController(object):
             except IndexError:
               pass 
              
+            # compute the PID errors
             e = self.target_velocity - state.v
             e_sum = sum(self.error) + e*self.dt
             dedt = (e - e_prev) / self.dt
@@ -83,8 +87,10 @@ class PurePursuitController(object):
             self.error.append(e)
             self.last_index = self.last_index + 1 
 
+            # compute the control signal according to the PID formula
             u = self.K_p*e + self.K_i*e_sum + self.K_d*dedt
 
+            # saturation
             if u > 0.55:
               u = 0.55
             elif u < -0.55:
@@ -114,8 +120,7 @@ class PurePursuitController(object):
             dist += math.sqrt(dx ** 2 + dy ** 2)
             ind += 1
 
-        # terminating condition
-        #TODO
+        # terminating condition to stop car
 	if self.target != None:
 	  tx, ty = self.traj_x[-1], self.traj_y[-1] #condition for distance between state and target position
 	  dx = tx - state.x
