@@ -8,11 +8,14 @@
     <arg name="show_tree" default="false"/>
 
 
+    <!-- Load map outside Q1 -->
     <rosparam command="load" file="$(find svea_core)/resources/params/race_track_sim_obstacles.yaml" />
     <rosparam command="load" file="$(find svea_core)/resources/params/track_q1.yaml" />
     <arg name="map_file" default="$(find svea_core)/resources/maps/q1.yaml" />
     <arg name="start_pt" default= '0, 0, 0, 0'/>
 
+
+    <!-- Load map outside Q2 (floor 2) -->
     <!--
     <rosparam command="load" file="$(find svea_core)/resources/params/obstacles.yaml" />
     <rosparam command="load" file="$(find svea_core)/resources/params/floor2_track.yaml" />
@@ -20,12 +23,13 @@
     <arg name="start_pt" default= '-5.47, -12.0, 0.8978652, 0'/>
     -->
 
+    <!-- Set up machine names, used for running code on different computers -->
     <machine name="oscar" address="oscar-project.local" user="oscar" env-loader="/home/oscar/svea_starter/utilities/remote-env.sh"/>
     <machine name="adam" address="mrmixit-Predator-PH317-52.local" user="mrmixit" env-loader="/home/mrmixit/Project/svea_starter/utilities/remote-env.sh"/>
     <machine name="caroline" address="caroline-HP-Pavilion-Notebook.local" user="caroline" env-loader="/home/caroline/EL2425/svea_starter/utilities/remote-env.sh"/>
     <machine name="ylva" address="Harrison.local" user="ylva" env-loader="/home/ylva/el2425/svea_starter/utilities/remote-env.sh"/>
 
-
+    <!-- If sim, launch map server and rviz on host machine -->
     <group if="$(eval is_sim == true)">
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/scripts/team4_project/rviz.rviz" />
         <node pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map_file)" />
@@ -39,6 +43,8 @@
 	<param name="use_lidar" value="$(arg use_lidar)"/>
     </node>
 
+
+    <!-- If running on car, launch nodes on machines defined with machine="name"-->
     <group if="$(eval is_sim == false)">
         <node pkg="svea_core" type="test_mapping.py" name="mapping" output="screen" machine="adam"/>
         <node pkg="svea_core" type="obstacle_detection.py" name="obstacle_detection" output="screen" machine="adam"/>
@@ -47,6 +53,8 @@
 	    <param name="show_tree" value="$(arg show_tree)"/>
 	</node>
     </group>
+
+    <!-- If simulation, run everything on host computer -->
     <group if="$(eval is_sim == true)">
         <node pkg="svea_core" type="test_mapping.py" name="mapping" output="screen"/>
         <node pkg="svea_core" type="obstacle_detection.py" name="obstacle_detection" output="screen"/>
@@ -56,7 +64,7 @@
         </node>
     </group>
 
-
+    <!-- If not sim, run serial node and localization on car -->
     <group unless="$(eval is_sim == true)">
 	<node pkg="rosserial_python" type="serial_node.py" name="serial_node">
              <param name="port" value="/dev/ttyACM0"/>
