@@ -11,18 +11,25 @@ import rospy
 import actionlib
 from copy import deepcopy
 
-TARGET_DISTANCE = 2e-1 # 2dm between targets
-PLANNING_TIMEOUT = 20 # seconds
-TARGET_VELOCITY = 1.0
+TARGET_DISTANCE = 2e-1 # 2dm between targets (path between waypoints)
+PLANNING_TIMEOUT = 20 # timeout in seconds, move waypoint and replan after this time
+TARGET_VELOCITY = 1.0 # m/s, default speed for car when not turning/braking
 
 waypoints = [] # global path
-current_path = Path()
-current_waypoint = 0
-initialized = False
+# Used to check collisions in current path
+current_path = Path() 
+# Save current "destination", can send to planner
+current_waypoint = 0 
+# Initialize tree once, then set this to True
+initialized = False 
+ # Where in [x,y] is the collision?
 collision_point = np.zeros((2,))
-planning_start_time = None
-last_pose = None
-localization_is_lost = False
+# Used to determine when planning timeout occurs
+planning_start_time = None 
+# used to reset position if localization is lost
+last_pose = None 
+# set to True if |last_pose-current_pose| is too large
+localization_is_lost = False 
 
 def interpolate(start, end, distance):
     """
