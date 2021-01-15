@@ -22,7 +22,7 @@ Rviz should open and you should see the map. Use 2D pose estimate to initialize 
 
 ## Run System in Reality
 
-To run the system in reality, you have to modify the launch file /svea_starter/src/svea_core/launch/floor2.launch in the car. Set is_sim to False and comment line 16 (the one related to map_server). Add the following lines to your launch file:
+To run the system in reality, you have to modify the [launch file] (../master2/svea_starter/src/svea_core/launch/floor2.launch) in the car. Set is_sim to False and comment line 16 (the one related to map_server). Add the following lines to your launch file:
 
 ```bash
 <!--open serial connection for controlling SVEA-->
