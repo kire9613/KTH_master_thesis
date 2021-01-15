@@ -40,8 +40,6 @@ class SimLidar(object):
     :type vehicle_name: str, optional
     """
 
-    ANGLE_MIN = radians(-135.0) # start angle of scan [rad]
-    ANGLE_MAX = radians(135.0) # end angle of the scan [rad]
     ANGLE_MIN = radians(-45.0) # start angle of scan [rad]
     ANGLE_MAX = radians(45.0) # end angle of the scan [rad]
     # INCREMENT = radians(0.25) # angular distance between measurements [rad]

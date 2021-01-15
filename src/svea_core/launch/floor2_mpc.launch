@@ -34,7 +34,7 @@
 
     <!-- Run the costmap node -->
     <node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" >
-      <rosparam file="$(find svea_core)/launch/costmap_params_sim.yaml" command="load" ns="costmap" />
+        <rosparam file="$(find svea_core)/resources/param/costmap_params_sim.yaml" command="load" ns="costmap" />
     </node>
 
     <node pkg="svea_core" type="map_collision_node.py" name="map_collision_node" output="screen" />
