@@ -3,13 +3,16 @@ Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math
 
+
+
+
 class PurePursuitController(object):
 
     k = 0.6  # look forward gain
     Lfc = 0.4  # look-ahead distance
-    K_p = 0.0  #TODO speed control propotional gain
-    K_i = 0.0  #TODO speed control integral gain
-    K_d = 0.0  #TODO speed control derivitive gain
+    K_p = 3.0  #TODO speed control propotional gain
+    K_i = 1.0  #TODO speed control integral gain
+    K_d = 1.0  #TODO speed control derivitive gain
     L = 0.324  # [m] wheel base of vehicle
 
     def __init__(self, vehicle_name=''):
@@ -36,7 +39,7 @@ class PurePursuitController(object):
         tx, ty = self.target
         alpha = math.atan2(ty - state.y, tx - state.x) - state.yaw
         if state.v < 0:  # back
-            alpha = math.pi - alpha
+            alpha = math.pi - alpha #turning 180 degrees
         Lf = self.k * state.v + self.Lfc
         delta = math.atan2(2.0 * self.L * math.sin(alpha) / Lf, 1.0)
         return delta
@@ -48,7 +51,12 @@ class PurePursuitController(object):
         else:
             # speed control
             #TODO
-            return self.target_velocity
+            tv = self.target_velocity #target velocity
+            cv = state.v #current velocity
+            error = tv-cv #the error between the target velocity and the desired velocity
+            P = self.K_p * error #proportional change
+            v = P + cv #current velocity plus the change
+            return v
 
     def find_target(self, state):
         ind = self._calc_target_index(state)
@@ -74,5 +82,9 @@ class PurePursuitController(object):
 
         # terminating condition
         #TODO
+        if (ind) == len(self.traj_x)-1 and dist == 0.0:
+                self.is_finished = True
+
+
 
         return ind
