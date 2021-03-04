@@ -14,10 +14,6 @@ class Signals:
 
 
 
-
-
-
-
 def delta(symp):
 	%calculate if new symptoms
 
