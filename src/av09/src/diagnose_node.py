@@ -1,4 +1,4 @@
-
+#! /usr/bin/env python
 
 #diagnosis node
 
@@ -6,61 +6,76 @@
 import numpy
 import math
 import rospy
+from av09_msgs.msg import *
 
 
-Class Diag:
-	def __init__(self);
-		self.diag=NONE
-		self.deltadiag=NONE
-	def Diagnose(self):
+class Diag:
+	def __init__(self):
+		self.diag=None
+		self.deltadiag=None
+	def Diagnose(self,ctcorr):
 
 		self.diag='Something'
+		rospy.loginfo('diagnosing')
+		self.deltadiag=1
 
-Class Symp:
-	def __init__(self);
-		self.symp=NONE
-		self.deltasymp=NONE
-	def callback(self, msg):
-		self.symp=msg.Symp.symp
-		self.deltasymp=msg.Symp.deltasymp
-
-Class CTcorr:
+class Symp:
 	def __init__(self):
-		self.ver=NONE
-		self.Fcorr=NONE
-		self.Arecc=NONE
-		self.Request=NONE
+		self.symp=None
+		self.deltasymp=None
+	def callback(self, msg):
+		self.symp=msg.symp
+		self.deltasymp=msg.deltasymp
+
+class CTcorr:
+	def __init__(self):
+		self.ver=None
+		self.Fcorr=None
+		self.Arecc=None
+		self.Request=None
 
 	def callback(self, msg):
-		self.ver=msg.CT.ver
-		self.Fcorr=msg.CT.Fcorr
-		self.Arecc=msg.CT.Arecc
-		self.Request=msg.CT.Request
+		self.ver=msg.ctver
+		self.Fcorr=msg.fault
+		self.Arecc=msg.recact
+		self.Request=msg.ctreq
 		
 
-Class StateMachine:
-	def __init__(self,state=1):
+class StateMachine:
+	def __init__(self,state,pub_ct,pub_diag):
 		self.state=state
 		self.symp=Symp()
 		self.CTcorr=CTcorr()
 		self.Diag=Diag()
+		self.pub_ct=pub_ct
+		self.pub_diag=pub_diag
 	
 	def Stateswitch(self):
-		return getattr(self, 'state_' + str(self.state), lambda: default)
+		#getattr(self, 'state_' + str(self.state))
+		if self.state==1:
+			return self.state_1()
+		elif self.state==2:
+			return self.state_2()
+		elif self.state==3:
+			return self.state_3()
+		else:
+			return self.state_4()
 				
 	
-
+	#IDLE
 	def state_1(self):
 		if self.symp.deltasymp==1:
 			self.state=2
+			print('state 1')
 
 
 	def state_2(self):
-		self.Diag.Diagnose(self.Symp,self.CTcorr)
+		self.Diag.Diagnose(self.CTcorr)
 		self.state=3
-		%self.symp.deltasymp=0
+		print('state 2')
+		#self.symp.deltasymp=0
 	def state_3(self):
-
+		print('state 3')
 		if self.symp.deltasymp==1:
 			self.state=2
 		elif Severity_check(self.Diag,self.CTcorr) or self.CTcorr.ver==1:
@@ -68,7 +83,11 @@ Class StateMachine:
 		
 
 	def state_4(self):
-		publish(self.Diag.diag)
+		diag_msg=symp()
+		diag_msg.diag=self.Diag.diag
+		diag_msg.deltadiag=self.Diag.deltadiag
+		self.pub_diag.publish(diag_msg)
+		rospy.loginfo(diag_msg)
 		if self.CTcorr.ver==0:
 			self.state=3
 		elif self.CTcorr.ver==1:
@@ -76,16 +95,22 @@ Class StateMachine:
 		
 
 def main():
-	rospy.init_node(Diagnosis_node)
+	rospy.init_node('Diagnosis_node')
 	
 	
-	SM=StateMachine(1)
-	rospy.subscriber('\Symptom', msgClass, SM.symp.callback1 )
-	rospy.subscriber('\CTcorr', msgClass, SM.CTcorr.callback2 )
-	SM.stateswitch()
+
+	pub_ct=rospy.Publisher('ctcorr',ctcorr,queue_size=10)
+	pub_diag=rospy.Publisher('diag',diag,queue_size=10)
+	SM=StateMachine(1,pub_ct,pub_diag)
+	while not rospy.is_shutdown():
+		rospy.Subscriber('symptoms', symp, SM.symp.callback )
+		rospy.Subscriber('ctcorr', ctcorr, SM.CTcorr.callback )
+
+		SM.Stateswitch()
+		print('switching')
 
 
-	rospy.spin()
+	
 
 
 

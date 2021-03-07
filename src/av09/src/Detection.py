@@ -5,45 +5,60 @@
 import rospy
 import math
 from std_msgs.msg import *
+from av09_msgs.msg import *
 
 class Signals:
     def __init__(self):
-        self.signals=None
+        self.signals=0
 
-    def callback(msg):
-
-
-
-def delta(symp):
-	%calculate if new symptoms
+    def callback(self,msg):
+		self.signals=msg.data
 
 
-Class Symptom:
+def delta(newsymp,oldsymp):
+	#calculate if new symptoms
+	deltasymp=abs(newsymp-oldsymp)
+	if deltasymp >0:
+		return 1
+	else:
+		return 0
+
+class Symptom:
 
 	def __init__(self):
-		self.symp=NONE
+		self.newsymp=0
+		self.oldsymp=0
 		self.deltasymp=0
 
-	def callback(self,msg):
-		self.symp=msg.Symp.symp
-		self.deltasymp=delta(symp)
+	def create_symptoms(self,signals):
+		self.oldsymp=self.newsymp
+		self.newsymp=signals.signals
+		
+		self.deltasymp=delta(self.newsymp,self.oldsymp)
 		
 
 
 
 
 def main():
-	rospy.init_node(Detection_node)
-	pub=rospy.publisher('/symptoms', UInt8MultiArray,queue_size=10)
-    
-    symp_msg=UInt64Multiarray()
-	
-	Symp=Symp()
-	rospy.subscriber('\Symptom', msgClass, Symp.callback )
-	if Symp.deltasymp==1:
-		publish(symp)
+	signal=Signals()
+	Symp=Symptom()
+	rospy.init_node('Detection_node')
+	while not rospy.is_shutdown():
 
-	rospy.spin()
+		
+		pub_symp=rospy.Publisher('symptoms',symp,queue_size=10)
+		symp_msg=symp()
+
+		rospy.Subscriber('rawsignals', signals, signal.callback )
+		Symp.create_symptoms(signal)
+		if Symp.deltasymp==1:
+			symp_msg.symp=Symp.newsymp
+			symp_msg.deltasymp=Symp.deltasymp
+			pub_symp.publish(symp_msg)
+			rospy.loginfo(symp_msg)
+
+	
 
 
 
