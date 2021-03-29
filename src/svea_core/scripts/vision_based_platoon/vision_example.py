@@ -39,8 +39,8 @@ markervis = False
 
 ## EXPERIMENT SET UP ##########################################################
 init_spacing = 0.5  # initial space between bumpers
-init_velocity = 1.2  # initial target velocity
-disturbance_velocity = 0.6 # experiment velocity drop
+init_velocity = 0.8  # initial target velocity
+disturbance_velocity = 0.8 # experiment velocity drop
 
 steady_state_hold_time = 12.0  # seconds
 
@@ -71,14 +71,13 @@ traj_y = np.hstack((traj_y_1st,traj_y_2nd,traj_y_3rd, traj_y_4th)).tolist()
 
 ## SVEA #######################################################################
 leader_name = "SVEA0"
-follower_prefix = "SVEA"
+follower_prefix = ""
 ###############################################################################
 
 ## INIT #######################################################################
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 visualize_plot = True
 ###############################################################################
-
 
 
 def param_init():
@@ -116,6 +115,10 @@ def main():
     rospy.init_node('vision_example')
     last_vehicle_start_pt, use_rviz = param_init()
 
+    
+    # subscribe to topic published in aruco_vision, marker info
+    rospy.Subscriber('/observed_pose', PoseStamped, subinfo, queue_size=1)
+    rospy.Subscriber('/marker_list', Bool, markerinfo, queue_size=1)
 
     # compute initial positions, these correspond with initial SVEA placement
     init_spacings = [init_spacing for _ in range(platoon_size)]
@@ -144,16 +147,16 @@ def main():
     follower_sims = []
     followers = []
     for i in range(platoon_size):
-        follower_name = follower_prefix + str(1 + i)
+        follower_name = follower_prefix # + str(1 + i)
         follower_state = VehicleState(*follower_start_pts[i])
-        follower_sim = SimSVEA(SimpleBicycleModel(follower_state),
-                               vehicle_name = follower_name,
-                               dt=dt, start_paused=True).start()
+#        follower_sim = SimSVEA(SimpleBicycleModel(follower_state),
+#                               vehicle_name = follower_name,
+#                               dt=dt, start_paused=True).start()
         follower = SVEAPlatoonMember(LocalizationInterface,
                                      traj_x, traj_y,
                                      data_handler = RVIZPathHandler,
                                      vehicle_name = follower_name)
-        follower_sims.append(follower_sim)
+#        follower_sims.append(follower_sim)
         followers.append(follower)
 
     # spin up svea managers so they are ready before simulation unpauses
@@ -179,7 +182,7 @@ def main():
 
     # get each vehicle into close-to-equilibrium positions
     rospy.loginfo("Going to initial equilibrium positions")
-    goto_eq_positions(leader, leader_eq_pt, followers, follower_eq_pts)
+#    goto_eq_positions(leader, leader_eq_pt, followers, follower_eq_pts)
 
     # create unified data logs for platoon
     start_t = rospy.get_time()
@@ -195,10 +198,6 @@ def main():
     experiment_start_time = -float('inf')
 
     while not leader.is_finished and not rospy.is_shutdown():
-        # subscribe to topic published in aruco_vision, marker info
-        rospy.Subscriber('/observed_pose', PoseStamped, subinfo, queue_size=1)
-        rospy.Subscriber('/marker_list', Bool, markerinfo, queue_size=1)
-
         # update all vehicle states, not used for non communication
         leader_state = leader.wait_for_state()
         follower_states = [follower.wait_for_state() for follower in followers]
@@ -219,10 +218,10 @@ def main():
         rospy.loginfo(spacings[0])
         dist.append(spacings[0])
 
-        if not experiment_begun and reaching_speed:
+        if False and not experiment_begun and reaching_speed:
             # use velocity control until reached steady state
             rospy.loginfo_once("Reaching steady state speeds")
-            leader.send_vel(init_velocity)
+  #          leader.send_vel(init_velocity)
             [follower.send_vel(init_velocity) for follower in followers]
             # keep track of latest time
             experiment_start_time = max(experiment_start_time, curr_t)
@@ -243,7 +242,7 @@ def main():
                                                      leader_state.v)
 
             # creating slow down for leader
-            leader.send_vel(disturbance_velocity)
+ #           leader.send_vel(disturbance_velocity)
 
             for i, follower in enumerate(followers):
                 if spacings[i] > min_spacing:
@@ -259,6 +258,7 @@ def main():
 
     if not rospy.is_shutdown():
         rospy.loginfo("Trajectory finished.")
+
 
     if visualize_plot:
         plt.plot(platoon_t, leader_v, "-", linewidth=1, label="V_L")
