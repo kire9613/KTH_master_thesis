@@ -1,3 +1,3 @@
 
 bool deltadiag
-int64 diag
+string diag

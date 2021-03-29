@@ -55,6 +55,7 @@ ctcorr.msg
 diag.msg
 symp.msg
 signals.msg
+node_status.msg
  )
 
 ## Generate services in the 'srv' folder

@@ -1,2 +1,2 @@
 string action
-string rc
+int8 rc

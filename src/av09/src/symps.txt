@@ -1,0 +1,16 @@
+vibration,5,6,7 
+varm_nav, 5,6,7
+drar_snett, 5,6,7,3,9,4
+vingligt, 5,6,7
+trögt, 3,4,5,9
+bromsskiva_varm, 9,1,2
+ryker_däck, 3,4,9
+streck_marken, 3,4,9
+hog_luftfbr, 1,2
+lang_uppst, 1,2
+pys_ljud, 1,2
+pbroms, 1,2
+oljavarninggul, 8
+dropparvätska, 8
+luktardiesel, 8
+oljavarningröd, 8
