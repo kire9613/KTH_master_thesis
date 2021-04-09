@@ -18,10 +18,21 @@ target_velocity = 1.0 # [m/s]
 dt = 0.01 # frequency of the model updates
 
 #TODO: create a trajectory that goes around the track
-xs = [-2.33, 10.48]
-ys = [-7.09, 11.71]
-traj_x = np.linspace(xs[0], xs[1]).tolist()
-traj_y = np.linspace(ys[0], ys[1]).tolist()
+xs = [-2.33, 10.48, 5.8, -6.9, -2.5]
+ys = [-7.09, 11.71, 14.6, -3.8, -6.7]
+traj_x_1st = np.linspace(xs[0], xs[1])
+traj_x_2nd =  np.linspace(xs[1], xs[2])
+traj_x_3rd = np.linspace(xs[2], xs[3])
+traj_x_4th = np.linspace(xs[3], xs[4])
+
+traj_y_1st = np.linspace(ys[0], ys[1])
+traj_y_2nd = np.linspace(ys[1], ys[2])
+traj_y_3rd = np.linspace(ys[2], ys[3])
+traj_y_4th = np.linspace(ys[3], ys[4])
+
+traj_x = np.hstack((traj_x_1st,traj_x_2nd, traj_x_3rd, traj_x_4th)).tolist()
+traj_y = np.hstack((traj_y_1st,traj_y_2nd,traj_y_3rd, traj_y_4th)).tolist()
+
 ###############################################################################
 
 ## INIT #######################################################################
@@ -81,11 +92,13 @@ def main():
     # simualtion loop
     svea.controller.target_velocity = target_velocity
     while not svea.is_finished and not rospy.is_shutdown():
+
         state = svea.wait_for_state()
 
         # compute control input via pure pursuit
         steering, velocity = svea.compute_control()
         svea.send_control(steering, velocity)
+        rospy.loginfo_throttle(5, velocity)
 
         # visualize data
         if use_matplotlib or use_rviz:

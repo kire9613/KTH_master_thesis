@@ -1,0 +1,41 @@
+<launch>
+   <!-- remap the topic name of camera stream -->
+   <remap from="/camera/image_raw/compressed" to="/camera/image/compressed"/>
+
+   <!-- launch video stream -->
+   <include file="$(find video_stream_opencv)/launch/camera.launch" >
+        <!-- node name and ros graph name -->
+        <arg name="camera_name" value="camera" />
+        <!-- means video device 2, /dev/video2, USB-port, computer webcam is 0 -->
+        <arg name="video_stream_provider" value="1" />
+        <!-- set camera fps to (if the device allows) -->
+        <arg name="set_camera_fps" value="50"/>
+        <!-- set buffer queue size of frame capturing to -->
+        <arg name="buffer_queue_size" value="10" />
+        <!-- throttling the querying of frames to -->
+        <arg name="fps" value="50" />
+        <!-- setting frame_id -->
+        <arg name="frame_id" value="webcam" />
+        <!-- camera info loading -->
+        <arg name="camera_info_url" value="file:///$(find svea_core)/camera/camera.yaml" />
+        <!-- visualize on an image_view window the stream generated -->
+        <arg name="visualize" value="false" />
+   </include>
+
+   <!-- launch aruco detect -->
+   <include file="$(find aruco_detect)/launch/aruco_detect.launch" >
+        <arg name="fiducial_len" value="0.10" />
+   </include>
+
+  <!--node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/resources/rviz/webcam_test.rviz" />vision_example-->
+
+   <!-- transform from camera to base_link -->
+   <!-- node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster" args="0.09 0 0.215 0 -1.57 3.14 base_link webcam" /-->
+   <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0 0 0 0 base_link webcam" />
+
+   <node pkg="svea_core" type="aruco_vision.py" name="aruco_vision" output="screen" />
+
+    <!-- launch vision example (commented out to see z parameter-->
+    <include file="$(find svea_core)/launch/vision_example.launch" />
+
+</launch>
