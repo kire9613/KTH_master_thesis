@@ -388,8 +388,32 @@ class ArucoInterface(object):
             yaw += math.pi # Flip around
 
         yaw += offset_vector[2] # Angular offset
+        #pitch += offset_vector[2] # Angular offset
         offset_pose.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, yaw))
 
         offset_pose.header.frame_id = map_frame
         offset_pose.header.stamp = rospy.Time.now()
         return offset_pose
+
+    def detected_pitch_change(self, state, marker, offset_vector, facing_marker=True, map_frame='map'):
+        '''
+        Returns the pitch of a marker object in degrees relative to the camera
+        Positive angle defined for a car driving uphill, negative downhill
+        '''
+        marker_pose = self.marker_pose_stamped(state, marker, map_frame=map_frame)
+        if marker_pose is None:
+            return None
+
+        quat = (marker_pose.pose.orientation.x,
+                marker_pose.pose.orientation.y,
+                marker_pose.pose.orientation.z,
+                marker_pose.pose.orientation.w)
+
+        marker_roll, _, _ = euler_from_quaternion(quat)
+
+        roll = abs(marker_roll)*180/math.pi -180
+
+        if marker_roll<=0:
+            roll = abs(roll)
+
+        return roll

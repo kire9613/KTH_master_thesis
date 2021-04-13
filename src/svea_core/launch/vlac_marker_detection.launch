@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<launch>
+   <!-- launch video stream -->
+   <include file="$(find video_stream_opencv)/launch/camera.launch" >
+        <!-- node name and ros graph name -->
+        <arg name="camera_name" value="camera" />
+        <!-- means video device 0, /dev/video0 -->
+        <arg name="video_stream_provider" value="2" />
+        <!-- set camera fps to (if the device allows) -->
+        <arg name="set_camera_fps" value="120"/>
+        <!-- set buffer queue size of frame capturing to -->
+        <arg name="buffer_queue_size" value="100" />
+        <!-- throttling the querying of frames to -->
+        <arg name="fps" value="120" />
+        <!-- setting frame_id -->
+        <arg name="frame_id" value="camera_link" />
+        <!-- camera info loading, take care as it needs the "file:///" at the start , e.g.:
+        "file:///$(find your_camera_package)/config/your_camera.yaml" -->
+        <arg name="camera_info_url" value="file:///$(find svea_core)/camera_info/kamera.yaml" />
+        <!-- flip the image horizontally (mirror it) -->
+        <arg name="flip_horizontal" value="false" />
+        <!-- flip the image vertically -->
+        <arg name="flip_vertical" value="false" />
+        <!-- visualize on an image_view window the stream generated -->
+        <arg name="visualize" value="true" />
+   </include>
+
+   <node pkg="tf2_ros" type="static_transform_publisher" name="camera_tf2" args="0 0 0 0 0 0 1 base_link camera_link" />
+
+   <include file="$(find svea_core)/launch/arucomod_detect.launch" >
+     <arg name="camera" value="camera"/>
+     <arg name="dictionary" value="5"/>
+     <arg name="image" value="image_raw"/>
+     <!--arg name="fiducial_len" value="0.05"/-->
+     <!--param name="publish_images" value="false"/-->
+     <!--param name="vis_msgs" value="true"/-->
+
+   </include>
+
+   <node pkg="svea_core" type="aruco_pitch.py" name="aruco_examples" output="screen"/>
+
+
+
+
+
+</launch>
