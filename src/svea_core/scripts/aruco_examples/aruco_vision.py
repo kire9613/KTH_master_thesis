@@ -92,7 +92,7 @@ def publish_detected_markers():
     Get the fiducial id of all visible markers
     """
     vis_markers = aruco_detect.visible_markers()
-    print(vis_markers)
+
 
     markers_visible = False
     if not len(vis_markers) == 0:
@@ -105,9 +105,9 @@ def publish_detected_markers():
     dictionary, it will not be returned in marker_objects
     """
     marker_objects = aruco_detect.get_markers_from_dict(vis_markers, marker_dict)
-    print(marker_objects)
+
     for marker in marker_objects:
-        print("Marker id", marker.fid)
+
         """
         Get marker position as PoseStamped msg
         """

@@ -22,7 +22,7 @@ from svea.aruco.aruco_interfaces import *
 platoon_size = 1
 num_neighbors = 0 # 0 for don't use communicated info
 desired_time_headway = 0.3
-k1 = 1.0 #constant time-headway term
+k1 = 1.0 #constant time-headway term, 1.0
 k2 = 0.5 #follow-the-leader term (i.e. match the lead vehicle velocity)
 k3 = 0.0 # =0.8
 k4 = 0.0 # =0.8
@@ -118,10 +118,10 @@ def main():
 
     # create simulated leader and followers
     leader_state = VehicleState(*leader_start_pt)
-    if is_sim:
-        leader_sim = SimSVEA(SimpleBicycleModel(leader_state),          #FOR SIM?
-                             vehicle_name=leader_name,                  #FOR SIM?
-                             dt=dt, start_paused=True).start()          #FOR SIM?
+    
+    leader_sim = SimSVEA(SimpleBicycleModel(leader_state),          #FOR SIM?
+                         vehicle_name=leader_name,                  #FOR SIM?
+                         dt=dt, start_paused=True).start()          #FOR SIM?
 
     leader = SVEAPlatoonMember(LocalizationInterface,
                                traj_x, traj_y,
@@ -130,10 +130,11 @@ def main():
     followers = []
 
     for i in range(platoon_size):
-        follower_name = follower_prefix # + str(1 + i)
+        follower_name = follower_prefix # + str(1 + i) # for sim
         follower_state = VehicleState(*follower_start_pts[i])
+        
+        follower_sims = []
         if is_sim:
-            follower_sims = []
             follower_sim = SimSVEA(SimpleBicycleModel(follower_state),  #FOR SIM
                                    vehicle_name = follower_name,        #FOR SIM
                                    dt=dt, start_paused=True).start()    #FOR SIM
@@ -150,8 +151,7 @@ def main():
     [follower.start(wait=True) for follower in followers]
 
     # unpause the simulated vehicles
-    if is_sim:
-        toggle_pause(leader_sim, follower_sims)
+    toggle_pause(leader_sim, follower_sims)
     wait_for_platoon_states(leader, followers)
 
     if use_rviz:
@@ -192,7 +192,8 @@ def main():
         if markervis is True:
             spacings = [new_space]
         else:
-            spacings = compute_spacings(leader, followers)
+            spacings = [0]
+            #spacings = compute_spacings(leader, followers)
 
         rospy.loginfo(spacings[0])
         dist.append(spacings[0])
@@ -201,7 +202,7 @@ def main():
             # use velocity control until reached steady state
             rospy.loginfo_once("Reaching steady state speeds")
             if is_sim:
-                leader.send_vel(init_velocity)
+                leader.send_vel(init_velocity) #FOR SIM
             [follower.send_vel(init_velocity) for follower in followers]
             # keep track of latest time
             experiment_start_time = max(experiment_start_time, curr_t)
@@ -212,7 +213,6 @@ def main():
             prev_t = curr_t
             reaching_speed = timer > 0.0 
         else:
-            #rospy.loginfo_once("Beginning Experiment at t="+str(curr_t))
             experiment_begun = True
 
             # compute accelerations if no visiable marker
@@ -220,7 +220,7 @@ def main():
             accel_ctrls = c_ovrv_model.compute_accel(spacings, speeds,
                                                      leader_state.v)
             if is_sim:
-                leader.send_vel(init_velocity)
+                leader.send_vel(init_velocity) #FOR SIM
 
             [follower_as[i].append(accel_ctrls)
                 for i, follower_state in enumerate(follower_states)]
