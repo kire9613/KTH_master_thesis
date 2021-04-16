@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
    <!-- remap the topic name of camera stream -->
    <remap from="/camera/image_raw/compressed" to="/camera/image/compressed"/>
@@ -11,7 +12,7 @@
         <!-- set camera fps to (if the device allows) -->
         <arg name="set_camera_fps" value="50"/>
         <!-- set buffer queue size of frame capturing to -->
-        <arg name="buffer_queue_size" value="10" />
+        <arg name="buffer_queue_size" value="1" />
         <!-- throttling the querying of frames to -->
         <arg name="fps" value="50" />
         <!-- setting frame_id -->

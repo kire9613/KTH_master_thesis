@@ -27,9 +27,9 @@ Some necessary initializations
 rospy.init_node('aruco_examples')
 aruco_detect = ArucoInterface(vehicle_frame='base_link', camera_frame='camera_link').start()
 vehicle_state = State() # Defaults to origin
-posepub = rospy.Publisher('/observed_pose', PoseStamped, queue_size=10)
-offset_pub = rospy.Publisher('/offset_pose', PoseStamped, queue_size=10)
-pitch_pub = rospy.Publisher('/observed_pitch', Float64, queue_size=10)
+posepub = rospy.Publisher('/observed_pose', PoseStamped, queue_size=1)
+offset_pub = rospy.Publisher('/offset_pose', PoseStamped, queue_size=1)
+pitch_pub = rospy.Publisher('/observed_pitch', Float64, queue_size=1)
 marker_dict = {}
 rospy.sleep(1)
 
@@ -142,7 +142,6 @@ def leader_pitch(marker, offset_vec):
     vec = offset_vec
     angle = aruco_detect.detected_pitch_change(s, m, vec, facing_marker=True)
     if angle:
-        print(angle)
         pitch_pub.publish(Float64(angle))
         return angle
 

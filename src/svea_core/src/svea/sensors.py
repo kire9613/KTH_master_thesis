@@ -8,7 +8,7 @@ SML. Currently, supporting: RPLidar, (coming soon) Hokuyo
 from threading import Thread
 
 import rospy
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, Imu
 from std_srvs.srv import Empty
 
 __license__ = "MIT"
@@ -216,3 +216,67 @@ class RPLidar():
         :rtype: bool
         """
         return self.is_emergency
+
+class IMU(object):
+    """
+    Basic interface for handling an IMU. Collects and stores the most recent
+    info.
+    """
+
+    def __init__(self):
+        self.imu = []
+        # list of functions to call whenever a new scan comes in
+        self.callbacks = []
+
+    def start(self):
+        """
+        Spins up ROS background thread; must be called to start
+        receiving and sending data
+
+        :return: itself
+        :rtype: RPLidar
+        """
+        Thread(target=self._init_and_spin_ros, args=()).start()
+        return self
+
+    def _init_and_spin_ros(self):
+        rospy.loginfo("Starting IMU Interface Node: \n" + str(self))
+        self._collect_srvs()
+        self._start_listen()
+
+    def _collect_srvs(self):
+        pass
+
+    def _start_listen(self):
+        rospy.Subscriber('/imu/data', Imu, self._read_imu)
+        rospy.loginfo("IMU Interface successfully initialized")
+        rospy.spin()
+
+    def _read_imu(self, imu_msg):
+        self.imu = imu_msg.orientation
+
+        for cb in self.callbacks:
+            cb(self.imu)
+
+    def add_callback(self, cb):
+        """Add state callback. Every function passed into this method
+        will be called whenever new scan information comes in from the
+        Lidar driver.
+
+        :param cb: A callback function intended for responding to the
+                   reception of a new scan, function must accept list
+                   of scans, min angle, and angle increment as arguments
+        :type cb: function
+        """
+        self.callbacks.append(cb)
+
+    def remove_callback(self, cb):
+        """Remove callback so it will no longer be called when state
+        information is received
+
+        :param cb: A callback function that should be no longer used
+                   in response to the reception of state info
+        :type cb: function
+        """
+        while cb in self.callbacks:
+            self.callbacks.pop(self.callbacks.index(cb))

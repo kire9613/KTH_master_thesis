@@ -184,10 +184,11 @@ def main():
             speeds = [follower_state.v for follower_state in follower_states]
             accel_ctrls = c_ovrv_model.compute_accel(spacings, speeds,
                                                      leader_state.v)
-
+            ######accel_ctrls to our controls#####
             # creating slow down for leader
             leader.send_vel(disturbance_velocity)
-
+            
+            ####NOT USE SEND ACCEL#####follower.send_control
             for i, follower in enumerate(followers):
                 if spacings[i] > min_spacing:
                     follower.send_accel(accel_ctrls[i], dt)
