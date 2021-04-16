@@ -22,12 +22,12 @@ from svea.aruco.aruco_interfaces import *
 platoon_size = 1
 num_neighbors = 0 # 0 for don't use communicated info
 desired_time_headway = 0.3
-k1 = 1.0 #constant time-headway term, 1.0
-k2 = 0.5 #follow-the-leader term (i.e. match the lead vehicle velocity)
+k1 = 2.0 # 0.025 #constant time-headway term, 1.0 (old value = 1.0)
+k2 = 1.0 #  0.1 #follow-the-leader term (i.e. match the lead vehicle velocity)  (old value = 0.5)
 k3 = 0.0 # =0.8
 k4 = 0.0 # =0.8
 k_gains = [k1, k2, k3, k4]
-min_spacing = 0.3
+min_spacing = 0.5 #changed from 0.3, not tested w 0.5
 new_space = 0
 dist = []
 dt = 0.01
@@ -37,17 +37,24 @@ markervis = False
 
 ## EXPERIMENT SET UP ##########################################################
 init_spacing = 0.5  # initial space between bumpers
-init_velocity = 0.8  # initial target velocity
-disturbance_velocity = 0.8 # experiment velocity drop
+init_velocity = 1.0  # initial target velocity 0.8 
+disturbance_velocity = 0.3 # experiment velocity drop
 
-steady_state_hold_time = 12.0  # seconds
+steady_state_hold_time = 5.0  # seconds
 
-# short traj
+"""
+# short traj, original
 xs = [-2.05, 14.8]
 ys = [-6.87, 18.2]
 traj_x = np.linspace(xs[0], xs[1]).tolist()
 traj_y = np.linspace(ys[0], ys[1]).tolist()
+"""
 
+# trajectory from floor2_example
+xs = [-2.33, 10.48]
+ys = [-7.09, 11.71]
+traj_x = np.linspace(xs[0], xs[1]).tolist()
+traj_y = np.linspace(ys[0], ys[1]).tolist()
 
 ## SVEA #######################################################################
 leader_name = "SVEA0"
@@ -192,6 +199,7 @@ def main():
         if markervis is True:
             spacings = [new_space]
         else:
+           # follower.send_vel(0.0)
             spacings = [0]
             #spacings = compute_spacings(leader, followers)
 
@@ -201,8 +209,8 @@ def main():
         if experiment_begun and not reaching_speed:
             # use velocity control until reached steady state
             rospy.loginfo_once("Reaching steady state speeds")
-            if is_sim:
-                leader.send_vel(init_velocity) #FOR SIM
+            if is_sim: #k-value test
+                leader.send_vel(init_velocity) #FOR SIM (not k-test, but in if statement)
             [follower.send_vel(init_velocity) for follower in followers]
             # keep track of latest time
             experiment_start_time = max(experiment_start_time, curr_t)
@@ -215,12 +223,12 @@ def main():
         else:
             experiment_begun = True
 
-            # compute accelerations if no visiable marker
+            # compute accelerations 
             speeds = [follower_state.v for follower_state in follower_states]
             accel_ctrls = c_ovrv_model.compute_accel(spacings, speeds,
                                                      leader_state.v)
-            if is_sim:
-                leader.send_vel(init_velocity) #FOR SIM
+            #if is_sim: #k-value test
+            leader.send_vel(disturbance_velocity) #FOR SIM #FOR SIM (not k-test, but in if statement)
 
             [follower_as[i].append(accel_ctrls)
                 for i, follower_state in enumerate(follower_states)]
@@ -242,23 +250,23 @@ def main():
         rospy.loginfo("Trajectory finished.")
 
  #plottar hastighet och distance
-    if visualize_plot:
-        plt.plot(platoon_t, leader_v, "-", linewidth=1, label="V_L")
-        [plt.plot(platoon_t, follower_v, "-", linewidth=1, label="V" + str(i))
+    if rospy.is_shutdown():
+        rospy.loginfo("FUKKING PLOT")
+        plt.plot(platoon_t, leader_v, "-", linewidth=1, label="V_leader")
+        [plt.plot(platoon_t, follower_v, "-", linewidth=1, label="V_follower" + str(i))
             for i, follower_v in enumerate(follower_vs)]
-        [plt.plot(platoon_t, follower_a, "-", linewidth=1, label="A" + str(i))
-            for i, follower_a in enumerate(follower_as)]
+       # [plt.plot(platoon_t, follower_a, "-", linewidth=1, label="Acc_follower" + str(i))
+        #    for i, follower_a in enumerate(follower_as)]
 
         plt.plot(platoon_t, dist, "-", linewidth=1, label="D")
 
         plt.axvline(experiment_start_time, 0, 1,
                     linestyle="--", color="grey", alpha=0.5)
         plt.xlabel('time (s)')
-        plt.ylabel('velocity (m/s), distance (m)')
+        plt.ylabel('velocity (m/s)')
         plt.ylim(-0.2, 1.8)
         plt.legend(loc="upper right")
-        plt.title(str(platoon_size) +
-                  " vehicle platoon with k = " + str(num_neighbors))
+        plt.title("Controller values k1=" + str(k1) + " k2=" + str(k2))
         plt.show()
         plt.pause(0.001)
 

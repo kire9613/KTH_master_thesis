@@ -11,11 +11,11 @@
         <!-- means video device 2, /dev/video2, USB-port, computer webcam is 0, on SVEA it's 1 -->
         <arg name="video_stream_provider" value="1" />
         <!-- set camera fps to (if the device allows) -->
-        <arg name="set_camera_fps" value="50"/>
+        <arg name="set_camera_fps" value="120"/>
         <!-- set buffer queue size of frame capturing to -->
         <arg name="buffer_queue_size" value="10" />
         <!-- throttling the querying of frames to -->
-        <arg name="fps" value="50" />
+        <arg name="fps" value="120" />
         <!-- setting frame_id -->
         <arg name="frame_id" value="webcam" />
         <!-- camera info loading -->
