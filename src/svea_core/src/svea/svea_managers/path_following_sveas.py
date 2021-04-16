@@ -160,6 +160,10 @@ class SVEAPlatoonMember(SVEAPurePursuit):
                                  data_handler = data_handler,
                                  vehicle_name = vehicle_name)
 
+    def send_raw_vel(self, raw_vel):
+        steering, _ = self.compute_control() # use pure pursuit only for steering
+        self.send_control(steering, raw_vel)
+
     def send_vel(self, vel):
         self.controller.target_velocity = vel
         steering, velocity = self.compute_control()
