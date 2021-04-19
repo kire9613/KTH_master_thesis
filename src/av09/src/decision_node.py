@@ -65,7 +65,7 @@ class Plan:
             self.RC=1
         
 
-        
+#hejhej 
 
 class StateMachine:
     def __init__(self,state,pub_act,pub_dec_status):

@@ -12,6 +12,7 @@ from faultclass import Fault_obj
 from symptomclass import Symptom_obj
 import os
 
+#hejhej
 
 
 def Severity_check(a,b):
