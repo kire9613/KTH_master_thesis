@@ -50,14 +50,14 @@ class CTcorr:
         self.Fcorr=0
         self.Arecc='NO ACTION'
         self.Request=0
-        self.rc=2
+        self.release_sd=2
 
     def callback(self, msg):
         self.ver=msg.ctver
         self.Fcorr=msg.fault
         self.Arecc=msg.recact
         self.Request=msg.ctreq
-        self.rc=msg.rc
+        self.release_sd=msg.release
 
 
 
@@ -169,7 +169,9 @@ class StateMachine:
 
     def state_2(self): #CT release condition
         self.operational_state='CT RELEASE CONDITION'
-        self.state=self.CTcorr.rc
+        
+        if self.CTcorr.release_sd==1:
+            self.state=1
         
     def state_3(self): # AUTO
         self.operational_state='AUTO RELEASE CONDITION'
@@ -283,6 +285,10 @@ def main():
         status_msg=node_status()
         status_msg.status1=SM.operational_state
         status_msg.status2=SM.actuation_status
+        status_msg.status3=SM.is_finished
+        status_msg.status4=SM.plan.vr
+        status_msg.status5=velocity
+        status_msg.status6=SM.route
         pub_actuation_status.publish(status_msg)
         #print(SM.CTcorr.rc)
 

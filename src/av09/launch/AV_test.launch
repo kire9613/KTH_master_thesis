@@ -12,7 +12,9 @@
     <node pkg="av09" type="diagnose_plan_node.py" name="diagnose_plan_node" output="screen">
 
     </node>
-
+    <node pkg="av09" type="vehicle_to_firestore.py" name="vehicle_to_firestore" output="screen">
+        
+    </node>
 
 
     <arg name="start_pt" default= '-7.43, -15.3, 0.8978652, 0'/>

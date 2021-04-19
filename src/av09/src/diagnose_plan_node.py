@@ -114,14 +114,14 @@ class CTcorr:
 		self.Fcorr=0
 		self.Arecc=0
 		self.Request=0
-		self.rc=0
+		self.release_sd=0
 
 	def callback(self, msg):
 		self.ver=msg.ctver
 		#self.Fcorr=msg.fault
 		#self.Arecc=msg.recact
 		#self.Request=msg.Request
-		self.rc=msg.rc
+		self.release_sd=msg.release
 		#print(self.ver)
 
 
@@ -132,7 +132,7 @@ class Plan:
 		self.RC=RC
 		self.action=action
 
-	def replan(self,Diag,ctrc,ctarec):
+	def replan(self,Diag):
 		diag=Diag.split(',')
 		old_action=self.action
 		old_rc=self.RC	
@@ -215,7 +215,7 @@ class StateMachine:
 		self.pub_diag.publish(diag_msg)
 
 	def state_4(self): #PLAN
-		self.plan.replan(self.Diag.diag,self.CTcorr.rc,self.CTcorr.Arecc)
+		self.plan.replan(self.Diag.diag)
 		self.actuate_handshake='NEW PLAN'
 		rospy.loginfo(self.actuate_handshake)
 
@@ -230,7 +230,7 @@ class StateMachine:
 		if not(self.CTcorr.Arecc =='None'):
 			
 			self.plan.action=self.CTcorr.Arecc
-			self.plan.rc=self.CTcorr.rc
+			self.plan.rc=2
 
 			self.actuate_handshake='NEW PLAN'
 		if self.CTcorr.Request==0:
