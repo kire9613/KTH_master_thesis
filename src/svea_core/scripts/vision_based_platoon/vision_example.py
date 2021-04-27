@@ -3,7 +3,7 @@
 import rospy
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
+import csv
 from svea.states import VehicleState
 from svea.simulators.sim_SVEA import SimSVEA
 from svea.models.bicycle import SimpleBicycleModel
@@ -36,11 +36,11 @@ markervis = False
 ###############################################################################
 
 ## EXPERIMENT SET UP ##########################################################
-init_spacing = 0.5  # initial space between bumpers
-init_velocity = 1.0  # initial target velocity 0.8 
-disturbance_velocity = 0.3 # experiment velocity drop
+init_spacing = 0.4  # initial space between bumpers
+init_velocity = 0.6  # initial target velocity 0.8 
+disturbance_velocity = 0.4 # experiment velocity drop
 
-steady_state_hold_time = 5.0  # seconds
+steady_state_hold_time = 15.0  # seconds
 
 """
 # short traj, original
@@ -183,62 +183,64 @@ def main():
     timer = steady_state_hold_time
     experiment_start_time = -float('inf')
 
-    while not rospy.is_shutdown():
+    while not leader.is_finished and not rospy.is_shutdown():
         # update all vehicle states, not used for non communication
         leader_state = leader.wait_for_state()
         follower_states = [follower.wait_for_state() for follower in followers]
         curr_t = rospy.get_time() - start_t
+        
+        if curr_t >= 7:
+            
+            platoon_t.append(curr_t)
+            leader_v.append(leader_state.v)
 
-        platoon_t.append(curr_t)
-        leader_v.append(leader_state.v)
+            [follower_vs[i].append(follower_state.v)
+             for i, follower_state in enumerate(follower_states)]
 
-        [follower_vs[i].append(follower_state.v)
-         for i, follower_state in enumerate(follower_states)]
-
-        #get spacings from camera, se to value if visible and to 0 if not
-        if markervis is True:
-            spacings = [new_space]
-        else:
-           # follower.send_vel(0.0)
-            spacings = [0]
-            #spacings = compute_spacings(leader, followers)
-
-        rospy.loginfo(spacings[0])
-        dist.append(spacings[0])
-
-        if experiment_begun and not reaching_speed:
-            # use velocity control until reached steady state
-            rospy.loginfo_once("Reaching steady state speeds")
-            if is_sim: #k-value test
-                leader.send_vel(init_velocity) #FOR SIM (not k-test, but in if statement)
-            [follower.send_vel(init_velocity) for follower in followers]
-            # keep track of latest time
-            experiment_start_time = max(experiment_start_time, curr_t)
-            if not reached_steady_state(init_velocity, leader, followers):
-                timer = steady_state_hold_time
+            #get spacings from camera, se to value if visible and to 0 if not
+            if markervis is True:
+                spacings = [new_space]
             else:
-                timer -= curr_t - prev_t
-            prev_t = curr_t
-            reaching_speed = timer > 0.0 
-        else:
-            experiment_begun = True
+               # follower.send_vel(0.0)
+                #spacings = [0]
+                spacings = compute_spacings(leader, followers)
 
-            # compute accelerations 
-            speeds = [follower_state.v for follower_state in follower_states]
-            accel_ctrls = c_ovrv_model.compute_accel(spacings, speeds,
-                                                     leader_state.v)
-            #if is_sim: #k-value test
-            leader.send_vel(disturbance_velocity) #FOR SIM #FOR SIM (not k-test, but in if statement)
+            rospy.loginfo(spacings[0])
+            dist.append(spacings[0])
 
-            [follower_as[i].append(accel_ctrls)
-                for i, follower_state in enumerate(follower_states)]
-
-            #send speed adjustments to the cars
-            for i, follower in enumerate(followers):
-                if spacings[i] > min_spacing:
-                    follower.send_accel(accel_ctrls[i], dt)
+            if not experiment_begun and reaching_speed:
+                # use velocity control until reached steady state
+                rospy.loginfo_once("Reaching steady state speeds")
+               # if is_sim: #k-value test
+                leader.send_vel(init_velocity) #FOR SIM (not k-test, but in if statement)
+                [follower.send_vel(init_velocity) for follower in followers]
+                # keep track of latest time
+                experiment_start_time = max(experiment_start_time, curr_t)
+                if not reached_steady_state(init_velocity, leader, followers):
+                    timer = steady_state_hold_time
                 else:
-                    follower.send_vel(0.0)
+                    timer -= curr_t - prev_t
+                prev_t = curr_t
+                reaching_speed = timer > 0.0 
+            else:
+                experiment_begun = True
+
+                # compute accelerations 
+                speeds = [follower_state.v for follower_state in follower_states]
+                accel_ctrls = c_ovrv_model.compute_accel(spacings, speeds,
+                                                         leader_state.v)
+                #if is_sim: #k-value test
+                leader.send_vel(disturbance_velocity) #FOR SIM #FOR SIM (not k-test, but in if statement)
+
+                [follower_as[i].append(accel_ctrls)
+                    for i, follower_state in enumerate(follower_states)]
+
+                #send speed adjustments to the cars
+                for i, follower in enumerate(followers):
+                    if spacings[i] > min_spacing:
+                        follower.send_accel(accel_ctrls[i], dt)
+                    else:
+                        follower.send_vel(0.0)
 
         # update visualizations
         if use_rviz:
@@ -250,7 +252,21 @@ def main():
         rospy.loginfo("Trajectory finished.")
 
  #plottar hastighet och distance
-    if rospy.is_shutdown():
+    if True:
+
+
+        for i, follower_v in enumerate(follower_vs):
+            pass
+        rows = zip(platoon_t,leader_v,follower_v,dist)
+        
+        # opening the csv file in 'w+' mode
+        file = open('export_data.csv', 'w+')
+        # writing the data into the file
+        with file:
+            write = csv.writer(file)
+            for row in rows:
+                write.writerow(row)
+
         rospy.loginfo("FUKKING PLOT")
         plt.plot(platoon_t, leader_v, "-", linewidth=1, label="V_leader")
         [plt.plot(platoon_t, follower_v, "-", linewidth=1, label="V_follower" + str(i))

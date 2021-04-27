@@ -86,8 +86,8 @@ def goto_eq_positions(leader, leader_eq_pt, followers, follower_eq_pts):
 
 
 def reached_steady_state(steady_vel, leader, followers):
-    leader_is_steady = abs(leader.state.v - steady_vel)/steady_vel < 0.1 # 10%
-    followers_are_steady = [abs(follower.state.v-steady_vel)/steady_vel < 0.1
+    leader_is_steady = abs(leader.state.v - steady_vel)/steady_vel < 0.4 # 10%
+    followers_are_steady = [abs(follower.state.v-steady_vel)/steady_vel < 0.4
                             for follower in followers]
     return leader_is_steady and all(followers_are_steady)
 
