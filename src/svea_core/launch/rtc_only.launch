@@ -1,0 +1,15 @@
+<launch>
+    <rosparam command="load" file="$(find svea_core)/resources/params/webrtc.yaml"/>
+    <!--run node for communicating with webrtc node-->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+        <arg name="port" value="9090"/>
+    </include>
+
+    <!--set the name of this relay depending on vehicle name (i.e. svea0_state to svea1_state)-->
+    <node pkg="topic_tools" type="relay" name="state_relay"
+        args="/state /svea5_state"/>
+
+    <!--have one remap for every other vehicle-->
+    <remap from="/svea3_state" to="/svea5/state"/>
+    <remap from="/svea_phantom_state" to="/svea_phantom/state"/>
+</launch>
