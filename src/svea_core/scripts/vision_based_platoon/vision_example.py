@@ -175,7 +175,7 @@ def main():
     leader_v = []
     follower_vs = [[] for follower in followers]
     follower_as = [[] for follower in followers]
-
+    
     # simualtion + animation loop
     experiment_begun = False
     reaching_speed = True
@@ -189,7 +189,7 @@ def main():
         follower_states = [follower.wait_for_state() for follower in followers]
         curr_t = rospy.get_time() - start_t
         
-        if curr_t >= 7:
+        if curr_t >= 30:
             
             platoon_t.append(curr_t)
             leader_v.append(leader_state.v)
@@ -202,12 +202,13 @@ def main():
                 spacings = [new_space]
             else:
                # follower.send_vel(0.0)
-                #spacings = [0]
-                spacings = compute_spacings(leader, followers)
+                spacings = [0]
+                #spacings = compute_spacings(leader, followers)
 
             rospy.loginfo(spacings[0])
             dist.append(spacings[0])
 
+            
             if not experiment_begun and reaching_speed:
                 # use velocity control until reached steady state
                 rospy.loginfo_once("Reaching steady state speeds")
