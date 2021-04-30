@@ -43,7 +43,7 @@ def markerinfo(data):
     global marker
     marker = data
 
-def leaderpitchinfo(data): 
+def leaderpitchinfo(data):
     global leaderpitch
     leaderpitch = data.data
 
@@ -76,8 +76,8 @@ def main():
     if is_sim:
         followername = 'SVEA1'
     else:
-        followername = '' 
-    
+        followername = ''
+
     if use_camera:
         rospy.Subscriber('/leadervehicle_pitch', Float64, leaderpitchinfo , queue_size=1)
         rospy.Subscriber('/observed_pose', PoseStamped, markerinfo, queue_size=1)
@@ -85,20 +85,20 @@ def main():
         rospy.Subscriber('/markervisibility', Bool, markervisibilityinfo, queue_size=1)
     else:
         rospy.Subscriber('/SVEA0/state', VehicleState, leaderinfo, queue_size=1)
-       
+
 
     start_t = rospy.get_time()
 
-    dt = 0.5 #dt should match MPC calculation time
+    dt = 0.25 #dt should match MPC calculation time
     cr = 0.0
-    dref = 1.5
+    dref = 1.2
 
     rospy.Subscriber(followername + '/state', VehicleState, followerinfo, queue_size=1)
-    
+
     MPC_weight_publisher = rospy.Publisher('/MPC_weights', String, queue_size=1)
     accelMPC_pub = rospy.Publisher('/accelMPC_publisher', Float64, queue_size=1)
-    brakeMPC_pub = rospy.Publisher('/MPC_brake', Float64, queue_size=1)   
-    motorMPC_pub = rospy.Publisher('/MPC_motor', Float64, queue_size=1) 
+    brakeMPC_pub = rospy.Publisher('/MPC_brake', Float64, queue_size=1)
+    motorMPC_pub = rospy.Publisher('/MPC_motor', Float64, queue_size=1)
 
     #rate = rospy.Rate(dt)
 
@@ -118,9 +118,9 @@ def main():
         else:
             d = calculate_spacing_from_coms(leader,follower)
             vrel = follower.v-leader.v
-            
 
-        
+
+
         print('Solving MPC with: d = ',d,', vrel = ',vrel,' ...')
         x,u = MPC.solve(vrel,d)
         vrel_MPC = x[0]
@@ -139,10 +139,8 @@ def main():
         MPC_weight_publisher.publish(String(weights))
 
 class MPC_controller(object):
-    def __init__(self,dt=0.1,cr=0.008,dref=0.5):
-        #alphalist = np.array# List of pitch on the road
+    def __init__(self,dt=0.1,cr=0.008,dref=1.0):
         self.dt = dt
-        self.m = 10 # kg
         # Matrices
         self.Ad = sparse.csc_matrix([
           [1., 0.],
@@ -150,11 +148,11 @@ class MPC_controller(object):
         ])
 
         self.Bd = sparse.csc_matrix([
-          [dt*self.m, -dt*self.m],
+          [dt, -dt],
           [0, 0]
         ])
 
-        self.g = 9.81 
+        self.g = 9.81
         self.cr = cr # roll coefficient
 
         self.nu = 2
@@ -162,21 +160,20 @@ class MPC_controller(object):
 
         # Constraints
         self.umin = np.array([0.,0.])
-        self.umax = np.array([.3,1.])
+        self.umax = np.array([.15,1.0])
 
         # Objective function
-        self.qe = 5.
-        self.qb = 1.
+        self.qe = 20. 
+        self.qb = 20.
 
         self.R = sparse.diags([self.qe,self.qb]) # Engine and braking acceleration weights
 
-        self.qv = 1.2
-        self.qd = 3. #40
-        
+        self.qv = 5.
+        self.qd = 3. 
+
         self.Q =sparse.diags([self.qv, self.qd]) # Relative velocity and distance weights
         self.dref = dref
         # Initial and reference states
-        #self.x0 = np.array([0., 0.5]) # Initial [vrel, d]
         self.xr = np.array([0., self.dref]) # Reference [vrel, d]
 
     def update_pitch_traj(self,alphalist):
@@ -206,17 +203,15 @@ class MPC_controller(object):
         self.x0 = np.array([vrel, distance])
         self.x_init.value = self.x0
 
-        self.prob = Problem(Minimize(self.objective), self.constraints) 
+        self.prob = Problem(Minimize(self.objective), self.constraints)
         self.prob.solve(solver=OSQP, warm_start=True)
         self.x0 = self.Ad.dot(self.x0) + self.Bd.dot(self.u[:,0].value) + self.Cd_0
-        #print('x = '+str(self.x0))
-        #print('u = '+str(self.u[:,0].value))
         return self.x0, self.u[:,0].value
-        
+
 
 if __name__ == '__main__':
     main()
 
-    
+
 
 
