@@ -1,0 +1,9 @@
+webrtc_subscribers: {
+    # i.e. vehicle_teleop_state: "nav_msgs/Odometry",
+}
+
+webrtc_publishers: {
+    svea3_state: "svea_msgs/VehicleState",
+    svea_phantom_state: "svea_msgs/VehicleState",
+    # i.e. drive_cmd: "geometry_msgs/Twist",
+}

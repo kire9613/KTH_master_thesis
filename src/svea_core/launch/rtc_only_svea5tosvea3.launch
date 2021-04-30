@@ -1,0 +1,7 @@
+<launch>
+    <rosparam command="load" file="$(find svea_core)/resources/params/webrtc.yaml"/>
+    <!--run node for communicating with webrtc node-->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+        <arg name="port" value="9090"/>
+    </include>
+</launch>
