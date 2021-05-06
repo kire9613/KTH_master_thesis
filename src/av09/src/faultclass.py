@@ -1,8 +1,10 @@
 
-
+#Class for representing fault and their potential symptoms
 class Fault_obj:
     def __init__(self,objlist,sizesymps):
         self.sizesymps=sizesymps
+        
+        #all potential symptoms
         self.P_symps=[]
         
         k=0

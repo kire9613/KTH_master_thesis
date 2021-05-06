@@ -1,5 +1,5 @@
 
-
+#Class for symptom representation
 class Symptom_obj:
     def __init__(self,objlist,faultsize):
         self.faultsize=faultsize

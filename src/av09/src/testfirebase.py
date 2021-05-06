@@ -16,3 +16,5 @@ database=firestore.client()
 data=database.collection('Vehicle').document('Diagnostic_data').get()
 
 print(data.to_dict())
+
+database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'diagnosis').document(u'diagnoses').set({'dia':'hej'},merge=True)

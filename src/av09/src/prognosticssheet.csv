@@ -1,0 +1,4 @@
+Faults,potnewF1,potnewF2,potnewF3,potnewF4,potnewF5
+air_leak_Y,air_leak_R:20,appl_breaks:10,,,
+liq_leak_Y,bearing_fault:50,liq_leak_R:5,,,
+tyre_air_Y,tyre_air_R:10,,,,

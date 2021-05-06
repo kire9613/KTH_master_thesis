@@ -19,7 +19,7 @@ class Signals:
 		self.diag_status=msg.status2
 
 
-def delta(newsymp,oldsymp, signals):
+def delta(newsymp,oldsymp):
 	newsymp=newsymp.split(',')
 	
 	oldsymp=oldsymp.split(',')
@@ -46,7 +46,7 @@ class Symptom:
 	def create_symptoms(self,signals,state):
 		self.oldsymp=self.newsymp
 		self.newsymp=str(signals.signals)
-		self.deltasymp=delta(self.newsymp,self.oldsymp, signals)
+		self.deltasymp=delta(self.newsymp,self.oldsymp)
 
 class Statemachine:
 

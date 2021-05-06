@@ -15,6 +15,8 @@ import os
 
 
 class Topics_to_firestore:
+
+    #Set up firestore database and system variables
     def __init__(self):
         THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
         cred=credentials.Certificate(os.path.join(THIS_FOLDER,"serviceAccountKey.json"))
@@ -23,11 +25,11 @@ class Topics_to_firestore:
         
         self.database=firestore.client()
 
+        #variable to signal a diagnosis has been made
+        self.diagevent=False
 
-
-
+        #plan, position and time variables
         self.oc=1
-        self.route='MAIN ROUTE'
         self.pos_x=0
         self.pos_y=0
         self.pos_y_history=[]
@@ -36,36 +38,47 @@ class Topics_to_firestore:
         self.is_finished=0
         self.rc=3
         self.vr=1
-        self.v=0
-        self.actuation_status='NORMAL OPERATION'
+        self.vl=1
+        
+        
 
-
+        #diagnosis, symptom, prognosis variables
         self.symp=[]
         self.P_faults=[]
         self.diag=['NO fAULT','SAFE']
+        self.prob_fault=1
+        self.potfaults=[]
         self.diag_det_status='WAITING FOR NEW SYMPS'
         self.ct_diag_status='NOTHING TO VERIFY'
         
-
-        self.plan_current='NO ACTION'
+        #plan and actuation variables
         self.action_history=[['NO ACTION',0.000]]
         self.plan_status='WAITING FOR NEW DIAG'
-        
+        self.actuation_status='NORMAL OPERATION'
+        self.distance_FIN=100
+        self.distance_W1=100
+        self.distance_W2=100
+        self.driven_dist=0
 
+        #control tower variables
         self.ctver=0
         self.CT_actuation_handshake='WAITING FOR CT RELEASE'
         self.CT_release_from_stand_down=0
         self.correct_fault=['NO FAULT','SAFE']
         self.request_control=0
 
-
+    #set diagnosis and prognosis variables from ROS message
     def diag_callback(self,msg):
         old_diag=self.diag
         self.diag=msg.diag
+        self.potfaults=msg.potfaults.split(',')
+        self.prob_fault=msg.prob_fault
+        if not old_diag == self.diag:
+            self.diagevent=True
 
 
 
-
+    #set diagnosis/prognosis/plan handshake variables from ROS message
     def diag_dec_status_callback(self,msg):
         old_status2=self.diag_det_status
         old_status4=self.ct_diag_status
@@ -73,51 +86,81 @@ class Topics_to_firestore:
         self.ct_diag_status=msg.status4
 
 
+    #set plan variables from ROS messages
     def action_callback(self,msg):
         self.rc=msg.rc
-        old_action=self.action_history[-1][0]
-        if not old_action==msg.action:
-            self.action_history.append([msg.action,rospy.Time.now()-self.zero_time])
+        self.vl=msg.vl
+        self.mgoal=msg.mgoal
+        self.wgoal=msg.wgoal
         
-
+    #set symptom variable from ROS message
     def symptoms_callback(self,msg):
         old_symp=self.symp
         self.symp=msg.symp
-        
+
+    #set distance to goals, next node in route and last node in route.
+    def vmd_callback(self,msg):
+        self.distance_W1=msg.dist_w1
+        self.distance_W2=msg.dist_w2
+        self.distance_FIN=msg.dist_mgoal
+        self.last_node=msg.lastN
+        self.next_node=msg.nextN
 
     def actuation_status_callback(self,msg):
-        old_status=self.actuation_status
         self.actuation_status=msg.status2
         self.oc=msg.status1
         self.is_finished=msg.status3
-        self.vr=msg.status4
-        self.v=msg.status5
-        self.route=msg.status6
+        self.vl=msg.status4
+        self.vr=msg.status5
+        self.driven_dist=msg.status6
 
-
+    #set current position from ROS message
     def path_callback(self,msg):
         try:
 
             self.pos_x=msg.poses[-1].pose.position.x
             self.pos_y=msg.poses[-1].pose.position.y
-            #self.pos_x_history.append(self.pos_x)
-            #self.pos_y_history.append(self.pos_y)
-            #print(self.pos_x,self.pos_y)
         except:
             print('could not find position')
 
+    #Write to firestore. Structure of database can be found on ....
     def update_firestore_write(self):
 
         self.pos_x_history.append(self.pos_x)
         self.pos_y_history.append(self.pos_y)
-        print(self.pos_x_history)
-        diag_data={u'DIAG':self.diag,u'Diag_status':self.diag_det_status,u'P_faults':0,u'warnings_symptoms':self.symp}
-        act_data={u'is_finished':self.is_finished,u'oc':self.oc,u'pos_x_history':self.pos_x_history,u'pos_y_history':self.pos_y_history,u'rc':self.rc,u'route':self.route,u'v':self.v,u'vr':self.vr}
-        plan_data={u'plan_current':str(self.plan_current),u'plan_status':self.plan_status}
-        self.database.collection(u'Vehicle').document(u'Act_data').set(act_data,merge=True)
-        self.database.collection(u'Vehicle').document(u'Diagnostic_data').set(diag_data,merge=True)
-        self.database.collection(u'Vehicle').document(u'plan_data').set(plan_data,merge=True)
+        
+        
+        #diag and prog update
+        prognoses=[]
+        for progfault in self.potfaults:
+            prog={'Average life':unicode(progfault.split(':')[1]),'prognosis':unicode(progfault.split(':')[0])}
+            prognoses.append(prog)
+        dia=[]
+        dia.append({'diagnose':unicode(self.diag),'likelyhood':self.prob_fault,'prognoses':prognoses})
+        
+        diag_prog_data={'dia':dia}
+        self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'diagnosis').document(u'diagnoses').set(diag_prog_data,merge=True)
 
+
+        #create log event
+        if self.diagevent:
+            time=rospy.get_rostime()
+            content=unicode(self.ct_diag_status)
+            log_ref=self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'vehicleLog')
+            type_=unicode('VEHICLE DIAGNOSIS EVENT')
+            log_ref.add({'content':content,'time':unicode(str(time)),'type':type_})
+            
+            self.diagevent=False
+
+
+        #route info and downtime
+        info_ref=self.database.collection('VehiclesTest').document('Vehicle1').collection('vehicleinfo').document('vehicleInfoCurrent')
+        route=[unicode('Sodertelje'),unicode('Jonkoping')]
+        info_ref.set({'distance':self.distance_FIN,'distanceDriven':float(self.driven_dist),'route':route,'totalDowntimeApprox': unicode('not available'),'speed':float(self.vr)})
+
+        
+        
+    #Read from firestore. Control tower variables are collected
     def CT_update_read(self):
         CT_data=self.database.collection('Vehicle').document('CT_data').get().to_dict()
         self.CT_release_from_stand_down=CT_data['CT_release_from_stand_down']
@@ -130,13 +173,19 @@ def main():
 
     channel=Topics_to_firestore()
 
+    #Frequency of main loop
     r=rospy.Rate(1)
+
     rospy.Subscriber('diag',diag,channel.diag_callback)
     rospy.Subscriber('diagnose_decision_status',node_status,channel.diag_dec_status_callback)
     rospy.Subscriber('action',action,channel.action_callback)
     rospy.Subscriber('symptoms',symp,channel.symptoms_callback)
     rospy.Subscriber('past_path',Path,channel.path_callback)
+    rospy.Subscriber('vehicle_map_data',vehicle_map_data, channel.vmd_callback)
+    rospy.Subscriber('actuation_status',node_status,channel.actuation_status_callback)
     ct_pub=rospy.Publisher('ctcorr',ctcorr,queue_size=10)
+
+    #Main loop
     while not rospy.is_shutdown():
         channel.update_firestore_write()
         ct_msg=ctcorr()
@@ -147,7 +196,6 @@ def main():
         ct_pub.publish(ct_msg)
         r.sleep()
 
-    #rospy.spin()
 
 
 

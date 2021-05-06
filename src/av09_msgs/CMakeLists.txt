@@ -56,6 +56,7 @@ diag.msg
 symp.msg
 signals.msg
 node_status.msg
+vehicle_map_data.msg
  )
 
 ## Generate services in the 'srv' folder
