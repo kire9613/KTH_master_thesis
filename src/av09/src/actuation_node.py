@@ -37,39 +37,45 @@ traj_y = np.linspace(ys[0], ys[1]).tolist()
 trajs_dict={'W1':'start:N1:W1:N1:N2:FIN','W2':'start:N1:N2:W2:N2:FIN','FIN':'start:N1:N2:FIN'}
 trajs_adv_dict={'start:N1:W1':'start:N1:W1:N1:N2:FIN','start:N1:W2':'start:N1:N2:W2:N2:FIN','start:N1:FIN':'start:N1:N2:FIN','N1:W1:W1':'N1:W1:N1:N2:FIN','W1:N1:W1':'N1:W1:N1:N2:FIN','N1:N2:W1':'N2:N1:W1:N1:N2:FIN',
 'N2:N1:W1':'N2:N1:W1:N1:N2:FIN','N2:W2:W1':'W2:N2:N1:W1:N1:N2:FIN','N2:FIN:W1':'FIN:N2:N1:W1:N1:N2:FIN','start:N1:W2':'start:N1:N2:W2:N2:FIN','N1:W1:W2':'W1:N1:N2:W2:N2:FIN','W1:N1:W2':'W1:N1:N2:W2:N2:FIN',
-'N1:N2:W2':'N1:N2:W2:N2:FIN','N2:W2:W2':'N2:W2:N2:FIN','N2:FIN:W2':'FIN:N2:W2:N2:FIN','start:N1:FIN':'start:N1:N2:FIN','N1:W1:FIN':'W1:N1:N2:FIN',
-'N1:N2:FIN':'N1:N2:FIN','N2:W2:FIN':'W2:N2:FIN','W2:N2:FIN':'W2:N2:FIN','N2:FIN:FIN':'N2:FIN','N1:W1:FIN':'W1:N1:N2:FIN','W1:N1:FIN':'W1:N1:N2:FIN'}
-node_dict={'start':[-7.43,-15.3],'N1':[-2.74,-7.27],'W1':[-5.167,-1.67],'N2':[9.96,10.55],'W2':[15.37,18.51],'FIN':[5.95,14.93]}
-
-
+'N1:N2:W2':'N1:N2:W2:N2:FIN','N2:W2:W2':'N2:W2:N2:FIN','N2:FIN:W2':'FIN:N2:W2:N2:FIN','N1:W1:FIN':'W1:N1:N2:FIN',
+'N1:N2:FIN':'N1:N2:FIN','N2:W2:FIN':'W2:N2:FIN','W2:N2:FIN':'W2:N2:FIN','N2:FIN:FIN':'N2:FIN','N1:W1:FIN':'W1:N1:N2:FIN','W1:N1:FIN':'W1:N1:N2:FIN','W2:N2:W1':'W2:N2:N1:W1:N1:N2:FIN','W2:N2:W2':'N2:W2:N2:FIN'}
+node_dict_floor2={'start':[-7.43,-15.3],'N1':[-2.74,-7.27],'W1':[-5.167,-1.67],'N2':[9.96,10.55],'W2':[15.37,18.51],'FIN':[5.95,14.93]}
+node_dict_itrl={'start':[-7.4,-1.9],'N1':[-7.12,6.13],'W1':[-8.2,8.17],'N2':[0.16,6.0],'W2':[1.65,6.3],'FIN':[0.78,11.8]}
+points_dict={'floor2':node_dict_floor2,'itrl':node_dict_itrl}
+#map_name_param=rospy.search_param('map_name')
+#map_name=rospy.get_param(map_name_param,False)
+#print(map_name)
+#node_dict=points_dict[map_name]
 
 ## INIT #######################################################################
 default_init_pt = [0.0, 0.0, 0.0, 0.0] # [x, y, yaw, v], units: [m, m, rad, m/s]
 ###############################################################################
 
-#calculate distance to local goal. Returns True if closer than 1 meter.
+#calculate distance to local goal. Returns True if closer than 0.4 meter.
 def dist_calc(svea,goal_p):
     dist=math.sqrt((svea.state.x-goal_p[0])*(svea.state.x-goal_p[0])+(svea.state.y-goal_p[1])*(svea.state.y-goal_p[1]))
-    if dist <=1:
+    if dist <=0.4:
         return 1
     return 0
 
 #Calculates distance to goal given current location in node network. Iterates through the node network and calculates and adds distance between nodes to the total
 def dist_to_goal(svea,curr_path,goal):
-    sumdist=math.sqrt((svea.state.x-node_dict[curr_path[1]][0])*(svea.state.x-node_dict[curr_path[1]][0]) + (svea.state.y-node_dict[curr_path[1]][1])*(svea.state.y-node_dict[curr_path[1]][1]))
+    sumdist=math.sqrt((svea.state.x-node_dict[curr_path[1]][0])**2 + (svea.state.y-node_dict[curr_path[1]][1])**2)
     node_list=trajs_adv_dict[':'.join([curr_path[0],curr_path[1],goal])].split(':')
     i=0
     started=False
-    
+
     while i<=len(node_list):
-        if not node_list[0]==curr_path[1] or not started:
-            started=True
+        
+
         if node_list[i]==goal:
             return sumdist
+            
         if started:
             #adds distance between nodes in the current iteration to the total distance.
-            sumdist=sumdist+math.sqrt((node_dict[node_list[i]][0]-node_dict[node_list[i+1]][0])*(node_dict[node_list[i]][0]-node_dict[node_list[i+1]][0]) + (node_dict[node_list[i]][1]-node_dict[node_list[i+1]][1])*(node_dict[node_list[i]][1]-node_dict[node_list[i+1]][1]))
-        
+            sumdist=sumdist+math.sqrt((node_dict[node_list[i]][0]-node_dict[node_list[i+1]][0])**2 + (node_dict[node_list[i]][1]-node_dict[node_list[i+1]][1])**2)
+        if node_list[i]==curr_path[0] and node_list[i+1]==curr_path[1]:
+            started=True
         i=i+1
 
 
@@ -273,8 +279,10 @@ def param_init():
     # grab parameters from launch-file
     start_pt_param = rospy.search_param('start_pt')
     is_sim_param = rospy.search_param('is_sim')
+    is_real_SVEA_param=rospy.search_param('is_real_SVEA')
     use_rviz_param = rospy.search_param('use_rviz')
     use_matplotlib_param = rospy.search_param('use_matplotlib')
+    map_name_param = rospy.search_param('map_name')
 
     start_pt = rospy.get_param(start_pt_param, default_init_pt)
     if isinstance(start_pt, str):
@@ -283,10 +291,12 @@ def param_init():
         start_pt = VehicleState(*start_pt)
 
     is_sim = rospy.get_param(is_sim_param, True)
+    is_real_SVEA=rospy.get_param(is_real_SVEA_param,True)
     use_rviz = rospy.get_param(use_rviz_param, False)
     use_matplotlib = rospy.get_param(use_matplotlib_param, False)
+    map_name= rospy.get_param(map_name_param, True)
 
-    return start_pt, is_sim, use_rviz, use_matplotlib
+    return start_pt, is_sim, use_rviz, use_matplotlib, is_real_SVEA, map_name
 
 def main():
 
@@ -307,8 +317,9 @@ def main():
 
 
     rospy.init_node('actuation_node')
-    start_pt, is_sim, use_rviz, use_matplotlib = param_init()
-
+    start_pt, is_sim, use_rviz, use_matplotlib, is_real_SVEA, map_name = param_init()
+    global node_dict
+    node_dict=points_dict[map_name]
     SM=StateMachine(1,target_velocity)
 
     rospy.Subscriber('action', action, SM.callback_plan )
@@ -352,6 +363,7 @@ def main():
     distance_W1=dist_to_goal(svea,SM.currentpath,'W1')
     distance_W2=dist_to_goal(svea,SM.currentpath,'W2')
     distance_FIN=dist_to_goal(svea,SM.currentpath,'FIN')
+    
     
     #How long we have driven
     driven_dist=0

@@ -32,10 +32,6 @@ def delta(newsymp,oldsymp):
 		i=i+1
 	return 0
 	
-	if deltasymp >0:
-		return 1
-	elif deltasymp ==0:
-		return 0
 class Symptom:
 
 	def __init__(self):

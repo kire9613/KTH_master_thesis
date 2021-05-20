@@ -12,7 +12,7 @@ import os
 
 
 
-
+nodes_to_towns={'start':'Sodertalje','N1':'Nykoping','N2':'Linkoping','FIN':'Jonkoping','W1':'Skavsta workshop','W2':'Tannefors'}
 
 class Topics_to_firestore:
 
@@ -61,6 +61,8 @@ class Topics_to_firestore:
         self.distance_W1=100
         self.distance_W2=100
         self.driven_dist=0
+        self.last_node='start'
+        self.next_node='N1'
 
         #control tower variables
         self.ctver=0
@@ -137,7 +139,7 @@ class Topics_to_firestore:
         #diag and prog update
         prognoses=[]
         for progfault in self.potfaults:
-            prog={'Average life':unicode(progfault.split(':')[1]),'prognosis':unicode(progfault.split(':')[0])}
+            prog={'AvgLife':unicode(progfault.split(':')[1]),'prognosis':unicode(progfault.split(':')[0])}
             prognoses.append(prog)
         dia=[]
         dia.append({'diagnose':unicode(self.diag),'likelyhood':self.prob_fault,'prognoses':prognoses})
@@ -147,7 +149,7 @@ class Topics_to_firestore:
 
 
         #update general state of health
-        self.database.collection(u'VehicleTest').document(u'Vehicle1').collection(u'vehicleinfo').document(u'vehicleHealth').set({'gsh':self.gsh})
+        self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'vehicleinfo').document(u'vehicleHealth').set({'gsh':int(self.gsh)},merge=True)
 
         #create log event
         if self.diagevent:
@@ -163,7 +165,7 @@ class Topics_to_firestore:
         #route info and downtime
         info_ref=self.database.collection('VehiclesTest').document('Vehicle1').collection('vehicleinfo').document('vehicleInfoCurrent')
         route=[unicode('Sodertelje'),unicode('Jonkoping')]
-        info_ref.set({'distance':self.distance_FIN,'distanceDriven':float(self.driven_dist),'route':route,'totalDowntimeApprox': unicode('not available'),'speed':float(self.vr)})
+        info_ref.set({'distance':self.distance_FIN,'distanceDriven':float(self.driven_dist),'route':route,'totalDowntimeApprox': float(self.approxDT),'speed':float(self.vr),'localroute':[unicode(nodes_to_towns[self.last_node]),unicode(nodes_to_towns[self.next_node])]},merge=True)
 
         
         

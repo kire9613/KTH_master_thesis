@@ -18,7 +18,9 @@ from svea.states import VehicleState
 #
 v_dict={'Vnormal':1,'Vred':0.3}
 #Hard-coded distances from workshops to end goal
-dist_dict={'W1:FIN':36.86,'W2:FIN':15.55}
+dist_dict_floor2={'W1:FIN':36.86,'W2:FIN':15.55}
+dist_dict_itrl={'W1:FIN':15.42,'W2:FIN':7.35}
+dist_dicts={'floor2':dist_dict_floor2,'itrl':dist_dict_itrl}
 default_init_pt = [0.0, 0.0, 0.0, 0.0]
 
 
@@ -146,7 +148,7 @@ class Plan:
 		self.mgoal=mgoal
 		self.wgoal=wgoal
 		self.RC=RC
-		self.approxDT
+		self.approxDT=0
 
 	def vhd_callback(self,msg):
 		self.dist_W1=msg.dist_w1
@@ -193,7 +195,7 @@ class Plan:
 		#Find the optimal plan (speed, route)
 		opt_plan = min(downtime_feasible, key=downtime_feasible.get)
 		#approximate total downtime
-		self.approxDT=downtime_feasible[opt_plan]-self.downtime('Vnormal:mgoal')
+		self.approxDT=downtime_feasible[opt_plan]-self.downtime('Vnormal:mgoal',self.dist_W1,self.dist_W2,self.dist_mgoal)
 		if opt_plan=='stop':
 			self.vl=0
 			self.mgoal='FIN'
@@ -222,9 +224,9 @@ class Plan:
 		if plan=='stop':
 			return 100000
 		if plan_list[1]=='W1':
-			time=dist_W1/v_dict[plan_list[0]] + dist_dict['W1:FIN']/v_dict['Vnormal']
+			time=dist_W1/v_dict[plan_list[0]] + dist_dict['W1:FIN']/v_dict['Vnormal'] + 5
 		elif plan_list[1]=='W2':
-			time=dist_W2/v_dict[plan_list[0]] + dist_dict['W2:FIN']/v_dict['Vnormal']
+			time=dist_W2/v_dict[plan_list[0]] + dist_dict['W2:FIN']/v_dict['Vnormal'] + 5
 		elif plan_list[1]=='mgoal':
 			time=dist_mgoal/v_dict[plan_list[0]]
 
@@ -278,7 +280,7 @@ class Prognosis:
 		self.risk_to_goals.append(0)
 
 		#return risk_W1_normal,risk_W1_reduced,risk_W2_normal,risk_W2_reduced,risk_mgoal_normal,risk_mgoal_reduced
-		print('risk_to_goals',self.risk_to_goals[0],self.risk_to_goals[1],self.risk_to_goals[2],self.risk_to_goals[3],self.risk_to_goals[4],self.risk_to_goals[5])
+		#print('risk_to_goals',self.risk_to_goals[0],self.risk_to_goals[1],self.risk_to_goals[2],self.risk_to_goals[3],self.risk_to_goals[4],self.risk_to_goals[5])
 #Main statemachine of the node. One method for state switching followed by methods on how to operate in each state.
 class StateMachine:
 
@@ -305,7 +307,7 @@ class StateMachine:
 			return self.state_1()
 		elif self.state=='DIAGNOSING':
 			return self.state_2()
-		elif self.state=='W4V': #W2V=wating for verification
+		elif self.state=='W4V': #W4V=wating for verification
 			return self.state_3()
 		elif self.state=='PLANNING':
 			return self.state_4()
@@ -387,24 +389,28 @@ class StateMachine:
 
 #Initialization handles use with just python or in a launch file
 def param_init():
-    # grab parameters from launch-file
-    start_pt_param = rospy.search_param('start_pt')
-    
-    start_pt = rospy.get_param(start_pt_param, default_init_pt)
-    if isinstance(start_pt, str):
-        start_pt = start_pt.split(',')
-        start_pt = [float(curr) for curr in start_pt]
-        start_pt = VehicleState(*start_pt)
+	# grab parameters from launch-file
+	start_pt_param = rospy.search_param('start_pt')
+	map_name_param = rospy.search_param('map_name')
+	start_pt = rospy.get_param(start_pt_param, default_init_pt)
+	map_name=rospy.get_param(map_name_param,False)
+	if isinstance(start_pt, str):
+		start_pt = start_pt.split(',')
+		start_pt = [float(curr) for curr in start_pt]
+		start_pt = VehicleState(*start_pt)
 
 
-    return start_pt
+	return start_pt, map_name
 
 
 
 def main():
 	rospy.init_node('diagnose_plan_node')
 	r=rospy.Rate(5)
-	start_pt=param_init()
+	start_pt, map_name=param_init()
+
+	global dist_dict
+	dist_dict=dist_dicts[map_name]
 
 
 	#Creates fault objects and symptom objects for use in diagnosis
@@ -464,7 +470,7 @@ def main():
 		severity=SM.Diag.diag.split(',')[1]
 		if severity=='SAFE':
 			SM.Diag.gsh=100
-		elif severity=='NOT SEVERE':
+		elif severity=='NOTSEVERE':
 			SM.Diag.gsh=50
 		elif severity=='SEVERE':
 			SM.Diag.gsh=20
@@ -476,8 +482,8 @@ def main():
 		status_msg.status2=SM.detect_handshake
 		status_msg.status3=SM.actuate_handshake
 		status_msg.status4=SM.ct_handshake
-		status_msg.status5=SM.Diag.gsh
-		status_msg.status6=SM.plan.approxDT
+		status_msg.status5=str(SM.Diag.gsh)
+		status_msg.status6=str(SM.plan.approxDT)
 		pub_diag_dec_status.publish(status_msg)
 		
 		#Verification always set to True until control tower fully integrated with SVEA
