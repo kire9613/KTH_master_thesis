@@ -50,6 +50,8 @@ class Topics_to_firestore:
         self.potfaults=[]
         self.diag_det_status='WAITING FOR NEW SYMPS'
         self.ct_diag_status='NOTHING TO VERIFY'
+        self.gsh=100
+        self.approxDT=0
         
         #plan and actuation variables
         self.action_history=[['NO ACTION',0.000]]
@@ -84,6 +86,8 @@ class Topics_to_firestore:
         old_status4=self.ct_diag_status
         self.diag_det_status=msg.status2
         self.ct_diag_status=msg.status4
+        self.gsh=msg.status5
+        self.approxDT=msg.status6
 
 
     #set plan variables from ROS messages
@@ -141,6 +145,9 @@ class Topics_to_firestore:
         diag_prog_data={'dia':dia}
         self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'diagnosis').document(u'diagnoses').set(diag_prog_data,merge=True)
 
+
+        #update general state of health
+        self.database.collection(u'VehicleTest').document(u'Vehicle1').collection(u'vehicleinfo').document(u'vehicleHealth').set({'gsh':self.gsh})
 
         #create log event
         if self.diagevent:

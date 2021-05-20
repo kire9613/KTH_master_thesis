@@ -38,6 +38,7 @@ class Diag:
 		self.slist=slist
 		self.flist=flist
 		self.zero_time=rospy.Time.now()
+		self.gsh=100
 
 		#Create the matrix P(S|F)
 		mat=[]
@@ -145,6 +146,7 @@ class Plan:
 		self.mgoal=mgoal
 		self.wgoal=wgoal
 		self.RC=RC
+		self.approxDT
 
 	def vhd_callback(self,msg):
 		self.dist_W1=msg.dist_w1
@@ -190,6 +192,8 @@ class Plan:
 
 		#Find the optimal plan (speed, route)
 		opt_plan = min(downtime_feasible, key=downtime_feasible.get)
+		#approximate total downtime
+		self.approxDT=downtime_feasible[opt_plan]-self.downtime('Vnormal:mgoal')
 		if opt_plan=='stop':
 			self.vl=0
 			self.mgoal='FIN'
@@ -455,12 +459,25 @@ def main():
 		act_msg.rc=int(SM.plan.RC)
 		pub_act.publish(act_msg)
 
+
+		#Update general state of health (GSH)
+		severity=SM.Diag.diag.split(',')[1]
+		if severity=='SAFE':
+			SM.Diag.gsh=100
+		elif severity=='NOT SEVERE':
+			SM.Diag.gsh=50
+		elif severity=='SEVERE':
+			SM.Diag.gsh=20
+
+
 		#create and publish the status message
 		status_msg=node_status()
 		status_msg.status1=SM.state
 		status_msg.status2=SM.detect_handshake
 		status_msg.status3=SM.actuate_handshake
 		status_msg.status4=SM.ct_handshake
+		status_msg.status5=SM.Diag.gsh
+		status_msg.status6=SM.plan.approxDT
 		pub_diag_dec_status.publish(status_msg)
 		
 		#Verification always set to True until control tower fully integrated with SVEA
