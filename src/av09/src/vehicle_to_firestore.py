@@ -8,6 +8,7 @@ from nav_msgs.msg import *
 from std_msgs.msg import *
 from av09_msgs.msg import *
 import os
+import datetime as dt
 
 
 
@@ -63,6 +64,7 @@ class Topics_to_firestore:
         self.driven_dist=0
         self.last_node='start'
         self.next_node='N1'
+        self.mission_finished=False
 
         #control tower variables
         self.ctver=0
@@ -153,11 +155,11 @@ class Topics_to_firestore:
 
         #create log event
         if self.diagevent:
-            time=rospy.get_rostime()
-            content=unicode(self.ct_diag_status)
-            log_ref=self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'vehicleLog')
+            datetime = dt.datetime.now()
+            content=unicode('NEW DIAGNOSIS: ' + str(self.diag))
+            log_ref=self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'vehicleinfo').document(u'VehicleLogs')
             type_=unicode('VEHICLE DIAGNOSIS EVENT')
-            log_ref.add({'content':content,'time':unicode(str(time)),'type':type_})
+            log_ref.update({u'Logs': firestore.ArrayUnion([{'content':content,'occ_time':unicode(str(datetime)),'type':type_}])})
             
             self.diagevent=False
 
@@ -165,7 +167,11 @@ class Topics_to_firestore:
         #route info and downtime
         info_ref=self.database.collection('VehiclesTest').document('Vehicle1').collection('vehicleinfo').document('vehicleInfoCurrent')
         route=[unicode('Sodertelje'),unicode('Jonkoping')]
-        info_ref.set({'distance':self.distance_FIN,'distanceDriven':float(self.driven_dist),'route':route,'totalDowntimeApprox': float(self.approxDT),'speed':float(self.vr),'localroute':[unicode(nodes_to_towns[self.last_node]),unicode(nodes_to_towns[self.next_node])]},merge=True)
+        if self.next_node=='FIN' and self.is_finished:
+            self.mission_finished=True
+        else:
+            self.mission_finished=False
+        info_ref.set({'distance':self.distance_FIN,'distanceDriven':float(self.driven_dist),'route':route,'totalDowntimeApprox': float(self.approxDT),'speed':float(self.vr),'localroute':[unicode(nodes_to_towns[self.last_node]),unicode(nodes_to_towns[self.next_node])],'mission_finished':self.mission_finished},merge=True)
 
         
         

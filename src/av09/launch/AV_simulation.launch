@@ -1,0 +1,19 @@
+<launch>
+
+    <arg name="start_pt" default= '-7.43, -1.9, 0.8978652, 0'/>
+    <arg name="use_rviz" default="true"/>
+    <arg name="use_matplotlib" default="false"/>
+    <arg name="is_sim" default="true"/>
+    <arg name="map_name" default="itrl"/>
+    <arg name="map_file" default="$(find svea_core)/resources/maps/itrl.yaml" />    
+
+
+    <arg name="symps" default="$(find av09)/src/symps.txt" />
+    <arg name="faults" default="$(find av09)/src/faults.txt" />
+
+    <node pkg="av09" type="simulation_node.py" name="simulation_node" output="screen">
+        
+    </node>
+ 
+
+</launch>
