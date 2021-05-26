@@ -46,7 +46,7 @@ class Topics_to_firestore:
         #diagnosis, symptom, prognosis variables
         self.symp=[]
         self.P_faults=[]
-        self.diag=['NO fAULT','SAFE']
+        self.diag='nofault,SAFE'
         self.prob_fault=1
         self.potfaults=[]
         self.diag_det_status='WAITING FOR NEW SYMPS'
@@ -177,11 +177,16 @@ class Topics_to_firestore:
         
     #Read from firestore. Control tower variables are collected
     def CT_update_read(self):
-        CT_data=self.database.collection('Vehicle').document('CT_data').get().to_dict()
-        self.CT_release_from_stand_down=CT_data['CT_release_from_stand_down']
-        self.request_control=CT_data['CT_request_control']
-        self.correct_fault=CT_data['corr_fault']
-        self.ctver=CT_data['ctver']
+        CT_data=self.database.collection('VehiclesTest').document('Vehicle1').collection('commands').document('command').get().to_dict()
+        #self.CT_release_from_stand_down=CT_data['CT_release_from_stand_down']
+        self.request_control=CT_data['takeControl']
+        
+        self.CTactSpeed=CT_data['action']['speed']
+        self.CTactRoute=CT_data['action']['route']
+        self.ctver=CT_data['verifyDiagnose']
+        print(self.request_control)
+        print(self.CTactRoute)
+        print(self.CTactSpeed)
 def main():
 
     rospy.init_node('vehicle_to_firestore')
@@ -203,10 +208,11 @@ def main():
     #Main loop
     while not rospy.is_shutdown():
         channel.update_firestore_write()
+        channel.CT_update_read()
         ct_msg=ctcorr()
         ct_msg.ctreq=channel.request_control
         ct_msg.ctver=channel.ctver
-        ct_msg.fault=channel.correct_fault
+        
         ct_msg.release=channel.CT_release_from_stand_down
         ct_pub.publish(ct_msg)
         r.sleep()
