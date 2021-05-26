@@ -4,7 +4,7 @@ class Symptom_obj:
     def __init__(self,objlist,faultsize):
         self.faultsize=faultsize
         self.pos_f_list=[]
-        self.name=objlist[1]
+        self.name=objlist[0]
             
         i=0
         while i<self.faultsize:

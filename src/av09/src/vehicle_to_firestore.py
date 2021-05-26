@@ -4,6 +4,8 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 import rospy
+from faultclass import Fault_obj
+from symptomclass import Symptom_obj
 from nav_msgs.msg import *
 from std_msgs.msg import *
 from av09_msgs.msg import *
@@ -18,7 +20,7 @@ nodes_to_towns={'start':'Sodertalje','N1':'Nykoping','N2':'Linkoping','FIN':'Jon
 class Topics_to_firestore:
 
     #Set up firestore database and system variables
-    def __init__(self):
+    def __init__(self, sympslist):
         THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
         cred=credentials.Certificate(os.path.join(THIS_FOLDER,"serviceAccountKey.json"))
 
@@ -26,6 +28,7 @@ class Topics_to_firestore:
         
         self.database=firestore.client()
 
+        self.sympslist=sympslist
         #variable to signal a diagnosis has been made
         self.diagevent=False
 
@@ -151,7 +154,23 @@ class Topics_to_firestore:
 
 
         #update general state of health
-        self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'vehicleinfo').document(u'vehicleHealth').set({'gsh':int(self.gsh)},merge=True)
+        active_symps={}
+        for i,ele in enumerate(self.sympslist):
+            
+            if int(self.symp.split(',')[i])==1:
+                if ele.name=='hotnave' or ele.name=='vibration':
+                    active_symps[ele.name]=[False,True,False,False]
+                else:
+                    active_symps[ele.name]=True
+            else:
+                if ele.name=='hotnave' or ele.name=='vibration':
+                    active_symps[ele.name]=[False,False,False,False]
+                else:
+                    active_symps[ele.name]=False
+        #print(active_symps)
+        self.database.collection(u'VehiclesTest').document(u'Vehicle1').collection(u'vehicleinfo').document(u'vehicleHealth').set({'gsh':int(self.gsh),'symptoms':active_symps},merge=True)
+        
+
 
         #create log event
         if self.diagevent:
@@ -188,8 +207,26 @@ def main():
 
     rospy.init_node('vehicle_to_firestore')
 
-    channel=Topics_to_firestore()
 
+
+    THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+    my_file1 = os.path.join(THIS_FOLDER, 'symps.txt')
+    my_file2 = os.path.join(THIS_FOLDER, 'faults.txt')
+
+    sympdoc=open(my_file1,mode='r')
+    list2=sympdoc.readlines()
+    faultdoc=open(my_file2,mode='r')
+    list1=faultdoc.readlines()
+    sympssize=len(list2)
+    faultssize=len(list1)
+
+    symps_list=[]
+    for i in list2:
+        i="".join(i.split())
+        objlist2=i.split(',')
+        symps_list.append(Symptom_obj(objlist2,faultssize))
+
+    channel=Topics_to_firestore(symps_list)
     #Frequency of main loop
     r=rospy.Rate(1)
 
