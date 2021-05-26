@@ -184,9 +184,6 @@ class Topics_to_firestore:
         self.CTactSpeed=CT_data['action']['speed']
         self.CTactRoute=CT_data['action']['route']
         self.ctver=CT_data['verifyDiagnose']
-        print(self.request_control)
-        print(self.CTactRoute)
-        print(self.CTactSpeed)
 def main():
 
     rospy.init_node('vehicle_to_firestore')
