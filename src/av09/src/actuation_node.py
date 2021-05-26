@@ -40,7 +40,7 @@ trajs_adv_dict={'start:N1:W1':'start:N1:W1:N1:N2:FIN','start:N1:W2':'start:N1:N2
 'N1:N2:W2':'N1:N2:W2:N2:FIN','N2:W2:W2':'N2:W2:N2:FIN','N2:FIN:W2':'FIN:N2:W2:N2:FIN','N1:W1:FIN':'W1:N1:N2:FIN',
 'N1:N2:FIN':'N1:N2:FIN','N2:W2:FIN':'W2:N2:FIN','W2:N2:FIN':'W2:N2:FIN','N2:FIN:FIN':'N2:FIN','N1:W1:FIN':'W1:N1:N2:FIN','W1:N1:FIN':'W1:N1:N2:FIN','W2:N2:W1':'W2:N2:N1:W1:N1:N2:FIN','W2:N2:W2':'N2:W2:N2:FIN'}
 node_dict_floor2={'start':[-7.43,-15.3],'N1':[-2.74,-7.27],'W1':[-5.167,-1.67],'N2':[9.96,10.55],'W2':[15.37,18.51],'FIN':[5.95,14.93]}
-node_dict_itrl={'start':[-7.4,-1.9],'N1':[-7.12,6.13],'W1':[-8.2,8.17],'N2':[0.16,6.0],'W2':[1.65,6.3],'FIN':[0.1,9.8]}
+node_dict_itrl={'start':[-7.4,-1.9],'N1':[-7.12,6.13],'W1':[-8.2,8.17],'N2':[0.16,6.0],'W2':[1.65,6.3],'FIN':[0.07,10.7]}
 points_dict={'floor2':node_dict_floor2,'itrl':node_dict_itrl}
 #map_name_param=rospy.search_param('map_name')
 #map_name=rospy.get_param(map_name_param,False)
