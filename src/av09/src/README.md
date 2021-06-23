@@ -2,7 +2,25 @@ Documentation for  package av09
 
 By Erik Branzén (ebranzen@kth.se)
 
-last update 2021-05-06
+last update 2021-06-23
+
+##########################
+Contents
+##########################
+
+Project overview
+
+Software architecture description
+
+File organization
+
+Design Decisions and Programming practices
+
+Installation Procedure
+
+Detailed node descriptions
+
+Description of other files
 
 #########################
 Project description
@@ -38,6 +56,9 @@ This node also simulates the vehicle in rviz. The vehicle follows a declared tra
 
 Vehicle_to_firestore:
 This node subscribes to all topics that are of interest to the control tower and writes data from these to the firebase firestore online database. The node also reads from the database to collect the variables from the control tower that controls functions in the vehicle. This data is then published to the \CTcorr topic.
+
+The database can be found on https://console.firebase.google.com/project/pytest-6b7a8/firestore/rules
+
 
 ########################
 File Organization:

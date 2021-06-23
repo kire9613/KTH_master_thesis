@@ -157,6 +157,7 @@ class Topics_to_firestore:
         active_symps={}
         for i,ele in enumerate(self.sympslist):
             
+            #As there are 4 wheels, symptoms for each wheel need to be written. We simply say that wheel 2 has either vibrations or hot nave.
             if int(self.symp.split(',')[i])==1:
                 if ele.name=='hotnave' or ele.name=='vibration':
                     active_symps[ele.name]=[False,True,False,False]

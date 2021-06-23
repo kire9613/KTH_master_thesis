@@ -60,7 +60,7 @@ class Diag:
 
 		#Calculation of time since system start
 		timestamp=rospy.Time.now()-self.zero_time
-		
+		print(symptoms.newsymp)
 		#P_vec is probability of all faults. failure of some components are exponentially distributed and some have static probs.
 		p_vec=[]
 		for ele in self.flist:
@@ -94,6 +94,7 @@ class Diag:
 			
 			self.deltadiag=1
 		self.diag=newdiag
+		print(self.diag)
 		
 
 		#When symp vector is all zeros, the calculation returns NaN as a division with zero occurs. The following code diagnoses the no-symptoms case
