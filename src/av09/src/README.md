@@ -2,7 +2,7 @@ Documentation for  package av09
 
 By Erik Branzén (ebranzen@kth.se)
 
-last update 2021-06-23
+last update 2021-06-29
 
 ##########################
 Contents
@@ -27,7 +27,9 @@ Project description
 #########################
 The code base developed in the package av09 as well as av09_msgs was a part of the the Master thesis of Erik Branzén. The code was written during the spring and summer of 2021. The goal of the thesis was to develop fault diagnostics and prognostics algorithms for an autonomous vehicle. Based on a knowledge base on active and potential faults, the vehicle could counteract faults and plan to minimize the chance of severe faults. The vehicle could also consider potential downtime for different actions and choose actions that optimized time lost during driving. These functionalities were implemented on the SVEA-platform, first simulated but later on a real physical vehicle. Some scenarios were developed to test the system functionalities.
 
+The project was developed in conjunction with the work of Jesper Englund. He designed implemented a control tower for monitoring of self-driving vehicles. Our combined works constitued the demonstrator that was shown to SCANIA CV AB in June 2021. A video was recorded and edited to show the key functionalities of the whole system.
 
+Link to demo video: https://www.youtube.com/watch?v=LxI5Gn6Ehhk 
 
 #########################
 Software architecture description
@@ -36,6 +38,8 @@ Five distinct modules make up the system. In ROS, these are declared as nodes. C
 
 The five nodes are : FaultSimulation, FaultDetection, Diagnosis/prognosis/planning, Actuation and Vehicle_to_firebase. A brief black box description of these nodes follow
 
+General system architecture and node statemachines are visualized in the images found in the images folder.
+
 Faultsimulation:
 This node generated fault events based on user input. As there were no components with sensors available to generate low-level diagnostic warnings, these had to be simulated in the software. The user chooses a fault and based on a fault-to-symptom probabilistic model, symptoms are generated. These symptoms are subsequently published to \rawsignals. 
 
@@ -43,9 +47,9 @@ FaultDetection:
 Based on the simulated sensor signals, This node first checks if any new signals are present and then publishes the signals as symptoms on \symptoms. Also, A handshake variable is published on a seperate topic \detection_status. In turn, the node is subscribed to \diagnose_decision_status to access the corresponding handshake variable sent from the diagnosis/prognosis/planning node. When a new symptom is detected, the detection node publishes a message on \detection_status. When the diagnosis/prognosis/planning node has noticed this, a confirmation is published on diagnose_decision_status.
 
 Diagnose/prognosis/planning:
-This is the core module of the system. First, a diagnosis is made based on the current symptoms if these are new symptoms. If the diagnosis confirms a new fault, then a severity analysis is made. If the fault is severe, an immediate reaction is necessary. If it is not severe, a prognosis can be made along with a long-term plan. The prognosis uses the active fault as a basis to find possible new faults that might propagate as a result. These are then combined to calculate a time window in which the vehicle can operate relaitvely safely (based on a user specified risk limit). This time window is subsequently used as a hard condition in the route planning that follows. Here, the system chooses which workshop to visit (if it needs to visit one) based on the the time window and the downtimes for driving to and spending time at them. 
+This is the core module of the system. First, a diagnosis is made based on the current symptoms if these are new symptoms. If the diagnosis confirms a new fault, a severity analysis is performed. If the fault is severe, an immediate reaction is necessary. If it is not severe, a prognosis can be made along with a long-term plan. The prognosis uses the active fault as a basis to find possible new faults that might propagate as a result. These are then combined to calculate a time window in which the vehicle can operate relaitvely safely (based on a user specified risk limit). This time window is subsequently used as a hard condition in the route planning that follows. Here, the system chooses which workshop to visit (if it needs to visit one) based on the the time window and the downtimes for driving to and spending time at them. 
 
-The node subscribes to many topics. The most important are \CTcorr, \symptoms and \detection_status. On \CTcorr, the control tower publishes its control variables on the system. For example, the control tower might need to verify the diagnosis in some cases where reliability is low. The control tower can also override a plan.
+The node subscribes to many topics. The most important are \CTcorr, \symptoms and \detection_status. On \CTcorr, the control tower publishes its control variables on the system. For example, the control tower might need to verify the diagnosis in some cases where reliability of the diagnosis is low. The control tower can also override a plan.
 
 The node publishes to several topics aswell. These are \diag, \plan, \diagnose_decision_status. The diag consists of the active fault and its severity and the plan consists of speed limit, route and release condition. The release condition determines what will allow the system to go back to normal operation after a fault has been dealt with. For example, if the fault is severe, the control tower is deemed the only actor that can "release" the vehicle back to normal operation even though the vehicle itself might conclude that the fault is healed.
 
@@ -57,7 +61,7 @@ This node also simulates the vehicle in rviz. The vehicle follows a declared tra
 Vehicle_to_firestore:
 This node subscribes to all topics that are of interest to the control tower and writes data from these to the firebase firestore online database. The node also reads from the database to collect the variables from the control tower that controls functions in the vehicle. This data is then published to the \CTcorr topic.
 
-The database can be found on https://console.firebase.google.com/project/pytest-6b7a8/firestore/rules
+The database can be found on https://console.firebase.google.com/project/pytest-6b7a8/firestore/data/~2FTIME~2Ftime_data 
 
 
 ########################
@@ -75,9 +79,9 @@ In av09/launch, launchfiles for different case studies can be located.
 #########################
 Design Decisions and Programming practices:
 #########################
-Across many of the nodes, the same data is used and represented. Some examples are the diagnosis, symptoms, plan. The representations of these metrics are shared between nodes to make the code easy to interpret. For example, the diagnosis is represented as a DIAG class whose methods and parameters are the same between nodes for the most part (with exception to callback functions).
+Across many of the nodes, the same data is used and represented. Some examples are the diagnosis, symptoms, plan. The representations of these metrics are shared between nodes to make the code easy to interpret. For example, the diagnosis is represented as a DIAG class whose methods and parameters are (mostly) the same between nodes (with exception to callback functions).
 
-The core mechanics of the nodes are that of a state machine. The parameters that determine the function of a state machine is: state, inputs, outputs and state transition conditions. In all nodes, these paramters are defined locally in the python files.
+The core mechanics of the nodes are that of a state machine. The parameters that determine the function of a state machine is: state, inputs, outputs and state transition conditions. In all nodes, these parameters are defined locally in the python files.
 
 The modular nature of the system was chosen as a key design feature for various reasons. Firstly, a modular architecture is easier to grasp and explain to another person. Secondly, in a modular architecture, changing features locally will not affect the system as a whole as long as long as good documentation is available where it is clear what each module inputs and outputs. Handing over a code base to another developer or working in parallell with someone else is much less pain-inducing. 
 

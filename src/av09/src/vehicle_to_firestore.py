@@ -218,7 +218,6 @@ def main():
     list2=sympdoc.readlines()
     faultdoc=open(my_file2,mode='r')
     list1=faultdoc.readlines()
-    sympssize=len(list2)
     faultssize=len(list1)
 
     symps_list=[]
@@ -231,6 +230,7 @@ def main():
     #Frequency of main loop
     r=rospy.Rate(1)
 
+    #Declaration of subscribers
     rospy.Subscriber('diag',diag,channel.diag_callback)
     rospy.Subscriber('diagnose_decision_status',node_status,channel.diag_dec_status_callback)
     rospy.Subscriber('action',action,channel.action_callback)
