@@ -48,6 +48,9 @@ class TAMP_svea_manager(SVEAManager):
             steering, velocity = self.controller.get_control()
             self.data_handler.update_target(self.controller.target)
         return steering, velocity
+    def send_control(self,steering,velocity,transmission):
+        """Base SVEA Manager class modifier"""
+        self.actuation.send_control(steering, velocity,transmission)
     @property
     def is_finished(self):
         """Check if  controller is finished or not"""

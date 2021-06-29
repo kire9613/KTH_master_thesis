@@ -89,7 +89,7 @@ class Tamp_svea:
 
             # get control input via control interface node
             steering, velocity = self.svea.get_control()
-            self.svea.send_control(steering, velocity)
+            self.svea.send_control(steering, velocity, transmission=1)
 
             # visualize data
             #self.use_matplotlib or
